@@ -1,0 +1,81 @@
+{
+	"name": "rob006/flarum-translations-builder",
+	"description": "Builder for Flarum translations monorepo",
+	"keywords": [
+		"flarum",
+		"translations"
+	],
+	"homepage": "https://github.com/rob006-software/flarum-translations-builder",
+	"type": "project",
+	"license": "MIT",
+	"support": {
+		"issues": "https://github.com/rob006-software/flarum-translations-builder/issues",
+		"source": "https://github.com/rob006-software/flarum-translations-builder"
+	},
+	"minimum-stability": "dev",
+	"prefer-stable": true,
+	"require": {
+		"php": "^7.0",
+		"yiisoft/yii2": "~2.0.23",
+		"yiisoft/yii2-composer": "~2.0.8",
+		"yiisoft/yii2-swiftmailer": "~2.1.1"
+	},
+	"require-dev": {
+		"roave/security-advisories": "dev-master",
+		"yiisoft/yii2-debug": "~2.1.5"
+	},
+	"autoload": {
+		"psr-4": {
+			"app\\": ""
+		},
+		"exclude-from-classmap": [
+			"/runtime/",
+			"/resources/"
+		]
+	},
+	"repositories": [
+		{
+			"type": "composer",
+			"url": "https://asset-packagist.org"
+		}
+	],
+	"config": {
+		"process-timeout": 1800,
+		"platform": {
+			"php": "7.0.33"
+		}
+	},
+	"scripts": {
+		"post-install-cmd": [
+			"yii\\composer\\Installer::postInstall"
+		],
+		"post-update-cmd": [
+			"yii\\composer\\Installer::postInstall"
+		],
+		"post-create-project-cmd": [
+			"yii\\composer\\Installer::postCreateProject"
+		]
+	},
+	"extra": {
+		"yii\\composer\\Installer::postCreateProject": {
+			"setPermission": [
+				{
+					"runtime": "0777",
+					"public/assets": "0777",
+					"yii": "0755"
+				}
+			]
+		},
+		"yii\\composer\\Installer::postInstall": {
+			"copyFiles": [
+				{
+					"config/templates/local.php": "config/local.php",
+					"config/templates/environment.php": "config/environment.php"
+				}
+			],
+			"generateCookieValidationKey": [
+				"config/local.php"
+			]
+		}
+	}
+}
