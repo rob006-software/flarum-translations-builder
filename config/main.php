@@ -60,7 +60,7 @@ return [
 		],
 		'db' => [
 			'class' => Connection::class,
-			'dsn' => 'sqlite:@app/runtime/translations.db',
+			'dsn' => 'sqlite:@app/runtime/database.db',
 			'charset' => 'utf8',
 			'enableSchemaCache' => true,
 			'attributes' => [

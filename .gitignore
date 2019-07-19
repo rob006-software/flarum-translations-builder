@@ -3,3 +3,6 @@
 
 # composer vendor dir
 /vendor
+
+# translations monorepo
+/translations
