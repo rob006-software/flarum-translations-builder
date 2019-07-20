@@ -16,18 +16,19 @@
 	"prefer-stable": true,
 	"require": {
 		"php": "^7.1",
-		"yiisoft/yii2": "~2.0.23",
-		"yiisoft/yii2-composer": "~2.0.8",
-		"yiisoft/yii2-swiftmailer": "~2.1.1",
+		"cpliakas/git-wrapper": "^2.2",
+		"mindplay/readable": "^1.1",
+		"monolog/monolog": "^1.24",
+		"roave/dont": "^1.0",
 		"symfony/http-client": "^4.3",
 		"symfony/translation": "^4.3",
 		"symfony/yaml": "^4.3",
-		"roave/dont": "^1.0",
-		"mindplay/readable": "^1.1"
+		"yiisoft/yii2": "~2.0.23",
+		"yiisoft/yii2-composer": "~2.0.8",
+		"yiisoft/yii2-swiftmailer": "~2.1.1"
 	},
 	"require-dev": {
-		"roave/security-advisories": "dev-master",
-		"yiisoft/yii2-debug": "~2.1.5"
+		"roave/security-advisories": "dev-master"
 	},
 	"autoload": {
 		"psr-4": {
@@ -48,7 +49,8 @@
 		"process-timeout": 1800,
 		"platform": {
 			"php": "7.1.21"
-		}
+		},
+		"sort-packages": true
 	},
 	"scripts": {
 		"post-install-cmd": [

@@ -11,7 +11,8 @@
 
 namespace app\commands;
 
-use app\models\Config;
+use app\models\Repository;
+use app\models\Translations;
 use Yii;
 use yii\console\Controller;
 
@@ -24,12 +25,61 @@ class UpdateController extends Controller {
 
 	public $defaultAction = 'run';
 
+	public $commit = false;
+	public $push = false;
+	public $verbose = false;
+
+	public function options($actionID) {
+		return array_merge(parent::options($actionID), [
+			'commit',
+			'push',
+			'verbose',
+		]);
+	}
+
 	public function actionRun(string $configFile = '@app/translations/config.php') {
-		$config = new Config(require Yii::getAlias($configFile));
-		foreach ($config->getProjects() as $project) {
+		$translations = $this->getTranslations($configFile);
+		foreach ($translations->getProjects() as $project) {
 			$catalogue = $project->updateSources();
 			foreach ($project->getLanguages() as $language) {
 				$project->updateComponents($language, $catalogue);
+			}
+		}
+
+		$this->postProcessRepository($translations->getRepository(), 'Update sources from extensions.');
+	}
+
+	public function actionSplit(string $configFile = '@app/translations/config.php', ?array $languages = null) {
+		$translations = $this->getTranslations($configFile);
+		foreach ($translations->getSubsplits() as $subsplit) {
+			if ($languages === null || in_array($subsplit->getLanguage(), $languages, true)) {
+				$subsplit->splitProjects($translations->getProjects());
+			}
+			$this->postProcessRepository($subsplit->getRepository(), 'Sync translations with main repository.');
+		}
+	}
+
+	private function getTranslations(string $configFile): Translations {
+		$translations = new Translations(require Yii::getAlias($configFile));
+		$output = $translations->getRepository()->update();
+		if ($this->verbose) {
+			echo $output;
+		}
+
+		return $translations;
+	}
+
+	private function postProcessRepository(Repository $repository, string $commitMessage): void {
+		if ($this->commit || $this->push) {
+			$output = $repository->commit($commitMessage);
+			if ($this->verbose) {
+				echo $output;
+			}
+		}
+		if ($this->push) {
+			$output = $repository->push();
+			if ($this->verbose) {
+				echo $output;
 			}
 		}
 	}

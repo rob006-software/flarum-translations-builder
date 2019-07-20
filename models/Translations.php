@@ -18,11 +18,11 @@ use Dont\DontSet;
 use yii\helpers\ArrayHelper;
 
 /**
- * Class Config.
+ * Class Translations.
  *
  * @author Robert Korulczyk <robert@korulczyk.pl>
  */
-final class Config {
+final class Translations {
 
 	use DontCall;
 	use DontCallStatic;
@@ -32,9 +32,13 @@ final class Config {
 	private $sourcesDir;
 	private $translationsDir;
 	private $projects = [];
+	private $subsplits = [];
 	private $languages;
 
+	private $repository;
+
 	public function __construct(array $config) {
+		$this->repository = new Repository($config['repository'], 'master', $config['dir']);
 		$this->sourcesDir = $config['sourcesDir'];
 		$this->translationsDir = $config['translationsDir'];
 		$this->languages = $config['languages'];
@@ -44,6 +48,9 @@ final class Config {
 			$translationsDir = ArrayHelper::remove($projectConfig, 'translationsDir', $this->translationsDir);
 			$this->projects[$projectName] = new Project($projectName, $projectConfig, $languages, $sourcesDir, $translationsDir);
 		}
+		foreach ($config['subsplits'] as $language => $subsplitConfig) {
+			$this->subsplits[$language] = new Subsplit($language, $subsplitConfig['repository'], $subsplitConfig['branch'], $subsplitConfig['path']);
+		}
 	}
 
 	/**
@@ -51,6 +58,13 @@ final class Config {
 	 */
 	public function getProjects(): array {
 		return $this->projects;
+	}
+
+	/**
+	 * @return Subsplit[]
+	 */
+	public function getSubsplits(): array {
+		return $this->subsplits;
 	}
 
 	/**
@@ -66,5 +80,9 @@ final class Config {
 
 	public function getTranslationsDir(): string {
 		return $this->translationsDir;
+	}
+
+	public function getRepository(): Repository {
+		return $this->repository;
 	}
 }

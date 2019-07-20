@@ -108,11 +108,11 @@ final class Project {
 		$client = HttpClient::create();
 		$translator = new Translator('en');
 		$translator->addLoader('yaml', new YamlLoader());
-		foreach ($this->getComponents() as $translation) {
+		foreach ($this->getComponents() as $component) {
 			// reverse array to process top record at the end - it will overwrite any previous translation
-			foreach (array_reverse($translation->getSources()) as $source) {
+			foreach (array_reverse($component->getSources()) as $source) {
 				$response = $client->request('GET', $source);
-				$translator->addResource('yaml', $response->getContent(), 'en', $translation->getName());
+				$translator->addResource('yaml', $response->getContent(), 'en', $component->getName());
 			}
 		}
 		return $translator;
