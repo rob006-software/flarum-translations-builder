@@ -28,13 +28,8 @@ class SelfUpdateController extends Controller {
 
 	public $defaultAction = 'run';
 
-	public function actionRun() {
-		$repository = new Repository(
-			Yii::$app->params['repository'],
-			'master',
-			APP_ROOT
-		);
-
+	public function actionRun(bool $updateTranslations = true) {
+		$repository = new Repository(Yii::$app->params['repository'], 'master', APP_ROOT);
 		$repository->update();
 
 		$hash = md5_file(APP_ROOT . '/composer.lock');
@@ -42,6 +37,11 @@ class SelfUpdateController extends Controller {
 			$process = new Process(['composer', 'install', '-o'], APP_ROOT);
 			$process->start();
 			Yii::$app->cache->set($hash, time(), 30 * 24 * 60 * 60);
+		}
+
+		if ($updateTranslations) {
+			$translationsRepository = new Repository(Yii::$app->params['translationsRepository'], 'master', APP_ROOT . '/translations');
+			$translationsRepository->update();
 		}
 	}
 }
