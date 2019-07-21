@@ -75,5 +75,6 @@ return [
 		],
 	],
 	'params' => [
+		'repository' => 'git@github.com:rob006-software/flarum-translations-builder.git',
 	],
 ];
