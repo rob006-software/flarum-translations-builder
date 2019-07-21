@@ -48,8 +48,14 @@ final class Translations {
 			$translationsDir = ArrayHelper::remove($projectConfig, 'translationsDir', $this->translationsDir);
 			$this->projects[$projectName] = new Project($projectName, $projectConfig, $languages, $sourcesDir, $translationsDir);
 		}
-		foreach ($config['subsplits'] as $language => $subsplitConfig) {
-			$this->subsplits[$language] = new Subsplit($language, $subsplitConfig['repository'], $subsplitConfig['branch'], $subsplitConfig['path']);
+		foreach ($config['subsplits'] as $subsplitName => $subsplitConfig) {
+			$this->subsplits[$subsplitName] = new Subsplit(
+				$subsplitName,
+				$subsplitConfig['language'],
+				$subsplitConfig['repository'],
+				$subsplitConfig['branch'],
+				$subsplitConfig['path']
+			);
 		}
 	}
 

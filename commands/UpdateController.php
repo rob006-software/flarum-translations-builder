@@ -49,10 +49,10 @@ class UpdateController extends Controller {
 		$this->postProcessRepository($translations->getRepository(), 'Update sources from extensions.');
 	}
 
-	public function actionSplit(string $configFile = '@app/translations/config.php', ?array $languages = null) {
+	public function actionSplit(?array $subsplits = null, string $configFile = '@app/translations/config.php') {
 		$translations = $this->getTranslations($configFile);
 		foreach ($translations->getSubsplits() as $subsplit) {
-			if ($languages === null || in_array($subsplit->getLanguage(), $languages, true)) {
+			if ($subsplits === null || in_array($subsplit->getLanguage(), $subsplits, true)) {
 				$subsplit->splitProjects($translations->getProjects());
 			}
 			$this->postProcessRepository($subsplit->getRepository(), 'Sync translations with main repository.');

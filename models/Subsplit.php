@@ -34,14 +34,16 @@ final class Subsplit {
 	use DontGet;
 	use DontSet;
 
+	private $name;
 	private $repository;
 	private $language;
 	private $path;
 
-	public function __construct(string $language, string $repository, string $branch, string $path) {
+	public function __construct(string $name, string $language, string $repository, string $branch, string $path) {
+		$this->name = $name;
 		$this->language = $language;
 		$this->path = $path;
-		$this->repository = new Repository($repository, $branch);
+		$this->repository = new Repository($repository, $branch, APP_ROOT . "/runtime/subsplits/$name");
 	}
 
 	/**

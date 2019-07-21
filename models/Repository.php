@@ -40,15 +40,16 @@ final class Repository {
 	private $git;
 	private $workingCopyDir;
 
-	public function __construct(string $remote, string $branch, ?string $workingCopyDir = null) {
+	public function __construct(string $remote, string $branch, string $workingCopyDir) {
 		$this->remote = $remote;
 		$this->branch = $branch;
-		$this->workingCopyDir = $workingCopyDir ?? (APP_ROOT . '/runtime/subsplits/' . $this->getName());
+		$this->workingCopyDir = $workingCopyDir;
 
 		$gitWrapper = new GitWrapper();
 
 		$log = new Logger('git');
-		$log->pushHandler(new StreamHandler(APP_ROOT . '/runtime/git-logs/' . $this->getName() . '.log', Logger::DEBUG));
+		$date = date('Y-m');
+		$log->pushHandler(new StreamHandler(APP_ROOT . "/runtime/git-logs/{$this->getName()}-$date.log", Logger::DEBUG));
 		$gitWrapper->addLoggerEventSubscriber(new GitLoggerEventSubscriber($log));
 
 		if (file_exists($this->workingCopyDir)) {
