@@ -12,8 +12,11 @@
 namespace app\commands;
 
 use app\models\Repository;
+use Symfony\Component\Process\Process;
 use Yii;
 use yii\console\Controller;
+use function md5_file;
+use function time;
 use const APP_ROOT;
 
 /**
@@ -33,5 +36,12 @@ class SelfUpdateController extends Controller {
 		);
 
 		$repository->update();
+
+		$hash = md5_file(APP_ROOT . '/composer.lock');
+		if (Yii::$app->cache->get($hash) === false) {
+			$process = new Process(['composer', 'install', '-o'], APP_ROOT);
+			$process->start();
+			Yii::$app->cache->set($hash, time(), 30 * 24 * 60 * 60);
+		}
 	}
 }
