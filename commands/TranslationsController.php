@@ -28,17 +28,23 @@ class TranslationsController extends Controller {
 	public $commit = false;
 	public $push = false;
 	public $verbose = false;
+	/** @var int */
+	public $frequency;
 
 	public function options($actionId) {
 		return array_merge(parent::options($actionId), [
 			'commit',
 			'push',
 			'verbose',
+			'frequency',
 		]);
 	}
 
 	public function actionUpdate(string $configFile = '@app/translations/config.php') {
 		$translations = $this->getTranslations($configFile);
+		if ($this->isLimited($translations->getHash())) {
+			return;
+		}
 		foreach ($translations->getProjects() as $project) {
 			$catalogue = $project->updateSources();
 			foreach ($project->getLanguages() as $language) {
@@ -47,16 +53,21 @@ class TranslationsController extends Controller {
 		}
 
 		$this->postProcessRepository($translations->getRepository(), 'Update sources from extensions.');
+		$this->updateLimit($translations->getHash());
 	}
 
 	public function actionSplit(?array $subsplits = null, string $configFile = '@app/translations/config.php') {
 		$translations = $this->getTranslations($configFile);
+		if ($this->isLimited($translations->getTranslationsHash())) {
+			return;
+		}
 		foreach ($translations->getSubsplits() as $subsplit) {
 			if ($subsplits === null || in_array($subsplit->getLanguage(), $subsplits, true)) {
 				$subsplit->splitProjects($translations->getProjects());
 			}
 			$this->postProcessRepository($subsplit->getRepository(), 'Sync translations with main repository.');
 		}
+		$this->updateLimit($translations->getTranslationsHash());
 	}
 
 	private function getTranslations(string $configFile): Translations {
@@ -82,5 +93,22 @@ class TranslationsController extends Controller {
 				echo $output;
 			}
 		}
+	}
+
+	private function isLimited(string $hash): bool {
+		if ($this->frequency <= 0) {
+			return false;
+		}
+
+		$lastRun = Yii::$app->cache->get($hash);
+		if ($lastRun > 0) {
+			return time() - $lastRun < $this->frequency;
+		}
+
+		return false;
+	}
+
+	private function updateLimit(string $hash): void {
+		Yii::$app->cache->set($hash, time(), 31 * 24 * 60 * 60);
 	}
 }

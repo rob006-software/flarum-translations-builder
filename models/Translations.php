@@ -15,7 +15,17 @@ use Dont\DontCall;
 use Dont\DontCallStatic;
 use Dont\DontGet;
 use Dont\DontSet;
+use mindplay\readable;
+use yii\base\InvalidArgumentException;
 use yii\helpers\ArrayHelper;
+use function dir;
+use function implode;
+use function in_array;
+use function is_dir;
+use function json_encode;
+use function md5;
+use function md5_file;
+use function pathinfo;
 
 /**
  * Class Translations.
@@ -29,6 +39,7 @@ final class Translations {
 	use DontGet;
 	use DontSet;
 
+	private $hash;
 	private $sourcesDir;
 	private $translationsDir;
 	private $projects = [];
@@ -38,6 +49,7 @@ final class Translations {
 	private $repository;
 
 	public function __construct(array $config) {
+		$this->hash = md5(json_encode($config));
 		$this->repository = new Repository($config['repository'], 'master', $config['dir']);
 		$this->sourcesDir = $config['sourcesDir'];
 		$this->translationsDir = $config['translationsDir'];
@@ -90,5 +102,39 @@ final class Translations {
 
 	public function getRepository(): Repository {
 		return $this->repository;
+	}
+
+	public function getHash(): string {
+		return $this->hash;
+	}
+
+	public function getSourcesHash(): string {
+		return $this->getDirectoryHash($this->sourcesDir, 'json');
+	}
+
+	public function getTranslationsHash(): string {
+		return $this->getDirectoryHash($this->translationsDir, 'json');
+	}
+
+	private function getDirectoryHash(string $directory, string $extension): string {
+		if (!is_dir($directory)) {
+			throw new InvalidArgumentException(readable::value($directory) . ' is not a valid directory.');
+		}
+
+		$dir = dir($directory);
+		$hashes = [];
+		while (($file = $dir->read()) !== false) {
+			if (!in_array($file, ['.', '..'], true)) {
+				if (is_dir($directory . '/' . $file)) {
+					$hashes[] = $this->getDirectoryHash("$directory/$file", $extension);
+				} elseif (pathinfo($file, PATHINFO_EXTENSION) === $extension) {
+					$hashes[] = md5_file("$directory/$file");
+				}
+			}
+		}
+
+		$dir->close();
+
+		return md5(implode(':', $hashes));
 	}
 }
