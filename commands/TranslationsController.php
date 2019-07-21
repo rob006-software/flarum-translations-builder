@@ -17,27 +17,27 @@ use Yii;
 use yii\console\Controller;
 
 /**
- * Class UpdateController.
+ * Class TranslationsController.
  *
  * @author Robert Korulczyk <robert@korulczyk.pl>
  */
-class UpdateController extends Controller {
+class TranslationsController extends Controller {
 
-	public $defaultAction = 'run';
+	public $defaultAction = 'update';
 
 	public $commit = false;
 	public $push = false;
 	public $verbose = false;
 
-	public function options($actionID) {
-		return array_merge(parent::options($actionID), [
+	public function options($actionId) {
+		return array_merge(parent::options($actionId), [
 			'commit',
 			'push',
 			'verbose',
 		]);
 	}
 
-	public function actionRun(string $configFile = '@app/translations/config.php') {
+	public function actionUpdate(string $configFile = '@app/translations/config.php') {
 		$translations = $this->getTranslations($configFile);
 		foreach ($translations->getProjects() as $project) {
 			$catalogue = $project->updateSources();
