@@ -48,7 +48,8 @@ class ReadmeController extends Controller {
 
 	public function actionUpdate(string $configFile = '@app/translations/config.php') {
 		$translations = $this->getTranslations($configFile);
-		if ($this->isLimited($translations->getHash())) {
+		$token = __METHOD__ . '#' . $translations->getHash();
+		if ($this->isLimited($token)) {
 			return;
 		}
 		$readme = file_get_contents($translations->getDir() . '/README.md');
@@ -72,7 +73,43 @@ class ReadmeController extends Controller {
 		file_put_contents($translations->getDir() . '/README.md', $readme);
 
 		$this->postProcessRepository($translations->getRepository(), 'Update translations status in README.');
-		$this->updateLimit($translations->getHash());
+		$this->updateLimit($token);
+	}
+
+	public function actionUpdateSubsplits(?array $subsplits = null, string $configFile = '@app/translations/config.php') {
+		$translations = $this->getTranslations($configFile);
+		$token = __METHOD__ . '#' . $translations->getTranslationsHash();
+		if ($this->isLimited($token)) {
+			return;
+		}
+		foreach ($translations->getSubsplits() as $subsplit) {
+			if (
+				($subsplits === null || in_array($subsplit->getId(), $subsplits, true))
+				&& $subsplit->shouldUpdateReadme()
+			) {
+				$readme = file_get_contents($subsplit->getDir() . '/README.md');
+				foreach ($translations->getProjects() as $project) {
+					$generator = $subsplit->getReadmeGenerator($translations, $project);
+					foreach ($project->getComponents() as $component) {
+						$extension = $translations->getExtension($component);
+						if ($extension !== null) {
+							$generator->addExtension($extension);
+						}
+					}
+
+					$readme = $this->replaceBetween(
+						"<!-- {$project->getId()}-extensions-list-start -->",
+						"<!-- {$project->getId()}-extensions-list-stop -->",
+						$readme,
+						$generator->generate()
+					);
+				}
+
+				file_put_contents($subsplit->getDir() . '/README.md', $readme);
+				$this->postProcessRepository($subsplit->getRepository(), 'Update translations status in README.');
+			}
+		}
+		$this->updateLimit($token);
 	}
 
 	private function replaceBetween(string $begin, string $end, string $string, string $replacement): string {

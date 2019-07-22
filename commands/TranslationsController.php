@@ -42,7 +42,8 @@ class TranslationsController extends Controller {
 
 	public function actionUpdate(string $configFile = '@app/translations/config.php') {
 		$translations = $this->getTranslations($configFile);
-		if ($this->isLimited($translations->getHash())) {
+		$token = __METHOD__ . '#' . $translations->getHash();
+		if ($this->isLimited($token)) {
 			return;
 		}
 		foreach ($translations->getProjects() as $project) {
@@ -53,21 +54,22 @@ class TranslationsController extends Controller {
 		}
 
 		$this->postProcessRepository($translations->getRepository(), 'Update sources from extensions.');
-		$this->updateLimit($translations->getHash());
+		$this->updateLimit($token);
 	}
 
 	public function actionSplit(?array $subsplits = null, string $configFile = '@app/translations/config.php') {
 		$translations = $this->getTranslations($configFile);
-		if ($this->isLimited($translations->getTranslationsHash())) {
+		$token = __METHOD__ . '#' . $translations->getTranslationsHash();
+		if ($this->isLimited($token)) {
 			return;
 		}
 		foreach ($translations->getSubsplits() as $subsplit) {
-			if ($subsplits === null || in_array($subsplit->getLanguage(), $subsplits, true)) {
-				$subsplit->splitProjects($translations->getProjects());
+			if ($subsplits === null || in_array($subsplit->getId(), $subsplits, true)) {
+				$subsplit->split($translations);
+				$this->postProcessRepository($subsplit->getRepository(), 'Sync translations with main repository.');
 			}
-			$this->postProcessRepository($subsplit->getRepository(), 'Sync translations with main repository.');
 		}
-		$this->updateLimit($translations->getTranslationsHash());
+		$this->updateLimit($token);
 	}
 
 	private function getTranslations(string $configFile): Translations {

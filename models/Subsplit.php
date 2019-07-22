@@ -10,111 +10,58 @@
  */
 
 namespace app\models;
-
-use app\components\translations\YamlFileDumper;
+use app\components\readme\ReadmeGenerator;
 use Dont\DontCall;
 use Dont\DontCallStatic;
 use Dont\DontGet;
 use Dont\DontSet;
-use Symfony\Component\Translation\Loader\ArrayLoader;
-use Symfony\Component\Translation\Loader\JsonFileLoader;
-use Symfony\Component\Translation\MessageCatalogue;
-use Symfony\Component\Translation\Translator;
-use function array_filter;
 
 /**
  * Class Subsplit.
  *
  * @author Robert Korulczyk <robert@korulczyk.pl>
  */
-final class Subsplit {
+abstract class Subsplit {
 
 	use DontCall;
 	use DontCallStatic;
 	use DontGet;
 	use DontSet;
 
-	private $name;
+	private $id;
 	private $repository;
-	private $language;
 	private $path;
+	private $updateReadme;
 
-	public function __construct(string $name, string $language, string $repository, string $branch, string $path) {
-		$this->name = $name;
-		$this->language = $language;
+	public function __construct(string $id, string $repository, string $branch, string $path, ?bool $updateReadme = false) {
+		$this->id = $id;
 		$this->path = $path;
-		$this->repository = new Repository($repository, $branch, APP_ROOT . "/runtime/subsplits/$name");
+		$this->updateReadme = $updateReadme;
+		$this->repository = new Repository($repository, $branch, APP_ROOT . "/runtime/subsplits/$id");
 	}
 
-	/**
-	 * @param Project[] $projects
-	 */
-	public function splitProjects(array $projects): void {
-		$this->repository->update();
-
-		$translator = $this->getSourcesTranslator($projects);
-		foreach ($projects as $project) {
-			// reverse array to process top record at the end - it will overwrite any previous translation
-			foreach (array_reverse($project->getComponents()) as $component) {
-				assert($component instanceof Component);
-				$translator->addResource(
-					'json_file',
-					$project->getComponentTranslationPath($component, $this->language),
-					$this->language,
-					$component->getId()
-				);
-			}
-		}
-
-		$translationsCatalogue = $translator->getCatalogue($this->language);
-		assert($translationsCatalogue instanceof MessageCatalogue);
-		// add non-empty string from translations to sources
-		foreach ($projects as $project) {
-			// reverse array to process top record at the end - it will overwrite any previous translation
-			foreach (array_reverse($project->getComponents()) as $component) {
-				assert($component instanceof Component);
-				$messages = array_filter($translationsCatalogue->all($component->getId()), static function ($string) {
-					return $string !== '';
-				});
-
-				$translator->addResource('array', $messages, 'en', $component->getId());
-			}
-		}
-
-		$dumper = new YamlFileDumper();
-		$dumper->setRelativePathTemplate('%domain%.%extension%');
-		$sourcesCatalogue = $translator->getCatalogue('en');
-		assert($sourcesCatalogue instanceof MessageCatalogue);
-		$dumper->dump($sourcesCatalogue, [
-			'path' => $this->getRepository()->getPath() . $this->path,
-			'as_tree' => true,
-			'inline' => 10,
-		]);
-	}
 
 	public function getRepository(): Repository {
 		return $this->repository;
 	}
 
-	/**
-	 * @param Project[] $projects
-	 * @return Translator
-	 */
-	private function getSourcesTranslator(array $projects): Translator {
-		$translator = new Translator('en');
-		$translator->addLoader('json_file', new JsonFileLoader());
-		$translator->addLoader('array', new ArrayLoader());
-		foreach ($projects as $project) {
-			// reverse array to process top record at the end - it will overwrite any previous translation
-			foreach (array_reverse($project->getComponents()) as $component) {
-				assert($component instanceof Component);
-				$translator->addResource('json_file', $project->getComponentSourcePath($component), 'en', $component->getId());
-			}
-		}
-		return $translator;
+	public function getId(): string {
+		return $this->id;
 	}
 
-	public function getLanguage(): string {
-		return $this->language;
+	public function shouldUpdateReadme(): bool {
+		return $this->updateReadme;
 	}
+
+	public function getPath(): string {
+		return $this->path;
+	}
+
+	public function getDir(): string {
+		return $this->getRepository()->getPath();
+	}
+
+	abstract public function split(Translations $translations): void;
+
+	abstract public function getReadmeGenerator(Translations $translations, Project $project): ReadmeGenerator;
 }

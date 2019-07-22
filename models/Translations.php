@@ -17,6 +17,7 @@ use Dont\DontGet;
 use Dont\DontSet;
 use mindplay\readable;
 use yii\base\InvalidArgumentException;
+use yii\base\InvalidConfigException;
 use yii\helpers\ArrayHelper;
 use function array_key_exists;
 use function dir;
@@ -48,7 +49,7 @@ final class Translations {
 	private $sourcesDir;
 	private $translationsDir;
 	private $projects = [];
-	private $subsplits = [];
+	private $subsplits;
 	private $extensions;
 	private $vendors;
 	private $languages;
@@ -64,6 +65,7 @@ final class Translations {
 		$this->languages = $config['languages'];
 		$this->extensions = $config['extensions'];
 		$this->vendors = $config['vendors'];
+		$this->subsplits = $config['subsplits'];
 		foreach ($config['projects'] as $projectId => $projectConfig) {
 			$languages = ArrayHelper::remove($projectConfig, '__languages', $this->languages);
 			$sourcesDir = ArrayHelper::remove($projectConfig, '__sourcesDir', "$this->sourcesDir/$projectId");
@@ -78,15 +80,6 @@ final class Translations {
 				$translationsDir
 			);
 		}
-		foreach ($config['subsplits'] as $subsplitName => $subsplitConfig) {
-			$this->subsplits[$subsplitName] = new Subsplit(
-				$subsplitName,
-				$subsplitConfig['language'],
-				$subsplitConfig['repository'],
-				$subsplitConfig['branch'],
-				$subsplitConfig['path']
-			);
-		}
 	}
 
 	/**
@@ -99,8 +92,37 @@ final class Translations {
 	/**
 	 * @return Subsplit[]
 	 */
-	public function getSubsplits(): array {
-		return $this->subsplits;
+	public function getSubsplits(): iterable {
+		foreach ($this->subsplits as $id => $config) {
+			yield $this->getSubsplit($id);
+		}
+	}
+
+	public function getSubsplit(string $id): Subsplit {
+		if (!isset($this->subsplits[$id])) {
+			throw new InvalidArgumentException('There is no subsplit with ' . readable::value($id) . ' ID.');
+		}
+
+		if (!$this->subsplits[$id] instanceof Subsplit) {
+			$config = $this->subsplits[$id];
+			/* @noinspection DegradedSwitchInspection */
+			switch ($config['type']) {
+				case LanguageSubsplit::TYPE:
+					$this->subsplits[$id] = new LanguageSubsplit(
+						$id,
+						$config['language'],
+						$config['repository'],
+						$config['branch'],
+						$config['path'],
+						$config['updateReadme'] ?? false
+					);
+					break;
+				default:
+					throw new InvalidConfigException('Invalid subsplit type: ' . readable::value($id) . '.');
+			}
+		}
+
+		return $this->subsplits[$id];
 	}
 
 	/**
