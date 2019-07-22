@@ -18,14 +18,18 @@ use Dont\DontSet;
 use mindplay\readable;
 use yii\base\InvalidArgumentException;
 use yii\helpers\ArrayHelper;
+use function array_key_exists;
 use function dir;
 use function implode;
 use function in_array;
+use function is_array;
 use function is_dir;
+use function is_string;
 use function json_encode;
 use function md5;
 use function md5_file;
 use function pathinfo;
+use function reset;
 
 /**
  * Class Translations.
@@ -40,10 +44,13 @@ final class Translations {
 	use DontSet;
 
 	private $hash;
+	private $dir;
 	private $sourcesDir;
 	private $translationsDir;
 	private $projects = [];
 	private $subsplits = [];
+	private $extensions;
+	private $vendors;
 	private $languages;
 
 	private $repository;
@@ -51,14 +58,25 @@ final class Translations {
 	public function __construct(array $config) {
 		$this->hash = md5(json_encode($config));
 		$this->repository = new Repository($config['repository'], 'master', $config['dir']);
+		$this->dir = $config['dir'];
 		$this->sourcesDir = $config['sourcesDir'];
 		$this->translationsDir = $config['translationsDir'];
 		$this->languages = $config['languages'];
-		foreach ($config['projects'] as $projectName => $projectConfig) {
-			$languages = ArrayHelper::remove($projectConfig, 'languages', $this->languages);
-			$sourcesDir = ArrayHelper::remove($projectConfig, 'sourcesDir', $this->sourcesDir);
-			$translationsDir = ArrayHelper::remove($projectConfig, 'translationsDir', $this->translationsDir);
-			$this->projects[$projectName] = new Project($projectName, $projectConfig, $languages, $sourcesDir, $translationsDir);
+		$this->extensions = $config['extensions'];
+		$this->vendors = $config['vendors'];
+		foreach ($config['projects'] as $projectId => $projectConfig) {
+			$languages = ArrayHelper::remove($projectConfig, '__languages', $this->languages);
+			$sourcesDir = ArrayHelper::remove($projectConfig, '__sourcesDir', "$this->sourcesDir/$projectId");
+			$translationsDir = ArrayHelper::remove($projectConfig, '__translationsDir', "$this->translationsDir/$projectId");
+			$weblateId = ArrayHelper::remove($projectConfig, '__weblateId', $projectId);
+			$this->projects[$projectId] = new Project(
+				$projectId,
+				$weblateId,
+				$projectConfig,
+				$languages,
+				$sourcesDir,
+				$translationsDir
+			);
 		}
 		foreach ($config['subsplits'] as $subsplitName => $subsplitConfig) {
 			$this->subsplits[$subsplitName] = new Subsplit(
@@ -90,6 +108,10 @@ final class Translations {
 	 */
 	public function getLanguages(): array {
 		return $this->languages;
+	}
+
+	public function getDir(): string {
+		return $this->dir;
 	}
 
 	public function getSourcesDir(): string {
@@ -136,5 +158,23 @@ final class Translations {
 		$dir->close();
 
 		return md5(implode(':', $hashes));
+	}
+
+	public function getExtension(Component $component): ?Extension {
+		$id = $component->getId();
+		if (!array_key_exists($id, $this->extensions)) {
+			$sources = $component->getSources();
+			$this->extensions[$id] = Extension::createFromGithubusercontentUrl($id, reset($sources));
+		} elseif (is_string($this->extensions[$id])) {
+			$this->extensions[$id] = new Extension($id, $this->extensions[$id]);
+		} elseif (is_array($this->extensions[$id])) {
+			$this->extensions[$id] = new Extension($id, $this->extensions[$id]['repositoryUrl'], $this->extensions[$id]);
+		}
+
+		return $this->extensions[$id];
+	}
+
+	public function getVendors(string $projectId): ?array {
+		return $this->vendors[$projectId] ?? null;
 	}
 }

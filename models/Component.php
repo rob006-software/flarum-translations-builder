@@ -29,7 +29,7 @@ final class Component {
 	use DontSet;
 
 	private $sources;
-	private $name;
+	private $id;
 	private $project;
 	private $languages;
 
@@ -37,13 +37,13 @@ final class Component {
 	 * Component constructor.
 	 *
 	 * @param string[] $sources
-	 * @param string $name
+	 * @param string $id
 	 * @param string $project
 	 * @param string[] $languages
 	 */
-	public function __construct(array $sources, string $name, string $project, array $languages) {
+	public function __construct(array $sources, string $id, string $project, array $languages) {
 		$this->sources = $sources;
-		$this->name = $name;
+		$this->id = $id;
 		$this->project = $project;
 		$this->languages = $languages;
 	}
@@ -55,8 +55,8 @@ final class Component {
 		return $this->sources;
 	}
 
-	public function getName(): string {
-		return $this->name;
+	public function getId(): string {
+		return $this->id;
 	}
 
 	public function getProject(): string {

@@ -61,7 +61,7 @@ final class Subsplit {
 					'json_file',
 					$project->getComponentTranslationPath($component, $this->language),
 					$this->language,
-					$component->getName()
+					$component->getId()
 				);
 			}
 		}
@@ -73,11 +73,11 @@ final class Subsplit {
 			// reverse array to process top record at the end - it will overwrite any previous translation
 			foreach (array_reverse($project->getComponents()) as $component) {
 				assert($component instanceof Component);
-				$messages = array_filter($translationsCatalogue->all($component->getName()), static function ($string) {
+				$messages = array_filter($translationsCatalogue->all($component->getId()), static function ($string) {
 					return $string !== '';
 				});
 
-				$translator->addResource('array', $messages, 'en', $component->getName());
+				$translator->addResource('array', $messages, 'en', $component->getId());
 			}
 		}
 
@@ -108,7 +108,7 @@ final class Subsplit {
 			// reverse array to process top record at the end - it will overwrite any previous translation
 			foreach (array_reverse($project->getComponents()) as $component) {
 				assert($component instanceof Component);
-				$translator->addResource('json_file', $project->getComponentSourcePath($component), 'en', $component->getName());
+				$translator->addResource('json_file', $project->getComponentSourcePath($component), 'en', $component->getId());
 			}
 		}
 		return $translator;

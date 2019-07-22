@@ -39,7 +39,8 @@ final class Project {
 	use DontSet;
 
 	private $components = [];
-	private $name;
+	private $id;
+	private $weblateId;
 	private $languages;
 	private $sourcesDir;
 	private $translationsDir;
@@ -47,28 +48,37 @@ final class Project {
 	/**
 	 * Project constructor.
 	 *
-	 * @param string $name
+	 * @param string $id
+	 * @param string $weblateId
 	 * @param array $components
 	 * @param string[] $languages
 	 * @param string $sourcesDir
 	 * @param string $translationsDir
 	 * @throws InvalidConfigException
 	 */
-	public function __construct(string $name, array $components, array $languages, string $sourcesDir, string $translationsDir) {
-		$this->name = $name;
+	public function __construct(
+		string $id,
+		string $weblateId,
+		array $components,
+		array $languages,
+		string $sourcesDir,
+		string $translationsDir
+	) {
+		$this->id = $id;
+		$this->weblateId = $weblateId;
 		$this->languages = $languages;
-		$this->sourcesDir = "$sourcesDir/$name";
-		$this->translationsDir = "$translationsDir/$name";
+		$this->sourcesDir = $sourcesDir;
+		$this->translationsDir = $translationsDir;
 
-		foreach ($components as $componentName => $componentConfig) {
+		foreach ($components as $componentId => $componentConfig) {
 			if (is_string($componentConfig)) {
-				$this->components[] = new Component([$componentConfig], $componentName, $name, $languages);
+				$this->components[] = new Component([$componentConfig], $componentId, $id, $languages);
 			} elseif (is_array($componentConfig)) {
 				$translationLanguages = ArrayHelper::remove($componentConfig, 'languages', $languages);
 				$this->components[] = new Component(
 					$componentConfig,
-					$componentName,
-					$name,
+					$componentId,
+					$id,
 					$translationLanguages
 				);
 			} else {
@@ -91,8 +101,12 @@ final class Project {
 		return $this->languages;
 	}
 
-	public function getName(): string {
-		return $this->name;
+	public function getId(): string {
+		return $this->id;
+	}
+
+	public function getWeblateId(): string {
+		return $this->weblateId;
 	}
 
 	public function updateSources(): MessageCatalogue {
@@ -112,7 +126,7 @@ final class Project {
 			// reverse array to process top record at the end - it will overwrite any previous translation
 			foreach (array_reverse($component->getSources()) as $source) {
 				$response = $client->request('GET', $source);
-				$translator->addResource('yaml', $response->getContent(), 'en', $component->getName());
+				$translator->addResource('yaml', $response->getContent(), 'en', $component->getId());
 			}
 		}
 		return $translator;
@@ -129,11 +143,11 @@ final class Project {
 	}
 
 	public function getComponentSourcePath(Component $component): string {
-		return "$this->sourcesDir/{$component->getName()}.json";
+		return "$this->sourcesDir/{$component->getId()}.json";
 	}
 
 	public function getComponentTranslationPath(Component $component, string $language): string {
-		return "$this->translationsDir/$language/{$component->getName()}.json";
+		return "$this->translationsDir/$language/{$component->getId()}.json";
 	}
 
 	public function getTranslationsPath(string $language): string {
@@ -152,13 +166,13 @@ final class Project {
 					unlink($filePath);
 				}
 			} else {
-				$sources = $sourcesCatalogue->all($component->getName());
+				$sources = $sourcesCatalogue->all($component->getId());
 				foreach ($sources as $key => $source) {
 					$sources[$key] = '';
 				}
-				$translator->addResource('array', $sources, $language, $component->getName());
+				$translator->addResource('array', $sources, $language, $component->getId());
 				if (file_exists($filePath)) {
-					$translator->addResource('json_file', $filePath, $language, $component->getName());
+					$translator->addResource('json_file', $filePath, $language, $component->getId());
 				}
 			}
 		}
