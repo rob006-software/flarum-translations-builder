@@ -23,8 +23,8 @@ use Symfony\Component\Translation\Loader\JsonFileLoader;
 use Symfony\Component\Translation\MessageCatalogue;
 use Symfony\Component\Translation\Translator;
 use yii\base\InvalidArgumentException;
-use function file_exists;
 use function array_filter;
+use function file_exists;
 use function file_get_contents;
 
 /**
