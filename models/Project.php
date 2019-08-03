@@ -23,6 +23,7 @@ use Symfony\Component\Translation\Loader\ArrayLoader;
 use Symfony\Component\Translation\Loader\JsonFileLoader;
 use Symfony\Component\Translation\MessageCatalogue;
 use Symfony\Component\Translation\Translator;
+use yii\base\InvalidArgumentException;
 use yii\base\InvalidConfigException;
 use yii\helpers\ArrayHelper;
 
@@ -72,10 +73,10 @@ final class Project {
 
 		foreach ($components as $componentId => $componentConfig) {
 			if (is_string($componentConfig)) {
-				$this->components[] = new Component([$componentConfig], $componentId, $id, $languages);
+				$this->components[$componentId] = new Component([$componentConfig], $componentId, $id, $languages);
 			} elseif (is_array($componentConfig)) {
 				$translationLanguages = ArrayHelper::remove($componentConfig, 'languages', $languages);
-				$this->components[] = new Component(
+				$this->components[$componentId] = new Component(
 					$componentConfig,
 					$componentId,
 					$id,
@@ -92,6 +93,14 @@ final class Project {
 	 */
 	public function getComponents(): array {
 		return $this->components;
+	}
+
+	public function getComponent(string $id): Component {
+		if (!isset($this->components[$id])) {
+			throw new InvalidArgumentException('There is no component with ' . readable::value($id) . ' ID.');
+		}
+
+		return $this->components[$id];
 	}
 
 	/**
@@ -113,7 +122,7 @@ final class Project {
 		$translator = $this->fetchSources();
 		$catalogue = $translator->getCatalogue();
 		assert($catalogue instanceof MessageCatalogue);
-		$this->dumpSources($catalogue);
+		$this->saveTranslations($catalogue, $this->sourcesDir);
 
 		return $catalogue;
 	}
@@ -130,16 +139,6 @@ final class Project {
 			}
 		}
 		return $translator;
-	}
-
-	private function dumpSources(MessageCatalogue $catalogue): void {
-		$dumper = new JsonFileDumper();
-		$dumper->setRelativePathTemplate('%domain%.%extension%');
-		$dumper->dump($catalogue, [
-			'path' => $this->sourcesDir,
-			'as_tree' => true,
-			'json_encoding' => JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES,
-		]);
 	}
 
 	public function getComponentSourcePath(Component $component): string {
@@ -177,12 +176,16 @@ final class Project {
 			}
 		}
 
-		$dumper = new JsonFileDumper();
-		$dumper->setRelativePathTemplate('%domain%.%extension%');
 		$catalogue = $translator->getCatalogue();
 		assert($catalogue instanceof MessageCatalogue);
+		$this->saveTranslations($catalogue, $this->getTranslationsPath($language));
+	}
+
+	public function saveTranslations(MessageCatalogue $catalogue, string $path) {
+		$dumper = new JsonFileDumper();
+		$dumper->setRelativePathTemplate('%domain%.%extension%');
 		$dumper->dump($catalogue, [
-			'path' => $this->getTranslationsPath($language),
+			'path' => $path,
 			'as_tree' => true,
 			'json_encoding' => JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES,
 		]);

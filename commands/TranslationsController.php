@@ -11,8 +11,10 @@
 
 namespace app\commands;
 
+use app\components\translations\TranslationsImporter;
 use app\models\Repository;
 use app\models\Translations;
+use mindplay\readable;
 use Yii;
 use yii\console\Controller;
 
@@ -70,6 +72,24 @@ class TranslationsController extends Controller {
 			}
 		}
 		$this->updateLimit($token);
+	}
+
+	public function actionImport(string $source, string $project, string $component, string $language, string $configFile = '@app/translations/config.php') {
+		$translations = $this->getTranslations($configFile);
+		$importer = new TranslationsImporter(
+			$translations->getProject($project),
+			$translations->getProject($project)->getComponent($component)
+		);
+		$importer->import(Yii::getAlias($source), $language);
+
+		$this->postProcessRepository(
+			$translations->getRepository(),
+			strtr('Importing {component} component in {project} project from {source}.', [
+				'{component}' => readable::value($component),
+				'{project}' => readable::value($project),
+				'{source}' => readable::value($source),
+			])
+		);
 	}
 
 	private function getTranslations(string $configFile): Translations {

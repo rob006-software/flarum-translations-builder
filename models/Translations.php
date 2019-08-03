@@ -89,6 +89,14 @@ final class Translations {
 		return $this->projects;
 	}
 
+	public function getProject(string $id): Project {
+		if (!isset($this->projects[$id])) {
+			throw new InvalidArgumentException('There is no project with ' . readable::value($id) . ' ID.');
+		}
+
+		return $this->projects[$id];
+	}
+
 	/**
 	 * @return Subsplit[]
 	 */
