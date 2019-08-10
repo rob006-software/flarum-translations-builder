@@ -58,7 +58,7 @@ final class Translations {
 
 	public function __construct(array $config) {
 		$this->hash = md5(json_encode($config));
-		$this->repository = new Repository($config['repository'], 'master', $config['dir']);
+		$this->repository = new Repository($config['repository'], $config['branch'] ?? null, $config['dir']);
 		$this->dir = $config['dir'];
 		$this->sourcesDir = $config['sourcesDir'];
 		$this->translationsDir = $config['translationsDir'];

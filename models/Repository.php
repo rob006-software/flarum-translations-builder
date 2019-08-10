@@ -40,7 +40,7 @@ final class Repository {
 	private $git;
 	private $workingCopyDir;
 
-	public function __construct(string $remote, string $branch, string $workingCopyDir) {
+	public function __construct(string $remote, ?string $branch, string $workingCopyDir) {
 		$this->remote = $remote;
 		$this->branch = $branch;
 		$this->workingCopyDir = $workingCopyDir;
@@ -64,8 +64,10 @@ final class Repository {
 	}
 
 	public function update(): string {
-		// @todo rebase or merge to avoid conflicts?
-		$output = $this->git->checkout($this->branch);
+		$output ='';
+		if ($this->branch !== null) {
+			$output .= $this->git->checkout($this->branch);
+		}
 		$output .= $this->git->pull();
 
 		return $output;
