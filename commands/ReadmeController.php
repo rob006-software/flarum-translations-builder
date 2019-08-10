@@ -76,7 +76,7 @@ class ReadmeController extends Controller {
 		$this->updateLimit($token);
 	}
 
-	public function actionUpdateSubsplits(?array $subsplits = null, string $configFile = '@app/translations/config.php') {
+	public function actionUpdateSubsplits(array $subsplits = [], string $configFile = '@app/translations/config.php') {
 		$translations = $this->getTranslations($configFile);
 		$token = __METHOD__ . '#' . $translations->getTranslationsHash();
 		if ($this->isLimited($token)) {
@@ -84,7 +84,7 @@ class ReadmeController extends Controller {
 		}
 		foreach ($translations->getSubsplits() as $subsplit) {
 			if (
-				($subsplits === null || in_array($subsplit->getId(), $subsplits, true))
+				(empty($subsplits) || in_array($subsplit->getId(), $subsplits, true))
 				&& $subsplit->shouldUpdateReadme()
 			) {
 				$readme = file_get_contents($subsplit->getDir() . '/README.md');

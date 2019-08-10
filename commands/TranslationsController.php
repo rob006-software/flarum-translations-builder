@@ -42,14 +42,14 @@ class TranslationsController extends Controller {
 		]);
 	}
 
-	public function actionUpdate(?array $projects = null, string $configFile = '@app/translations/config.php') {
+	public function actionUpdate(array $projects = [], string $configFile = '@app/translations/config.php') {
 		$translations = $this->getTranslations($configFile);
 		$token = __METHOD__ . '#' . $translations->getHash();
 		if ($this->isLimited($token)) {
 			return;
 		}
 		foreach ($translations->getProjects() as $project) {
-			if ($projects === null || in_array($project->getId(), $projects, true)) {
+			if (empty($projects) || in_array($project->getId(), $projects, true)) {
 				$catalogue = $project->updateSources();
 				foreach ($project->getLanguages() as $language) {
 					$project->updateComponents($language, $catalogue);
@@ -61,14 +61,14 @@ class TranslationsController extends Controller {
 		$this->updateLimit($token);
 	}
 
-	public function actionSplit(?array $subsplits = null, string $configFile = '@app/translations/config.php') {
+	public function actionSplit(array $subsplits = [], string $configFile = '@app/translations/config.php') {
 		$translations = $this->getTranslations($configFile);
 		$token = __METHOD__ . '#' . $translations->getTranslationsHash();
 		if ($this->isLimited($token)) {
 			return;
 		}
 		foreach ($translations->getSubsplits() as $subsplit) {
-			if ($subsplits === null || in_array($subsplit->getId(), $subsplits, true)) {
+			if (empty($subsplits) || in_array($subsplit->getId(), $subsplits, true)) {
 				$subsplit->split($translations);
 				$this->postProcessRepository($subsplit->getRepository(), 'Sync translations with main repository.');
 			}
