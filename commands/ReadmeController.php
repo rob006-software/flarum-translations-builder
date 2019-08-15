@@ -56,7 +56,7 @@ class ReadmeController extends Controller {
 		foreach ($translations->getProjects() as $project) {
 			$generator = new MainReadmeGenerator($project, $translations->getVendors($project->getId()));
 			foreach ($project->getComponents() as $component) {
-				$extension = Yii::$app->extensionsRepository->getExtension($component);
+				$extension = Yii::$app->extensionsRepository->getExtension($component->getId());
 				if ($extension !== null) {
 					$generator->addExtension($extension);
 				}
