@@ -19,18 +19,14 @@ use mindplay\readable;
 use yii\base\InvalidArgumentException;
 use yii\base\InvalidConfigException;
 use yii\helpers\ArrayHelper;
-use function array_key_exists;
 use function dir;
 use function implode;
 use function in_array;
-use function is_array;
 use function is_dir;
-use function is_string;
 use function json_encode;
 use function md5;
 use function md5_file;
 use function pathinfo;
-use function reset;
 
 /**
  * Class Translations.
@@ -50,22 +46,22 @@ final class Translations {
 	private $translationsDir;
 	private $projects = [];
 	private $subsplits;
-	private $extensions;
 	private $vendors;
 	private $languages;
+	private $supportedVersions;
 
 	private $repository;
 
-	public function __construct(array $config) {
+	public function __construct(string $repository, ?string $branch, array $config) {
 		$this->hash = md5(json_encode($config));
-		$this->repository = new Repository($config['repository'], $config['branch'] ?? null, $config['dir']);
+		$this->repository = new Repository($repository, $branch, $config['dir']);
 		$this->dir = $config['dir'];
 		$this->sourcesDir = $config['sourcesDir'];
 		$this->translationsDir = $config['translationsDir'];
 		$this->languages = $config['languages'];
-		$this->extensions = $config['extensions'];
 		$this->vendors = $config['vendors'];
 		$this->subsplits = $config['subsplits'];
+		$this->supportedVersions = $config['supportedVersions'];
 		foreach ($config['projects'] as $projectId => $projectConfig) {
 			$languages = ArrayHelper::remove($projectConfig, '__languages', $this->languages);
 			$sourcesDir = ArrayHelper::remove($projectConfig, '__sourcesDir', "$this->sourcesDir/$projectId");
@@ -190,21 +186,11 @@ final class Translations {
 		return md5(implode(':', $hashes));
 	}
 
-	public function getExtension(Component $component): ?Extension {
-		$id = $component->getId();
-		if (!array_key_exists($id, $this->extensions)) {
-			$sources = $component->getSources();
-			$this->extensions[$id] = Extension::createFromGithubusercontentUrl($id, reset($sources));
-		} elseif (is_string($this->extensions[$id])) {
-			$this->extensions[$id] = new Extension($id, $this->extensions[$id]);
-		} elseif (is_array($this->extensions[$id])) {
-			$this->extensions[$id] = new Extension($id, $this->extensions[$id]['repositoryUrl'], $this->extensions[$id]);
-		}
-
-		return $this->extensions[$id];
-	}
-
 	public function getVendors(string $projectId): ?array {
 		return $this->vendors[$projectId] ?? null;
+	}
+
+	public function getSupportedVersions(): array {
+		return $this->supportedVersions;
 	}
 }

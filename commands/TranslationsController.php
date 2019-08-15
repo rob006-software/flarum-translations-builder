@@ -95,7 +95,11 @@ class TranslationsController extends Controller {
 	}
 
 	private function getTranslations(string $configFile): Translations {
-		$translations = new Translations(require Yii::getAlias($configFile));
+		$translations = new Translations(
+			Yii::$app->params['translationsRepository'],
+			null,
+			require Yii::getAlias($configFile)
+		);
 		$output = $translations->getRepository()->update();
 		if ($this->verbose) {
 			echo $output;

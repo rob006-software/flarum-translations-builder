@@ -16,6 +16,7 @@ use Dont\DontCallStatic;
 use Dont\DontGet;
 use Dont\DontSet;
 use GitWrapper\Event\GitLoggerEventSubscriber;
+use GitWrapper\GitWorkingCopy;
 use GitWrapper\GitWrapper;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
@@ -28,7 +29,7 @@ use const APP_ROOT;
  *
  * @author Robert Korulczyk <robert@korulczyk.pl>
  */
-final class Repository {
+class Repository {
 
 	use DontCall;
 	use DontCallStatic;
@@ -88,5 +89,9 @@ final class Repository {
 
 	public function getPath(): string {
 		return $this->workingCopyDir;
+	}
+
+	protected function getWorkingCopy(): GitWorkingCopy {
+		return $this->git;
 	}
 }

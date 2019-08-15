@@ -73,4 +73,8 @@ final class Component {
 	public function isValidForLanguage(string $language): bool {
 		return in_array($language, $this->languages, true);
 	}
+
+	public function isExtension(): bool {
+		return !in_array($this->getId(), ['core', 'validation'], true);
+	}
 }

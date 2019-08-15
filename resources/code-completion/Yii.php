@@ -9,6 +9,9 @@
  * with this source code in the file LICENSE.
  */
 
+use app\components\extensions\ExtensionsRepository;
+use app\components\GithubApi;
+
 /**
  * Fake class to define code completion for IDE.
  *
@@ -26,14 +29,14 @@ class Yii extends \yii\BaseYii {
 
 abstract class BaseApplication extends \yii\base\Application {
 
+	/** @var ExtensionsRepository */
+	public $extensionsRepository;
+	/** @var GithubApi */
+	public $githubApi;
 }
 
 class WebApplication extends \yii\web\Application {
 
-//	/**
-//	 * @var \app\components\MyComponent
-//	 */
-//	public $myComponent;
 }
 
 class ConsoleApplication extends \yii\console\Application {

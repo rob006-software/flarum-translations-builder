@@ -56,7 +56,7 @@ class ReadmeController extends Controller {
 		foreach ($translations->getProjects() as $project) {
 			$generator = new MainReadmeGenerator($project, $translations->getVendors($project->getId()));
 			foreach ($project->getComponents() as $component) {
-				$extension = $translations->getExtension($component);
+				$extension = Yii::$app->extensionsRepository->getExtension($component);
 				if ($extension !== null) {
 					$generator->addExtension($extension);
 				}
@@ -91,7 +91,7 @@ class ReadmeController extends Controller {
 				foreach ($translations->getProjects() as $project) {
 					$generator = $subsplit->getReadmeGenerator($translations, $project);
 					foreach ($project->getComponents() as $component) {
-						$extension = $translations->getExtension($component);
+						$extension = Yii::$app->extensionsRepository->getExtension($component->getId());
 						if ($extension !== null) {
 							$generator->addExtension($extension);
 						}
@@ -126,7 +126,11 @@ class ReadmeController extends Controller {
 	}
 
 	private function getTranslations(string $configFile): Translations {
-		$translations = new Translations(require Yii::getAlias($configFile));
+		$translations = new Translations(
+			Yii::$app->params['translationsRepository'],
+			null,
+			require Yii::getAlias($configFile)
+		);
 		$output = $translations->getRepository()->update();
 		if ($this->verbose) {
 			echo $output;

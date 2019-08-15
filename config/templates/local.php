@@ -16,6 +16,14 @@ use yii\helpers\ArrayHelper;
  */
 $localConfig = [];
 
+$localConfig = ArrayHelper::merge($localConfig, [
+	'components' => [
+		'githubApi' => [
+			'authToken' => null, // @todo fill me
+		],
+	],
+]);
+
 if (APP_CONTEXT === 'web') {
 	$localConfig = ArrayHelper::merge($localConfig, [
 		'components' => [

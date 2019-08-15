@@ -9,6 +9,8 @@
  * with this source code in the file LICENSE.
  */
 
+use app\components\extensions\ExtensionsRepository;
+use app\components\GithubApi;
 use yii\caching\FileCache;
 use yii\db\Connection;
 use yii\log\FileTarget;
@@ -73,9 +75,16 @@ return [
 			'rules' => [
 			],
 		],
+		'extensionsRepository' => [
+			'class' => ExtensionsRepository::class,
+		],
+		'githubApi' => [
+			'class' => GithubApi::class,
+		]
 	],
 	'params' => [
 		'repository' => 'git@github.com:rob006-software/flarum-translations-builder.git',
 		'translationsRepository' => 'git@github.com:rob006-software/flarum-translations.git',
+		'translationsForkRepository' => 'git@github.com:robbot006/flarum-translations.git',
 	],
 ];

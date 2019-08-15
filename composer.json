@@ -16,9 +16,12 @@
 	"prefer-stable": true,
 	"require": {
 		"php": "^7.1",
+		"cache/filesystem-adapter": "^1.0",
 		"cpliakas/git-wrapper": "^2.2",
+		"knplabs/github-api": "^2.11",
 		"mindplay/readable": "^1.1",
 		"monolog/monolog": "^1.24",
+		"php-http/guzzle6-adapter": "^1.1",
 		"roave/dont": "^1.0",
 		"symfony/http-client": "^4.3",
 		"symfony/translation": "^4.3",

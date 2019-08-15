@@ -11,19 +11,15 @@
 
 namespace app\models;
 
+use app\models\packagist\SearchResult;
 use Dont\DontCall;
 use Dont\DontCallStatic;
 use Dont\DontGet;
 use Dont\DontSet;
-use Symfony\Component\HttpClient\HttpClient;
 use Yii;
 use yii\helpers\ArrayHelper;
 use yii\helpers\Inflector;
-use function json_decode;
-use function parse_url;
-use function strpos;
-use function substr;
-use const PHP_URL_PATH;
+use function strncmp;
 
 /**
  * Class Extension.
@@ -39,59 +35,110 @@ final class Extension {
 
 	private $id;
 	private $repositoryUrl;
-	private $config;
+	private $composerData;
+	private $packagistSearchData;
 
-	public function __construct(string $id, string $repositoryUrl, array $config = []) {
+	public function __construct(string $id, string $repositoryUrl) {
 		$this->id = $id;
 		$this->repositoryUrl = $repositoryUrl;
-		$this->config = $config;
 	}
 
-	public static function createFromGithubusercontentUrl(string $id, string $url): self {
-		$path = trim(parse_url($url, PHP_URL_PATH), '/');
-		$repositoryName = substr($path, 0, strpos($path, '/', strpos($path, '/') + 1));
-		$repositoryUrl = "https://github.com/$repositoryName";
+	public static function createFromPackagistSearchResult(SearchResult $result): Extension {
+		$extension = new Extension(static::nameToId($result->getName()), $result->getRepository());
+		$extension->packagistSearchData = $result;
 
-		return new static($id, $repositoryUrl);
+		return $extension;
 	}
 
 	public function getId(): string {
 		return $this->id;
 	}
 
-	public function getExtensionName(): string {
-		return $this->config['name']
-			?? $this->getComposerValue('extra.flarum-extension.title')
-			?? Inflector::titleize(strtr($this->getPackageName(), ['-' => ' ']));
+	public function getName(): string {
+		return $this->getComposerValue('extra.flarum-extension.title')
+			?? Inflector::titleize(strtr(explode('/', $this->getPackageName())[1], ['-' => ' ']));
+	}
+
+	public function getVendor(): string {
+		return explode('/', $this->getPackageName())[0];
 	}
 
 	public function getPackageName(): string {
-		return explode('/', $this->getComposerValue('name'))[1];
+		return $this->getComposerValue('name');
 	}
 
-	public function getPackageVendor(): string {
-		return explode('/', $this->getComposerValue('name'))[0];
+	public function getThreadUrl(): ?string {
+		return $this->getComposerValue('extra.flagrow.discuss');
 	}
 
 	public function getRepositoryUrl(): string {
 		return $this->repositoryUrl;
 	}
 
-	private function getComposerValue(string $key) {
-		return ArrayHelper::getValue($this->getComposerData(), $key);
+	public function isAbandoned(): bool {
+		return !empty($this->getPackagistData()->getAbandoned());
 	}
 
-	private function generateGithubusercontentUrl(string $file, string $branch = 'master'): string {
-		$path = trim(parse_url($this->repositoryUrl, PHP_URL_PATH), '/');
-		return "https://raw.githubusercontent.com/{$path}/{$branch}/{$file}";
+	public function getReplacement(): ?string {
+		return $this->getPackagistData()->getAbandoned();
+	}
+
+	public function isOutdated(array $supportedReleases): bool {
+		$required = $this->getComposerValue('require.flarum/core');
+		foreach ($supportedReleases as $release) {
+			// @todo this check is quite naive - we may need to replace it by regular constraint resolving
+			if (strpos($required, $release) !== false) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	public function isLanguagePack(): bool {
+		return $this->getComposerValue('extra.flarum-locale') !== null;
+	}
+
+	public function getProjectId(): string {
+		if (strncmp('fof/', $this->getPackageName(), 4) === 0) {
+			return 'fof';
+		}
+		if (strncmp('flarum/', $this->getPackageName(), 7) === 0) {
+			return 'flarum';
+		}
+
+		return 'various';
+	}
+
+	public function getTranslationSourceUrl(): string {
+		return Yii::$app->extensionsRepository->detectTranslationSourceUrl($this->repositoryUrl);
+	}
+
+	private function getComposerValue(string $key, $default = null) {
+		return ArrayHelper::getValue($this->getComposerData(), $key, $default);
 	}
 
 	private function getComposerData(): array {
-		return Yii::$app->cache->getOrSet($this->repositoryUrl, function () {
-			$url = $this->generateGithubusercontentUrl('composer.json');
-			$client = HttpClient::create();
-			$response = $client->request('GET', $url);
-			return json_decode($response->getContent(), true);
-		}, 7 * 24 * 60 * 60);
+		if ($this->composerData === null) {
+			$this->composerData = Yii::$app->extensionsRepository->getComposerJsonData($this->repositoryUrl);
+		}
+
+		return $this->composerData;
+	}
+
+	private function getPackagistData(): SearchResult {
+		if ($this->packagistSearchData === null) {
+			$this->packagistSearchData = Yii::$app->extensionsRepository->getPackagistData($this->getComposerValue('name'));
+		}
+
+		return $this->packagistSearchData;
+	}
+
+	public static function nameToId(string $name): string {
+		return strtr(strtolower($name), [
+			'/flarum-ext-' => '-',
+			'/flarum-' => '-',
+			'/' => '-',
+		]);
 	}
 }

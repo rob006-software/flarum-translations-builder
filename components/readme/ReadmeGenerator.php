@@ -64,7 +64,7 @@ abstract class ReadmeGenerator {
 			return '';
 		}
 
-		return ' by ' . ($this->vendors[$extension->getId()] ?? Inflector::titleize(strtr($extension->getPackageVendor(), ['-' => ' '])));
+		return ' by ' . ($this->vendors[$extension->getId()] ?? Inflector::titleize(strtr($extension->getVendor(), ['-' => ' '])));
 	}
 
 	protected function getProject(): Project {
