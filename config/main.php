@@ -45,13 +45,23 @@ return [
 			'targets' => [
 				[
 					'class' => FileTarget::class,
-					'levels' => ['error', 'warning'],
+					'logVars' => [],
+					'levels' => ['warning'],
 					'except' => [
 						'yii\web\HttpException:*',
 					],
 				],
 				[
 					'class' => FileTarget::class,
+					'logFile' => '@runtime/logs/error.log',
+					'levels' => ['error'],
+					'except' => [
+						'yii\web\HttpException:*',
+					],
+				],
+				[
+					'class' => FileTarget::class,
+					'logVars' => [],
 					'levels' => ['error', 'warning'],
 					'logFile' => '@app/runtime/logs/http.log',
 					'categories' => [
@@ -80,7 +90,7 @@ return [
 		],
 		'githubApi' => [
 			'class' => GithubApi::class,
-		]
+		],
 	],
 	'params' => [
 		'repository' => 'git@github.com:rob006-software/flarum-translations-builder.git',

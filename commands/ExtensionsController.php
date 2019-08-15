@@ -65,7 +65,7 @@ class ExtensionsController extends Controller {
 					unset($extensions[$index]);
 				}
 			} /* @noinspection PhpRedundantCatchClauseInspection */ catch (UnprocessableExtensionInterface $exception) {
-				Yii::warning($exception);
+				Yii::warning($exception->getMessage());
 				unset($extensions[$index]);
 			}
 		}
