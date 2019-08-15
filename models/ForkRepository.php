@@ -35,6 +35,7 @@ final class ForkRepository extends Repository {
 		$output .= $this->getWorkingCopy()->fetchAll(['prune' => true]);
 		$output .= $this->getWorkingCopy()->checkout('master');
 		$output .= $this->getWorkingCopy()->pull('upstream', 'master');
+		$output .= $this->getWorkingCopy()->push();
 
 		return $output;
 	}
