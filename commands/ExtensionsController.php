@@ -26,6 +26,7 @@ use const APP_ROOT;
  */
 class ExtensionsController extends Controller {
 
+	public $update = true;
 	public $verbose = false;
 	public $useCache = false;
 	/** @var int */
@@ -36,6 +37,7 @@ class ExtensionsController extends Controller {
 			'frequency',
 			'verbose',
 			'useCache',
+			'update',
 		]);
 	}
 
@@ -86,9 +88,11 @@ class ExtensionsController extends Controller {
 			null,
 			require Yii::getAlias($configFile)
 		);
-		$output = $translations->getRepository()->update();
-		if ($this->verbose) {
-			echo $output;
+		if ($this->update) {
+			$output = $translations->getRepository()->update();
+			if ($this->verbose) {
+				echo $output;
+			}
 		}
 
 		return $translations;

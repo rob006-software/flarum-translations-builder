@@ -26,14 +26,22 @@ class SelfUpdateController extends Controller {
 
 	public $defaultAction = 'run';
 
-	public function actionRun(bool $updateTranslations = true) {
+	public $update = true;
+
+	public function options($actionId) {
+		return array_merge(parent::options($actionId), [
+			'update',
+		]);
+	}
+
+	public function actionRun() {
 		$repository = new Repository(Yii::$app->params['repository'], 'master', APP_ROOT);
 		$repository->update();
 
 		$process = new Process(['composer', 'install', '-o'], APP_ROOT);
 		$process->start();
 
-		if ($updateTranslations) {
+		if ($this->update) {
 			$translationsRepository = new Repository(Yii::$app->params['translationsRepository'], 'master', APP_ROOT . '/translations');
 			$translationsRepository->update();
 		}

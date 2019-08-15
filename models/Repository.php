@@ -65,7 +65,7 @@ class Repository {
 	}
 
 	public function update(): string {
-		$output ='';
+		$output = '';
 		if ($this->branch !== null) {
 			$output .= $this->git->checkout($this->branch);
 		}

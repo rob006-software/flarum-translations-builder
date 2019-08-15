@@ -27,6 +27,7 @@ class TranslationsController extends Controller {
 
 	public $defaultAction = 'update';
 
+	public $update = true;
 	public $commit = false;
 	public $push = false;
 	public $verbose = false;
@@ -39,6 +40,7 @@ class TranslationsController extends Controller {
 			'push',
 			'verbose',
 			'frequency',
+			'update',
 		]);
 	}
 
@@ -100,9 +102,11 @@ class TranslationsController extends Controller {
 			null,
 			require Yii::getAlias($configFile)
 		);
-		$output = $translations->getRepository()->update();
-		if ($this->verbose) {
-			echo $output;
+		if ($this->update) {
+			$output = $translations->getRepository()->update();
+			if ($this->verbose) {
+				echo $output;
+			}
 		}
 
 		return $translations;
