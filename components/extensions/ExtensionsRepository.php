@@ -190,8 +190,10 @@ class ExtensionsRepository extends Component {
 			$response = $this->getClient()->request('GET', $response['next'])->toArray();
 			foreach ($response['results'] as $item) {
 				$result = SearchResult::createFromApiResponse($item);
-				if ($result->isFormGithub() || $result->isFormGitlab()) {
+				if ($result->isFromGithub() || $result->isFromGitlab()) {
 					$results[$result->getName()] = $result;
+				} else {
+					Yii::warning('Unsupported repository: ' . readable::value($result->getRepository()));
 				}
 			}
 		} while (isset($response['next']));

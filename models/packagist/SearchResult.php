@@ -15,6 +15,7 @@ use Dont\DontCall;
 use Dont\DontCallStatic;
 use Dont\DontGet;
 use Dont\DontSet;
+use Yii;
 
 /**
  * Class SearchResult.
@@ -50,7 +51,27 @@ class SearchResult {
 	}
 
 	public static function createFromApiResponse(array $data): self {
+		$data['repository'] = self::normalizeRepository($data['repository']);
+
 		return new static($data);
+	}
+
+	public static function normalizeRepository(string $repository): string {
+		// make sure that domain name has correct case - some extensions uses https://GitHub.com
+		if (strncasecmp('https://github.com/', $repository, 19) === 0) {
+			return 'https://github.com/' . substr($repository, 19);
+		}
+		if (strncasecmp('https://gitlab.com/', $repository, 19) === 0) {
+			return 'https://gitlab.com/' . substr($repository, 19);
+		}
+		if (strncasecmp('git@github.com:', $repository, 15) === 0) {
+			return 'https://github.com/' . substr($repository, 15);
+		}
+		if (strncasecmp('git@gitlab.com:', $repository, 15) === 0) {
+			return 'https://gitlab.com/' . substr($repository, 15);
+		}
+
+		return $repository;
 	}
 
 	public function getName(): string {
@@ -81,11 +102,11 @@ class SearchResult {
 		return $this->abandoned;
 	}
 
-	public function isFormGithub(): bool {
-		return strncmp('https://github.com/', $this->repository, 19) === 0;
+	public function isFromGithub(): bool {
+		return Yii::$app->extensionsRepository->isGithubRepo($this->repository);
 	}
 
-	public function isFormGitlab(): bool {
-		return strncmp('https://gitlab.com/', $this->repository, 19) === 0;
+	public function isFromGitlab(): bool {
+		return Yii::$app->extensionsRepository->isGitlabRepo($this->repository);
 	}
 }
