@@ -23,6 +23,7 @@ use Symfony\Contracts\HttpClient\Exception\HttpExceptionInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Yii;
 use yii\base\Component;
+use function strlen;
 use function strncmp;
 
 /**
@@ -31,6 +32,7 @@ use function strncmp;
  * @author Robert Korulczyk <robert@korulczyk.pl>
  */
 class ExtensionsRepository extends Component {
+
 	public $packagistCacheDuration = 1 * 24 * 60 * 60;
 	public $githubCacheDuration = 1 * 24 * 60 * 60;
 
@@ -72,10 +74,36 @@ class ExtensionsRepository extends Component {
 		$extensions = [];
 		foreach ($results as $result) {
 			assert($result instanceof SearchResult);
-			$extensions[Extension::nameToId($result->getName())] = Extension::createFromPackagistSearchResult($result);
+			$extension = Extension::createFromPackagistSearchResult($result);
+			if (
+				!isset($extensions[$extension->getId()])
+				// handle ID conflicts
+				|| $this->compareExtensions($extension, $extensions[$extension->getId()]) > 0
+			) {
+				$extensions[$extension->getId()] = $extension;
+			}
 		}
 
 		return $extensions;
+	}
+
+	private function compareExtensions(Extension $a, Extension $b): int {
+		if ($b->isAbandoned()) {
+			return 1;
+		}
+		if ($a->isAbandoned()) {
+			return -1;
+		}
+
+		// `a-b-c` ID could be created by `a/b-c` package or `a-b/c` package. Prefer this one with shorter vendor - it
+		// will ber harder to create malicious package with conflicting ID.
+		if ($a->getVendor() !== $b->getVendor()) {
+			return strlen($b->getVendor()) - strlen($a->getVendor());
+		}
+
+		// If vendor is the same, prefer this one with shorter name - it is probably migration from
+		// `vendor/flarum-ext-name` to `vendor/name`.
+		return strlen($b->getPackageName()) - strlen($a->getPackageName());
 	}
 
 	public function getExtension(string $id, bool $useCache = true): ?Extension {
