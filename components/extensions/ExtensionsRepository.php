@@ -166,8 +166,7 @@ class ExtensionsRepository extends Component {
 			}
 		}
 
-		/* @noinspection PhpUndefinedVariableInspection */
-		return $url;
+		return $this->generateRawUrl($repositoryUrl, 'no-translation-source.yml');
 	}
 
 	private function generateRawUrl(string $repositoryUrl, string $file, ?string $branch = null): string {
