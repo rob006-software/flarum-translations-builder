@@ -129,6 +129,7 @@ class PullRequestGenerator {
 ![Latest Stable Version](https://poser.pugx.org/$name/v/stable) ![Latest Unstable Version](https://poser.pugx.org/$name/v/unstable)
 [![Total Downloads](https://poser.pugx.org/$name/downloads) ![Monthly Downloads](https://poser.pugx.org/$name/d/monthly) ![Daily Downloads](https://poser.pugx.org/$name/d/daily)](https://packagist.org/packages/$name/stats)
 
+
 MD;
 
 		if (Yii::$app->extensionsRepository->isGithubRepo($extension->getRepositoryUrl())) {
@@ -142,6 +143,7 @@ MD;
 [![GitHub stars](https://img.shields.io/github/stars/$name)](https://github.com/$name/stargazers) [![GitHub forks](https://img.shields.io/github/forks/$name)](https://github.com/$name/network) [![GitHub issues](https://img.shields.io/github/issues/$name)](https://github.com/$name/issues)
 
 [![GitHub last commit](https://img.shields.io/github/last-commit/$name)](https://github.com/$name/commits) [![GitHub commit activity](https://img.shields.io/github/commit-activity/m/$name)](https://github.com/$name/graphs/contributors) [![GitHub commit activity](https://img.shields.io/github/commit-activity/y/$name)](https://github.com/$name/graphs/contributors)
+
 
 MD;
 		}
