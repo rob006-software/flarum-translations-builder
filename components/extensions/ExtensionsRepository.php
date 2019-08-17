@@ -157,6 +157,8 @@ class ExtensionsRepository extends Component {
 		$possiblePaths = [
 			'resources/locale/en.yml',
 			'locale/en.yml',
+			'resources/locale/en.yaml',
+			'locale/en.yaml',
 		];
 		foreach ($possiblePaths as $possiblePath) {
 			$url = $this->generateRawUrl($repositoryUrl, $possiblePath);
