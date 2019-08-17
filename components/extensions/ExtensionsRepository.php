@@ -163,7 +163,7 @@ class ExtensionsRepository extends Component {
 		foreach ($possiblePaths as $possiblePath) {
 			$url = $this->generateRawUrl($repositoryUrl, $possiblePath);
 			$response = $this->getClient()->request('GET', $url);
-			if ($response->getStatusCode() < 300) {
+			if ($response->getStatusCode() < 300 && $response->getContent() !== '') {
 				return $url;
 			}
 		}
