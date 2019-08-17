@@ -39,6 +39,7 @@ class SelfUpdateController extends Controller {
 		$repository->update();
 
 		$process = new Process(['composer', 'install', '-o'], APP_ROOT);
+		$process->setTimeout(5 * 60);
 		$process->start();
 
 		if ($this->update) {
