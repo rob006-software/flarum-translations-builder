@@ -76,7 +76,8 @@ final class Extension {
 	}
 
 	public function isAbandoned(): bool {
-		return !empty($this->getPackagistData()->getAbandoned());
+		// abandoned packages without replacement have empty string in `abandoned` field
+		return $this->getPackagistData()->getAbandoned() !== null;
 	}
 
 	public function getReplacement(): ?string {
