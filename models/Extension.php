@@ -64,7 +64,7 @@ final class Extension {
 	}
 
 	public function getPackageName(): string {
-		return $this->getComposerValue('name');
+		return $this->getPackagistData()->getName();
 	}
 
 	public function getThreadUrl(): ?string {
