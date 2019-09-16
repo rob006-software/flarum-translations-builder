@@ -58,12 +58,13 @@ class PullRequestGenerator {
 		foreach ($extensions as $extension) {
 			$branchName = "new/{$extension->getId()}";
 			if ($this->repository->hasBranch($branchName)) {
+				$this->updateBranch($branchName, $extension);
 				continue;
 			}
 
 			$this->repository->createBranch($branchName);
 
-			$this->addNewExtensionToConfig($extension);
+			$this->addExtensionToConfig($extension);
 			$this->repository->commit("Add {$extension->getPackageName()}.");
 			$this->repository->push();
 
@@ -76,22 +77,36 @@ class PullRequestGenerator {
 		}
 	}
 
-	private function addNewExtensionToConfig(Extension $extension): void {
+	private function updateBranch(string $branchName, Extension $extension): void {
+		$this->repository->checkoutBranch($branchName);
+		$this->addExtensionToConfig($extension);
+		$this->repository->commit("Update config for {$extension->getPackageName()}.");
+		$this->repository->push();
+	}
+
+	private function addExtensionToConfig(Extension $extension): void {
 		$project = $this->translations->getProject($extension->getProjectId());
 		$components = $project->getComponents();
 		unset($components['core']);
 
 		$filePath = $this->repository->getPath() . "/config/{$project->getId()}-project.php";
+		$config = require $filePath;
 		$configContent = file_get_contents($filePath);
-		$position = $this->findPrecedingComponent(array_keys($components), $extension->getId());
-		if ($position === null) {
+		if (isset($config[$extension->getId()])) {
 			$configContent = strtr($configContent, [
-				"\n\t/* extensions list end */" => "\n\t'{$extension->getId()}' => '{$extension->getTranslationSourceUrl()}',\n\t/* extensions list end */",
+				"\n\t'{$extension->getId()}' => '{$config[$extension->getId()]}'," => "\n\t'{$extension->getId()}' => '{$extension->getTranslationSourceUrl()}',",
 			]);
 		} else {
-			$configContent = strtr($configContent, [
-				"\n\t'{$position}' => " => "\n\t'{$extension->getId()}' => '{$extension->getTranslationSourceUrl()}',\n\t'{$position}' => ",
-			]);
+			$position = $this->findPrecedingComponent(array_keys($components), $extension->getId());
+			if ($position === null) {
+				$configContent = strtr($configContent, [
+					"\n\t/* extensions list end */" => "\n\t'{$extension->getId()}' => '{$extension->getTranslationSourceUrl()}',\n\t/* extensions list end */",
+				]);
+			} else {
+				$configContent = strtr($configContent, [
+					"\n\t'{$position}' => " => "\n\t'{$extension->getId()}' => '{$extension->getTranslationSourceUrl()}',\n\t'{$position}' => ",
+				]);
+			}
 		}
 		file_put_contents($filePath, $configContent);
 	}

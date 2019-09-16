@@ -73,6 +73,11 @@ final class ForkRepository extends Repository {
 		return $output;
 	}
 
+	public function checkoutBranch(string $name): string {
+		return $this->getWorkingCopy()->checkout($name)
+			. $this->getWorkingCopy()->pull();
+	}
+
 	private function getBranches(bool $useCache = true): array {
 		if ($this->_branches === null || !$useCache) {
 			$this->_branches = $this->getWorkingCopy()->getBranches()->all();
