@@ -59,9 +59,11 @@ class PullRequestGenerator {
 			$branchName = "new/{$extension->getId()}";
 			if ($this->repository->hasBranch($branchName)) {
 				$this->updateBranch($branchName, $extension);
+				// @todo push comment to PR
 				continue;
 			}
 
+			$this->repository->checkoutBranch('master');
 			$this->repository->createBranch($branchName);
 
 			$this->addExtensionToConfig($extension);
@@ -70,7 +72,6 @@ class PullRequestGenerator {
 
 			$this->openPullRequestForNewExtension($branchName, $extension);
 
-			$this->repository->rebase();
 			if (--$limit <= 0) {
 				return;
 			}
