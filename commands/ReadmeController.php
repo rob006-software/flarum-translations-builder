@@ -64,12 +64,17 @@ class ReadmeController extends Controller {
 				}
 			}
 
-			$readme = $this->replaceBetween(
-				"<!-- {$project->getId()}-extensions-list-start -->",
-				"<!-- {$project->getId()}-extensions-list-stop -->",
-				$readme,
-				$generator->generate()
-			);
+			if (
+				strpos($readme, "<!-- {$project->getId()}-extensions-list-start -->") !== false
+				&& strpos($readme, "<!-- {$project->getId()}-extensions-list-stop -->") !== false
+			) {
+				$readme = $this->replaceBetween(
+					"<!-- {$project->getId()}-extensions-list-start -->",
+					"<!-- {$project->getId()}-extensions-list-stop -->",
+					$readme,
+					$generator->generate()
+				);
+			}
 		}
 
 		file_put_contents($translations->getDir() . '/README.md', $readme);
