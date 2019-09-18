@@ -10,6 +10,7 @@
  */
 
 namespace app\models;
+
 use app\components\readme\ReadmeGenerator;
 use Dont\DontCall;
 use Dont\DontCallStatic;
@@ -31,15 +32,16 @@ abstract class Subsplit {
 	private $id;
 	private $repository;
 	private $path;
+	private $components;
 	private $updateReadme;
 
-	public function __construct(string $id, string $repository, string $branch, string $path, ?bool $updateReadme = false) {
+	public function __construct(string $id, string $repository, string $branch, string $path, ?array $components, ?bool $updateReadme = false) {
 		$this->id = $id;
 		$this->path = $path;
+		$this->components = $components;
 		$this->updateReadme = $updateReadme;
 		$this->repository = new Repository($repository, $branch, APP_ROOT . "/runtime/subsplits/$id");
 	}
-
 
 	public function getRepository(): Repository {
 		return $this->repository;
@@ -59,6 +61,11 @@ abstract class Subsplit {
 
 	public function getDir(): string {
 		return $this->getRepository()->getPath();
+	}
+
+	public function isValidForComponent(string $projectId, string $componentId): bool {
+		return $this->components === null
+			|| (!empty($this->components[$projectId]) && in_array($componentId, $this->components[$projectId], true));
 	}
 
 	abstract public function split(Translations $translations): void;

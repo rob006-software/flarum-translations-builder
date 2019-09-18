@@ -31,10 +31,18 @@ final class LanguageSubsplit extends Subsplit {
 
 	private $language;
 
-	public function __construct(string $id, string $language, string $repository, string $branch, string $path, ?bool $updateReadme = false) {
+	public function __construct(
+		string $id,
+		string $language,
+		string $repository,
+		string $branch,
+		string $path,
+		?array $components,
+		?bool $updateReadme = false
+	) {
 		$this->language = $language;
 
-		parent::__construct($id, $repository, $branch, $path, $updateReadme);
+		parent::__construct($id, $repository, $branch, $path, $components, $updateReadme);
 	}
 
 	public function split(Translations $translations): void {
@@ -45,7 +53,7 @@ final class LanguageSubsplit extends Subsplit {
 			// reverse array to process top record at the end - it will overwrite any previous translation
 			foreach (array_reverse($project->getComponents()) as $component) {
 				assert($component instanceof Component);
-				if ($component->isValidForLanguage($this->language)) {
+				if ($component->isValidForLanguage($this->language) && $this->isValidForComponent($project->getId(), $component->getId())) {
 					$translator->addResource(
 						'json_file',
 						$project->getComponentTranslationPath($component, $this->language),
@@ -63,11 +71,13 @@ final class LanguageSubsplit extends Subsplit {
 			// reverse array to process top record at the end - it will overwrite any previous translation
 			foreach (array_reverse($project->getComponents()) as $component) {
 				assert($component instanceof Component);
-				$messages = array_filter($translationsCatalogue->all($component->getId()), static function ($string) {
-					return $string !== '';
-				});
+				if ($component->isValidForLanguage($this->language) && $this->isValidForComponent($project->getId(), $component->getId())) {
+					$messages = array_filter($translationsCatalogue->all($component->getId()), static function ($string) {
+						return $string !== '';
+					});
 
-				$translator->addResource('array', $messages, 'en', $component->getId());
+					$translator->addResource('array', $messages, 'en', $component->getId());
+				}
 			}
 		}
 
@@ -90,7 +100,9 @@ final class LanguageSubsplit extends Subsplit {
 			// reverse array to process top record at the end - it will overwrite any previous translation
 			foreach (array_reverse($project->getComponents()) as $component) {
 				assert($component instanceof Component);
-				$translator->addResource('json_file', $project->getComponentSourcePath($component), 'en', $component->getId());
+				if ($component->isValidForLanguage($this->language) && $this->isValidForComponent($project->getId(), $component->getId())) {
+					$translator->addResource('json_file', $project->getComponentSourcePath($component), 'en', $component->getId());
+				}
 			}
 		}
 		return $translator;

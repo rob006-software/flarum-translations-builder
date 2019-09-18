@@ -118,6 +118,7 @@ final class Translations {
 						$config['repository'],
 						$config['branch'],
 						$config['path'],
+						$config['components'] ?? null,
 						$config['updateReadme'] ?? false
 					);
 					break;

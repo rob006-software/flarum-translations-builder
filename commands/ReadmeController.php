@@ -12,6 +12,7 @@
 namespace app\commands;
 
 use app\components\readme\MainReadmeGenerator;
+use app\models\LanguageSubsplit;
 use app\models\Repository;
 use app\models\Translations;
 use mindplay\readable;
@@ -98,9 +99,14 @@ class ReadmeController extends Controller {
 				foreach ($translations->getProjects() as $project) {
 					$generator = $subsplit->getReadmeGenerator($translations, $project);
 					foreach ($project->getComponents() as $component) {
-						$extension = Yii::$app->extensionsRepository->getExtension($component->getId());
-						if ($extension !== null) {
-							$generator->addExtension($extension);
+						if (
+							(!($subsplit instanceof LanguageSubsplit) || $component->isValidForLanguage($subsplit->getLanguage()))
+							&& $subsplit->isValidForComponent($project->getId(), $component->getId())
+						) {
+							$extension = Yii::$app->extensionsRepository->getExtension($component->getId());
+							if ($extension !== null) {
+								$generator->addExtension($extension);
+							}
 						}
 					}
 
