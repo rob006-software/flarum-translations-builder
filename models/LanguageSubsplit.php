@@ -45,12 +45,14 @@ final class LanguageSubsplit extends Subsplit {
 			// reverse array to process top record at the end - it will overwrite any previous translation
 			foreach (array_reverse($project->getComponents()) as $component) {
 				assert($component instanceof Component);
-				$translator->addResource(
-					'json_file',
-					$project->getComponentTranslationPath($component, $this->language),
-					$this->language,
-					$component->getId()
-				);
+				if ($component->isValidForLanguage($this->language)) {
+					$translator->addResource(
+						'json_file',
+						$project->getComponentTranslationPath($component, $this->language),
+						$this->language,
+						$component->getId()
+					);
+				}
 			}
 		}
 
