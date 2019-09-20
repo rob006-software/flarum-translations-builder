@@ -66,6 +66,28 @@ class GithubApi extends Component {
 			]);
 	}
 
+	public function addPullRequestComment(string $targetRepository, string $sourceRepository, string $branch, array $settings): array {
+		$pullRequest = $this->getPullRequestForBranch($targetRepository, $sourceRepository, $branch);
+		if ($pullRequest === null) {
+			throw new InvalidArgumentException("There is no PR for branch $branch.");
+		}
+
+		[$targetUserName, $targetRepoName] = $this->explodeRepoUrl($targetRepository);
+		return $this->githubApiClient->issues()->comments()
+			->create($targetUserName, $targetRepoName, $pullRequest['number'], $settings);
+	}
+
+	public function getPullRequestForBranch(string $targetRepository, string $sourceRepository, string $branch): ?array {
+		[$targetUserName, $targetRepoName] = $this->explodeRepoUrl($targetRepository);
+		[$sourceUserName,] = $this->explodeRepoUrl($sourceRepository);
+		$info = $this->githubApiClient->pullRequest()->all($targetUserName, $targetRepoName, [
+			'head' => $sourceUserName === $targetUserName ? $branch : "$sourceUserName:$branch",
+		]);
+
+		// in case of multiple PRs for the same branch, we pick the most recent one (newest first is default GitHub sorting)
+		return $info[0] ?? null;
+	}
+
 	private function explodeRepoUrl(string $repoUrl): array {
 		if (strncmp($repoUrl, 'https://github.com/', 19) === 0) {
 			$path = trim(parse_url($repoUrl, PHP_URL_PATH), '/');

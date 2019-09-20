@@ -59,7 +59,7 @@ class PullRequestGenerator {
 			$branchName = "new/{$extension->getId()}";
 			if ($this->repository->hasBranch($branchName)) {
 				$this->updateBranch($branchName, $extension);
-				// @todo push comment to PR
+				$this->updatePullRequestForNewExtension($branchName);
 				continue;
 			}
 
@@ -130,6 +130,17 @@ class PullRequestGenerator {
 			[
 				'title' => "Add {$extension->getPackageName()}",
 				'body' => $this->generatePullRequestBadges($extension),
+			]
+		);
+	}
+
+	private function updatePullRequestForNewExtension(string $branchName): void {
+		$this->githubApi->addPullRequestComment(
+			Yii::$app->params['translationsRepository'],
+			Yii::$app->params['translationsForkRepository'],
+			$branchName,
+			[
+				'body' => 'Pull request updated.',
 			]
 		);
 	}
