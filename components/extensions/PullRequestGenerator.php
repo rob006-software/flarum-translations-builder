@@ -58,8 +58,9 @@ class PullRequestGenerator {
 		foreach ($extensions as $extension) {
 			$branchName = "new/{$extension->getId()}";
 			if ($this->repository->hasBranch($branchName)) {
-				$this->updateBranch($branchName, $extension);
-				$this->updatePullRequestForNewExtension($branchName);
+				if ($this->updateBranch($branchName, $extension)) {
+					$this->updatePullRequestForNewExtension($branchName);
+				}
 				continue;
 			}
 
@@ -78,11 +79,13 @@ class PullRequestGenerator {
 		}
 	}
 
-	private function updateBranch(string $branchName, Extension $extension): void {
+	private function updateBranch(string $branchName, Extension $extension): bool {
 		$this->repository->checkoutBranch($branchName);
 		$this->addExtensionToConfig($extension);
-		$this->repository->commit("Update config for {$extension->getPackageName()}.");
+		$this->repository->commit("Update config for {$extension->getPackageName()}.", $commited);
 		$this->repository->push();
+
+		return $commited;
 	}
 
 	private function addExtensionToConfig(Extension $extension): void {

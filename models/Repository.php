@@ -74,9 +74,10 @@ class Repository {
 		return $output;
 	}
 
-	public function commit(string $message): string {
+	public function commit(string $message, ?bool &$committed = null): string {
 		$output = $this->git->add('-A');
-		if ($this->git->hasChanges()) {
+		$committed = $this->git->hasChanges();
+		if ($committed) {
 			$output .= $this->git->commit($message);
 		}
 
