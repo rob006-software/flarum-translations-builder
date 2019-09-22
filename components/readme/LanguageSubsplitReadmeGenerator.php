@@ -32,7 +32,7 @@ final class LanguageSubsplitReadmeGenerator extends ReadmeGenerator {
 	public function generate(): string {
 		$extensions = $this->getExtensions();
 		usort($extensions, static function (Extension $a, Extension $b) {
-			return $a->getName() <=> $b->getName();
+			return "{$a->getName()}{$this->generateVendorName($a)}" <=> "{$b->getName()}{$this->generateVendorName($b)}";
 		});
 
 		$output = "\n\n| Extension | Status |\n| --- | --- |\n";
