@@ -41,6 +41,23 @@ class ExtensionsController extends Controller {
 		]);
 	}
 
+	public function actionList(string $configFile = '@app/translations/config.php') {
+		$translations = $this->getTranslations($configFile);
+
+		$extensions = Yii::$app->extensionsRepository->getExtensions($this->useCache);
+		foreach ($translations->getProjects() as $project) {
+			foreach ($project->getComponents() as $component) {
+				if (!isset($extensions[$component->getId()])) {
+					continue;
+				}
+				$extension = $extensions[$component->getId()];
+				echo $component->getId() . ' - '
+					. "[`{$extension->getPackageName()}`]({$extension->getRepositoryUrl()})"
+					. "\n";
+			}
+		}
+	}
+
 	public function actionDetectNew(int $limit = 2, string $configFile = '@app/translations/config.php') {
 		$translations = $this->getTranslations($configFile);
 		$token = __METHOD__ . '#' . $translations->getHash();
