@@ -11,6 +11,7 @@
 
 namespace app\components\translations;
 
+use Closure;
 use Symfony\Component\Translation\Dumper\YamlFileDumper as BaseYamlFileDumper;
 use Symfony\Component\Translation\MessageCatalogue;
 use Symfony\Component\Translation\Util\ArrayConverter;
@@ -23,6 +24,14 @@ use Symfony\Component\Yaml\Yaml;
  */
 class YamlFileDumper extends BaseYamlFileDumper {
 
+	private $prefixGenerator;
+
+	public function __construct(?Closure $prefixGenerator = null, string $extension = 'yml') {
+		$this->prefixGenerator = $prefixGenerator;
+
+		parent::__construct($extension);
+	}
+
 	/**
 	 * {@inheritdoc}
 	 */
@@ -33,6 +42,7 @@ class YamlFileDumper extends BaseYamlFileDumper {
 			$data = ArrayConverter::expandToTree($data);
 		}
 
-		return Yaml::dump($data, $options['inline'] ?? 2, 2, $options['flags'] ?? 0);
+		$prefix = $this->prefixGenerator === null ? '' : ($this->prefixGenerator)($domain, $options);
+		return $prefix . Yaml::dump($data, $options['inline'] ?? 2, 2, $options['flags'] ?? 0);
 	}
 }
