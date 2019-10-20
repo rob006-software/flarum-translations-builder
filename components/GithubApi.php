@@ -88,6 +88,24 @@ class GithubApi extends Component {
 		return $info[0] ?? null;
 	}
 
+	public function createIssueIfNotExist(string $repository, string $title, array $settings = []): ?array {
+		[$userName, $repoName] = $this->explodeRepoUrl($repository);
+		$issues = $this->githubApiClient->issues()->all($userName, $repoName);
+		foreach ($issues as $issue) {
+			if ($issue['title'] === $title) {
+				return null;
+			}
+		}
+
+		$settings['title'] = $title;
+		return $this->githubApiClient->issues()->create($userName, $repoName, $settings);
+	}
+
+	public function createIssue(string $repository, array $settings): array {
+		[$userName, $repoName] = $this->explodeRepoUrl($repository);
+		return $this->githubApiClient->issues()->create($userName, $repoName, $settings);
+	}
+
 	private function explodeRepoUrl(string $repoUrl): array {
 		if (strncmp($repoUrl, 'https://github.com/', 19) === 0) {
 			$path = trim(parse_url($repoUrl, PHP_URL_PATH), '/');

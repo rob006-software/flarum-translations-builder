@@ -11,6 +11,7 @@
 
 namespace app\models;
 
+use app\components\extensions\IssueGenerator;
 use app\models\packagist\SearchResult;
 use Dont\DontCall;
 use Dont\DontCallStatic;
@@ -119,9 +120,9 @@ final class Extension {
 		return ArrayHelper::getValue($this->getComposerData(), $key, $default);
 	}
 
-	private function getComposerData(): array {
-		if ($this->composerData === null) {
-			$this->composerData = Yii::$app->extensionsRepository->getComposerJsonData($this->repositoryUrl);
+	private function getComposerData(bool $refresh = false): array {
+		if ($this->composerData === null || $refresh) {
+			$this->composerData = Yii::$app->extensionsRepository->getComposerJsonData($this->repositoryUrl, $refresh);
 		}
 
 		return $this->composerData;
@@ -133,6 +134,18 @@ final class Extension {
 		}
 
 		return $this->packagistSearchData;
+	}
+
+	public function verifyName(): bool {
+		$githubName = static::nameToId($this->getComposerData(true)['name']);
+		$packagistName = static::nameToId($this->getPackageName());
+		if ($packagistName === $githubName) {
+			return true;
+		}
+
+		(new IssueGenerator())->generateForMigration($packagistName, $githubName);
+
+		return false;
 	}
 
 	public static function nameToId(string $name): string {

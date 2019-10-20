@@ -23,6 +23,7 @@ use Symfony\Contracts\HttpClient\Exception\HttpExceptionInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Yii;
 use yii\base\Component;
+use function json_decode;
 use function strlen;
 use function strncmp;
 
@@ -127,8 +128,8 @@ class ExtensionsRepository extends Component {
 		}, $this->packagistCacheDuration);
 	}
 
-	public function getComposerJsonData(string $repositoryUrl): array {
-		return Yii::$app->cache->getOrSet(__METHOD__ . '#' . $repositoryUrl, function () use ($repositoryUrl): array {
+	public function getComposerJsonData(string $repositoryUrl, bool $refresh = false): array {
+		$callback = function () use ($repositoryUrl): array {
 			$url = $this->generateRawUrl($repositoryUrl, 'composer.json');
 			$response = $this->getClient()->request('GET', $url);
 			try {
@@ -150,7 +151,15 @@ class ExtensionsRepository extends Component {
 					$exception
 				);
 			}
-		}, $this->githubCacheDuration);
+		};
+
+		if ($refresh) {
+			$value = $callback();
+			Yii::$app->cache->set(__METHOD__ . '#' . $repositoryUrl, $value, $this->githubCacheDuration);
+			return $value;
+		}
+
+		return Yii::$app->cache->getOrSet(__METHOD__ . '#' . $repositoryUrl, $callback, $this->githubCacheDuration);
 	}
 
 	public function detectTranslationSourceUrl(string $repositoryUrl): string {

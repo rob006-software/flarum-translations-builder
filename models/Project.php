@@ -23,9 +23,14 @@ use Symfony\Component\Translation\Loader\ArrayLoader;
 use Symfony\Component\Translation\Loader\JsonFileLoader;
 use Symfony\Component\Translation\MessageCatalogue;
 use Symfony\Component\Translation\Translator;
+use Symfony\Component\Translation\Util\ArrayConverter;
+use Yii;
 use yii\base\InvalidArgumentException;
 use yii\base\InvalidConfigException;
 use yii\helpers\ArrayHelper;
+use function file_exists;
+use function file_get_contents;
+use function json_decode;
 
 /**
  * Class Project.
@@ -122,6 +127,7 @@ final class Project {
 		$translator = $this->fetchSources();
 		$catalogue = $translator->getCatalogue();
 		assert($catalogue instanceof MessageCatalogue);
+		$this->validateSourcesChanges($catalogue);
 		$this->saveTranslations($catalogue, $this->sourcesDir);
 
 		return $catalogue;
@@ -189,5 +195,25 @@ final class Project {
 			'as_tree' => true,
 			'json_encoding' => JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES,
 		]);
+	}
+
+	private function validateSourcesChanges(MessageCatalogue $catalogue) {
+		foreach ($this->getComponents() as $component) {
+			if (!$component->isExtension() || !file_exists($this->getComponentSourcePath($component))) {
+				continue;
+			}
+			$new = ArrayConverter::expandToTree($catalogue->all($component->getId()));
+			$old = json_decode(file_get_contents($this->getComponentSourcePath($component)), true);
+			if ($old !== $new) {
+				$extension = Yii::$app->extensionsRepository->getExtension($component->getId());
+				assert($extension instanceof Extension);
+				if (!$extension->verifyName()) {
+					// If name was changed, ignore new source. Such cases should be handled manually - verifyName()
+					// will open issue about it on issue tracker.
+					// @see https://github.com/rob006-software/flarum-translations-builder/issues/6
+					$catalogue->replace($old, $component->getId());
+				}
+			}
+		}
 	}
 }
