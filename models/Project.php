@@ -211,7 +211,10 @@ final class Project {
 					// If name was changed, ignore new source. Such cases should be handled manually - verifyName()
 					// will open issue about it on issue tracker.
 					// @see https://github.com/rob006-software/flarum-translations-builder/issues/6
-					$catalogue->replace($old, $component->getId());
+					$catalogue->replace(
+						(new ArrayLoader())->load($old, 'en', $component->getId())->all($component->getId()),
+						$component->getId()
+					);
 				}
 			}
 		}
