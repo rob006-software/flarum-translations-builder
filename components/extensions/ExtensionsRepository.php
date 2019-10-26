@@ -34,8 +34,8 @@ use function strncmp;
  */
 class ExtensionsRepository extends Component {
 
-	public $packagistCacheDuration = 1 * 24 * 60 * 60;
-	public $githubCacheDuration = 1 * 24 * 60 * 60;
+	public $packagistCacheDuration = 6 * 60 * 60;
+	public $githubCacheDuration = 6 * 60 * 60;
 
 	private $_extensions;
 	private $_client;
