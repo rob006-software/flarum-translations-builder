@@ -11,12 +11,12 @@
 
 namespace app\commands;
 
+use app\components\ConsoleController;
 use app\components\extensions\exceptions\UnprocessableExtensionInterface;
 use app\components\extensions\PullRequestGenerator;
 use app\models\ForkRepository;
 use app\models\Translations;
 use Yii;
-use yii\console\Controller;
 use const APP_ROOT;
 
 /**
@@ -24,7 +24,7 @@ use const APP_ROOT;
  *
  * @author Robert Korulczyk <robert@korulczyk.pl>
  */
-class ExtensionsController extends Controller {
+class ExtensionsController extends ConsoleController {
 
 	public $update = true;
 	public $verbose = false;

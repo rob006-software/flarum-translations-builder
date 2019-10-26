@@ -11,6 +11,7 @@
 
 namespace app\commands;
 
+use app\components\ConsoleController;
 use app\components\readme\MainReadmeGenerator;
 use app\models\LanguageSubsplit;
 use app\models\Repository;
@@ -18,7 +19,6 @@ use app\models\Translations;
 use mindplay\readable;
 use Yii;
 use yii\base\InvalidArgumentException;
-use yii\console\Controller;
 use function file_get_contents;
 use function strpos;
 use function substr;
@@ -28,7 +28,7 @@ use function substr;
  *
  * @author Robert Korulczyk <robert@korulczyk.pl>
  */
-class ReadmeController extends Controller {
+class ReadmeController extends ConsoleController {
 
 	public $defaultAction = 'update';
 

@@ -11,10 +11,10 @@
 
 namespace app\commands;
 
+use app\components\ConsoleController;
 use app\models\Repository;
 use Symfony\Component\Process\Process;
 use Yii;
-use yii\console\Controller;
 use const APP_ROOT;
 
 /**
@@ -22,7 +22,7 @@ use const APP_ROOT;
  *
  * @author Robert Korulczyk <robert@korulczyk.pl>
  */
-class SelfUpdateController extends Controller {
+class SelfUpdateController extends ConsoleController {
 
 	public $defaultAction = 'run';
 

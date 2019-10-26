@@ -11,6 +11,7 @@
 
 use app\components\extensions\ExtensionsRepository;
 use app\components\GithubApi;
+use yii\mutex\FileMutex;
 
 /**
  * Fake class to define code completion for IDE.
@@ -33,6 +34,8 @@ abstract class BaseApplication extends \yii\base\Application {
 	public $extensionsRepository;
 	/** @var GithubApi */
 	public $githubApi;
+	/** @var FileMutex */
+	public $mutex;
 }
 
 class WebApplication extends \yii\web\Application {

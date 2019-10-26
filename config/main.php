@@ -14,6 +14,7 @@ use app\components\GithubApi;
 use yii\caching\FileCache;
 use yii\db\Connection;
 use yii\log\FileTarget;
+use yii\mutex\FileMutex;
 use yii\swiftmailer\Mailer;
 
 error_reporting(-1);
@@ -84,6 +85,9 @@ return [
 			'showScriptName' => false,
 			'rules' => [
 			],
+		],
+		'mutex' => [
+			'class' => FileMutex::class,
 		],
 		'extensionsRepository' => [
 			'class' => ExtensionsRepository::class,

@@ -11,19 +11,19 @@
 
 namespace app\commands;
 
+use app\components\ConsoleController;
 use app\components\translations\TranslationsImporter;
 use app\models\Repository;
 use app\models\Translations;
 use mindplay\readable;
 use Yii;
-use yii\console\Controller;
 
 /**
  * Class TranslationsController.
  *
  * @author Robert Korulczyk <robert@korulczyk.pl>
  */
-class TranslationsController extends Controller {
+class TranslationsController extends ConsoleController {
 
 	public $defaultAction = 'update';
 
