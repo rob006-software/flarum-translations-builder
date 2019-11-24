@@ -82,6 +82,7 @@ class GithubApi extends Component {
 		[$sourceUserName,] = $this->explodeRepoUrl($sourceRepository);
 		$info = $this->githubApiClient->pullRequest()->all($targetUserName, $targetRepoName, [
 			'head' => $sourceUserName === $targetUserName ? $branch : "$sourceUserName:$branch",
+			'state' => 'all',
 		]);
 
 		// in case of multiple PRs for the same branch, we pick the most recent one (newest first is default GitHub sorting)
