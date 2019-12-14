@@ -25,6 +25,7 @@ use Symfony\Component\Translation\MessageCatalogue;
 use Symfony\Component\Translation\Translator;
 use Symfony\Component\Translation\Util\ArrayConverter;
 use Yii;
+use yii\base\Exception;
 use yii\base\InvalidArgumentException;
 use yii\base\InvalidConfigException;
 use yii\helpers\ArrayHelper;
@@ -206,7 +207,9 @@ final class Project {
 			$old = json_decode(file_get_contents($this->getComponentSourcePath($component)), true);
 			if ($old !== $new) {
 				$extension = Yii::$app->extensionsRepository->getExtension($component->getId());
-				assert($extension instanceof Extension);
+				if ($extension === null) {
+					throw new Exception("Unable to find extension for '{$component->getId()}' component.");
+				}
 				if (!$extension->verifyName()) {
 					// If name was changed, ignore new source. Such cases should be handled manually - verifyName()
 					// will open issue about it on issue tracker.
