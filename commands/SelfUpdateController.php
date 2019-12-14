@@ -40,7 +40,7 @@ class SelfUpdateController extends ConsoleController {
 
 		$process = new Process(['composer', 'install', '-o'], APP_ROOT);
 		$process->setTimeout(5 * 60);
-		$process->start();
+		$process->mustRun();
 
 		if ($this->update) {
 			$translationsRepository = new Repository(Yii::$app->params['translationsRepository'], 'master', APP_ROOT . '/translations');
