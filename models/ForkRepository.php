@@ -78,7 +78,7 @@ final class ForkRepository extends Repository {
 			. $this->getWorkingCopy()->pull();
 	}
 
-	private function getBranches(bool $useCache = true): array {
+	public function getBranches(bool $useCache = true): array {
 		if ($this->_branches === null || !$useCache) {
 			$this->_branches = $this->getWorkingCopy()->getBranches()->all();
 		}

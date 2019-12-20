@@ -12,7 +12,6 @@
 namespace app\commands;
 
 use app\components\ConsoleController;
-use app\components\extensions\exceptions\UnprocessableExtensionInterface;
 use app\components\extensions\PullRequestGenerator;
 use app\models\ForkRepository;
 use app\models\Translations;
@@ -44,7 +43,7 @@ class ExtensionsController extends ConsoleController {
 	public function actionList(string $configFile = '@app/translations/config.php') {
 		$translations = $this->getTranslations($configFile);
 
-		$extensions = Yii::$app->extensionsRepository->getExtensions($this->useCache);
+		$extensions = Yii::$app->extensionsRepository->getAllExtensions($this->useCache);
 		foreach ($translations->getProjects() as $project) {
 			foreach ($project->getComponents() as $component) {
 				if (!isset($extensions[$component->getId()])) {
@@ -65,25 +64,13 @@ class ExtensionsController extends ConsoleController {
 			return;
 		}
 
-		$extensions = Yii::$app->extensionsRepository->getExtensions($this->useCache);
+		$extensions = Yii::$app->extensionsRepository->getValidExtensions(
+			$translations->getSupportedVersions(),
+			$this->useCache
+		);
 		foreach ($translations->getProjects() as $project) {
 			foreach ($project->getComponents() as $component) {
 				unset($extensions[$component->getId()]);
-			}
-		}
-
-		foreach ($extensions as $index => $extension) {
-			try {
-				if ($extension->isAbandoned()) {
-					unset($extensions[$index]);
-				} elseif ($extension->isOutdated($translations->getSupportedVersions())) {
-					unset($extensions[$index]);
-				} elseif ($extension->isLanguagePack()) {
-					unset($extensions[$index]);
-				}
-			} /* @noinspection PhpRedundantCatchClauseInspection */ catch (UnprocessableExtensionInterface $exception) {
-				Yii::warning($exception->getMessage());
-				unset($extensions[$index]);
 			}
 		}
 

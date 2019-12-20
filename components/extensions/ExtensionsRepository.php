@@ -14,6 +14,7 @@ namespace app\components\extensions;
 use app\components\extensions\exceptions\GithubApiException;
 use app\components\extensions\exceptions\InvalidRepositoryUrlException;
 use app\components\extensions\exceptions\UnableLoadComposerJsonException;
+use app\components\extensions\exceptions\UnprocessableExtensionInterface;
 use app\models\Extension;
 use app\models\packagist\SearchResult;
 use Github\Exception\RuntimeException as GithubRuntimeException;
@@ -44,7 +45,7 @@ class ExtensionsRepository extends Component {
 	 * @param bool $useCache
 	 * @return Extension[]
 	 */
-	public function getExtensions(bool $useCache = true): array {
+	public function getAllExtensions(bool $useCache = true): array {
 		if ($this->_extensions === null) {
 			if ($useCache) {
 				$this->_extensions = Yii::$app->cache->getOrSet(__METHOD__, function () {
@@ -56,6 +57,31 @@ class ExtensionsRepository extends Component {
 		}
 
 		return $this->_extensions;
+	}
+
+	/**
+	 * @param string[] $supportedVersions
+	 * @param bool $useCache
+	 * @return Extension[]
+	 */
+	public function getValidExtensions(array $supportedVersions, bool $useCache = true): array {
+		$extensions = $this->getAllExtensions($useCache);
+		foreach ($extensions as $index => $extension) {
+			try {
+				if ($extension->isAbandoned()) {
+					unset($extensions[$index]);
+				} elseif ($extension->isOutdated($supportedVersions)) {
+					unset($extensions[$index]);
+				} elseif ($extension->isLanguagePack()) {
+					unset($extensions[$index]);
+				}
+			} /* @noinspection PhpRedundantCatchClauseInspection */ catch (UnprocessableExtensionInterface $exception) {
+				Yii::warning($exception->getMessage());
+				unset($extensions[$index]);
+			}
+		}
+
+		return $extensions;
 	}
 
 	private function getClient(): HttpClientInterface {
@@ -108,7 +134,7 @@ class ExtensionsRepository extends Component {
 	}
 
 	public function getExtension(string $id, bool $useCache = true): ?Extension {
-		return $this->getExtensions($useCache)[$id] ?? null;
+		return $this->getAllExtensions($useCache)[$id] ?? null;
 	}
 
 	public function getPackagistData(string $name): ?SearchResult {
