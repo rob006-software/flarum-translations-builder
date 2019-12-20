@@ -66,6 +66,29 @@ class JanitorController extends Controller {
 		}
 	}
 
+	public function actionComponents(string $configFile = '@app/translations/config.php') {
+		$translations = $this->getTranslations($configFile);
+
+		$extensions = Yii::$app->extensionsRepository->getValidExtensions(
+			$translations->getSupportedVersions(),
+			$this->useCache
+		);
+
+		$found = false;
+		foreach ($translations->getProjects() as $project) {
+			foreach ($project->getComponents() as $component) {
+				if ($component->isExtension() && !isset($extensions[$component->getId()])) {
+					$found = true;
+					echo $component->getId(), "\n";
+				}
+			}
+		}
+
+		if (!$found) {
+			echo "No outdated components found.\n";
+		}
+	}
+
 	private function getTranslations(string $configFile): Translations {
 		$translations = new Translations(
 			Yii::$app->params['translationsRepository'],
