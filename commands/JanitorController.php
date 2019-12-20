@@ -15,8 +15,12 @@ use app\models\ForkRepository;
 use app\models\Translations;
 use Yii;
 use yii\console\Controller;
+use yii\helpers\FileHelper;
 use function array_combine;
 use function array_merge;
+use function filemtime;
+use function strtotime;
+use function unlink;
 
 /**
  * Class JanitorController.
@@ -28,6 +32,10 @@ class JanitorController extends Controller {
 	public $useCache = false;
 
 	public function options($actionId) {
+		if ($actionId === 'logs') {
+			return parent::options($actionId);
+		}
+
 		return array_merge(parent::options($actionId), [
 			'useCache',
 		]);
@@ -86,6 +94,15 @@ class JanitorController extends Controller {
 
 		if (!$found) {
 			echo "No outdated components found.\n";
+		}
+	}
+
+	public function actionLogs() {
+		$files = FileHelper::findFiles(APP_ROOT . '/runtime/git-logs');
+		foreach ($files as $file) {
+			if (filemtime($file) < strtotime('-1 month')) {
+				unlink($file);
+			}
 		}
 	}
 

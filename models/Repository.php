@@ -49,8 +49,8 @@ class Repository {
 		$gitWrapper = new GitWrapper();
 
 		$log = new Logger('git');
-		$date = date('Y-m');
-		$log->pushHandler(new StreamHandler(APP_ROOT . "/runtime/git-logs/{$this->getName()}-$date.log", Logger::DEBUG));
+		$date = date('Y-m-d');
+		$log->pushHandler(new StreamHandler(APP_ROOT . "/runtime/git-logs/{$this->getName()}-$date.log", Logger::INFO));
 		$gitWrapper->addLoggerEventSubscriber(new GitLoggerEventSubscriber($log));
 
 		if (file_exists($this->workingCopyDir)) {
