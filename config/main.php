@@ -46,6 +46,8 @@ return [
 			'targets' => [
 				[
 					'class' => FileTarget::class,
+					'maxFileSize' => 1024,
+					'maxLogFiles' => 3,
 					'logVars' => [],
 					'levels' => ['warning'],
 					'except' => [
@@ -54,6 +56,8 @@ return [
 				],
 				[
 					'class' => FileTarget::class,
+					'maxFileSize' => 1024,
+					'maxLogFiles' => 3,
 					'logFile' => '@runtime/logs/error.log',
 					'levels' => ['error'],
 					'except' => [
@@ -62,6 +66,8 @@ return [
 				],
 				[
 					'class' => FileTarget::class,
+					'maxFileSize' => 1024,
+					'maxLogFiles' => 3,
 					'logVars' => [],
 					'levels' => ['error', 'warning'],
 					'logFile' => '@app/runtime/logs/http.log',
