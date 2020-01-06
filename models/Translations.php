@@ -58,12 +58,17 @@ final class Translations {
 		$this->dir = $config['dir'];
 		$this->sourcesDir = $config['sourcesDir'];
 		$this->translationsDir = $config['translationsDir'];
-		$this->languages = $config['languages'];
+		$this->languages = array_keys($config['languages']);
 		$this->vendors = $config['vendors'];
 		$this->subsplits = $config['subsplits'];
 		$this->supportedVersions = $config['supportedVersions'];
 		foreach ($config['projects'] as $projectId => $projectConfig) {
-			$languages = ArrayHelper::remove($projectConfig, '__languages', $this->languages);
+			$languages = [];
+			foreach ($config['languages'] as $language => $languageConfig) {
+				if (isset($languageConfig[$projectId])) {
+					$languages[$language] = $languageConfig[$projectId];
+				}
+			}
 			$sourcesDir = ArrayHelper::remove($projectConfig, '__sourcesDir', "$this->sourcesDir/$projectId");
 			$translationsDir = ArrayHelper::remove($projectConfig, '__translationsDir', "$this->translationsDir/$projectId");
 			$weblateId = ArrayHelper::remove($projectConfig, '__weblateId', $projectId);

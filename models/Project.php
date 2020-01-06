@@ -28,7 +28,6 @@ use Yii;
 use yii\base\Exception;
 use yii\base\InvalidArgumentException;
 use yii\base\InvalidConfigException;
-use yii\helpers\ArrayHelper;
 use function file_exists;
 use function file_get_contents;
 use function json_decode;
@@ -58,7 +57,7 @@ final class Project {
 	 * @param string $id
 	 * @param string $weblateId
 	 * @param array $components
-	 * @param string[] $languages
+	 * @param array $languagesConfig
 	 * @param string $sourcesDir
 	 * @param string $translationsDir
 	 * @throws InvalidConfigException
@@ -67,26 +66,32 @@ final class Project {
 		string $id,
 		string $weblateId,
 		array $components,
-		array $languages,
+		array $languagesConfig,
 		string $sourcesDir,
 		string $translationsDir
 	) {
 		$this->id = $id;
 		$this->weblateId = $weblateId;
-		$this->languages = $languages;
+		$this->languages = array_keys($languagesConfig);
 		$this->sourcesDir = $sourcesDir;
 		$this->translationsDir = $translationsDir;
 
 		foreach ($components as $componentId => $componentConfig) {
+			$languages = [];
+			foreach ($languagesConfig as $language => $languageComponents) {
+				if (in_array($componentId, $languageComponents)) {
+					$languages[] = $language;
+				}
+			}
+
 			if (is_string($componentConfig)) {
 				$this->components[$componentId] = new Component([$componentConfig], $componentId, $id, $languages);
 			} elseif (is_array($componentConfig)) {
-				$translationLanguages = ArrayHelper::remove($componentConfig, 'languages', $languages);
 				$this->components[$componentId] = new Component(
 					$componentConfig,
 					$componentId,
 					$id,
-					$translationLanguages
+					$languages
 				);
 			} else {
 				throw new InvalidConfigException('Invalid $config: ' . readable::value($componentConfig) . '.');
