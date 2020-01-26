@@ -11,6 +11,8 @@
 
 use app\components\extensions\ExtensionsRepository;
 use app\components\GithubApi;
+use app\components\GitlabApi;
+use yii\caching\ArrayCache;
 use yii\caching\FileCache;
 use yii\db\Connection;
 use yii\log\FileTarget;
@@ -34,6 +36,9 @@ return [
 	'components' => [
 		'cache' => [
 			'class' => FileCache::class,
+		],
+		'arrayCache' => [
+			'class' => ArrayCache::class,
 		],
 		'mailer' => [
 			'class' => Mailer::class,
@@ -100,6 +105,9 @@ return [
 		],
 		'githubApi' => [
 			'class' => GithubApi::class,
+		],
+		'gitlabApi' => [
+			'class' => GitlabApi::class,
 		],
 	],
 	'params' => [

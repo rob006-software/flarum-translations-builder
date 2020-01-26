@@ -11,20 +11,26 @@
 
 namespace app\components\extensions;
 
-use app\components\extensions\exceptions\GithubApiException;
+use app\components\extensions\exceptions\InvalidPackageNameException;
 use app\components\extensions\exceptions\InvalidRepositoryUrlException;
 use app\components\extensions\exceptions\UnableLoadComposerJsonException;
 use app\components\extensions\exceptions\UnprocessableExtensionInterface;
 use app\models\Extension;
 use app\models\packagist\SearchResult;
-use Github\Exception\RuntimeException as GithubRuntimeException;
+use Composer\Semver\Semver;
+use Composer\Semver\VersionParser;
 use mindplay\readable;
 use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Contracts\HttpClient\Exception\HttpExceptionInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
+use UnexpectedValueException;
 use Yii;
 use yii\base\Component;
+use yii\helpers\ArrayHelper;
+use function array_filter;
+use function count;
 use function json_decode;
+use function reset;
 use function strlen;
 use function strncmp;
 
@@ -35,8 +41,10 @@ use function strncmp;
  */
 class ExtensionsRepository extends Component {
 
-	public $packagistCacheDuration = 6 * 60 * 60;
-	public $githubCacheDuration = 6 * 60 * 60;
+	public const NO_TRANSLATION_FILE = 'no-translation-source.yml';
+
+	public $packagistCacheDuration = 3600;
+	public $githubCacheDuration = 3600;
 
 	private $_extensions;
 	private $_client;
@@ -70,9 +78,9 @@ class ExtensionsRepository extends Component {
 			try {
 				if ($extension->isAbandoned()) {
 					unset($extensions[$index]);
-				} elseif ($extension->isOutdated($supportedVersions)) {
-					unset($extensions[$index]);
 				} elseif ($extension->isLanguagePack()) {
+					unset($extensions[$index]);
+				} elseif ($extension->isOutdated($supportedVersions)) {
 					unset($extensions[$index]);
 				}
 			} /* @noinspection PhpRedundantCatchClauseInspection */ catch (UnprocessableExtensionInterface $exception) {
@@ -154,6 +162,22 @@ class ExtensionsRepository extends Component {
 		}, $this->packagistCacheDuration);
 	}
 
+	public function getPackagistReleaseData(string $name, string $version): ?array {
+		$data = Yii::$app->arrayCache->getOrSet(__METHOD__ . '#' . $name, function () use ($name) {
+			try {
+				return $this->getClient()->request('GET', "https://repo.packagist.org/p/{$name}.json")->toArray();
+			} catch (HttpExceptionInterface $exception) {
+				throw new InvalidPackageNameException(
+					"Unable to get Packagist data from: https://repo.packagist.org/p/{$name}.json.",
+					$exception->getCode(),
+					$exception
+				);
+			}
+		});
+
+		return $data['packages'][$name][$version] ?? null;
+	}
+
 	public function getComposerJsonData(string $repositoryUrl, bool $refresh = false): array {
 		$callback = function () use ($repositoryUrl): array {
 			$url = $this->generateRawUrl($repositoryUrl, 'composer.json');
@@ -188,7 +212,7 @@ class ExtensionsRepository extends Component {
 		return Yii::$app->cache->getOrSet(__METHOD__ . '#' . $repositoryUrl, $callback, $this->githubCacheDuration);
 	}
 
-	public function detectTranslationSourceUrl(string $repositoryUrl): string {
+	public function detectTranslationSourceUrl(string $repositoryUrl, ?string $branch = null): string {
 		$possiblePaths = [
 			'resources/locale/en.yml',
 			'locale/en.yml',
@@ -196,14 +220,63 @@ class ExtensionsRepository extends Component {
 			'locale/en.yaml',
 		];
 		foreach ($possiblePaths as $possiblePath) {
-			$url = $this->generateRawUrl($repositoryUrl, $possiblePath);
+			$url = $this->generateRawUrl($repositoryUrl, $possiblePath, $branch);
 			$response = $this->getClient()->request('GET', $url);
 			if ($response->getStatusCode() < 300 && $response->getContent() !== '') {
 				return $url;
 			}
 		}
 
-		return $this->generateRawUrl($repositoryUrl, 'no-translation-source.yml');
+		return $this->generateRawUrl($repositoryUrl, static::NO_TRANSLATION_FILE);
+	}
+
+	/**
+	 * @param string $repositoryUrl
+	 * @param string[]|null $prefixes
+	 * @return string|null
+	 */
+	public function detectLastTag(string $repositoryUrl, ?array $prefixes = null): ?string {
+		$tags = Yii::$app->arrayCache->getOrSet(__METHOD__ . '#' . $repositoryUrl, function () use ($repositoryUrl) {
+			if ($this->isGithubRepo($repositoryUrl)) {
+				$tags = ArrayHelper::getColumn(Yii::$app->githubApi->getTags($repositoryUrl), 'name');
+			} elseif ($this->isGitlabRepo($repositoryUrl)) {
+				$tags = ArrayHelper::getColumn(Yii::$app->gitlabApi->getTags($repositoryUrl), 'name');
+			} else {
+				throw new InvalidRepositoryUrlException('Invalid repository URL: ' . readable::value($repositoryUrl) . '.');
+			}
+
+			// remove non-semver tags
+			$parser = new VersionParser();
+			return array_filter($tags, static function ($name) use ($parser) {
+				try {
+					$parser->normalize($name);
+					return true;
+				} catch (UnexpectedValueException $exception) {
+					return false;
+				}
+			});
+		});
+
+		if ($prefixes !== null) {
+			$tags = array_filter($tags, static function (string $item) use ($prefixes) {
+				foreach ($prefixes as $prefix) {
+					if (strncmp($prefix, $item, strlen($prefix)) === 0) {
+						return true;
+					}
+				}
+
+				return false;
+			});
+		}
+
+		if (empty($tags)) {
+			return null;
+		}
+		if (count($tags) === 1) {
+			return reset($tags);
+		}
+
+		return Semver::rsort($tags)[0];
 	}
 
 	private function generateRawUrl(string $repositoryUrl, string $file, ?string $branch = null): string {
@@ -212,20 +285,11 @@ class ExtensionsRepository extends Component {
 			$path = substr($path, 0, -4);
 		}
 		if ($this->isGithubRepo($repositoryUrl)) {
-			try {
-				$branch = $branch ?? Yii::$app->githubApi->getRepoInfo($repositoryUrl)['default_branch'] ?? 'master';
-			} catch (GithubRuntimeException $exception) {
-				throw new GithubApiException(
-					'Unable to get GitHub API data for ' . readable::value($repositoryUrl) . '.',
-					$exception->getCode(),
-					$exception
-				);
-			}
+			$branch = $branch ?? Yii::$app->githubApi->getRepoInfo($repositoryUrl)['default_branch'] ?? 'master';
 			return "https://raw.githubusercontent.com/{$path}/{$branch}/{$file}";
 		}
 		if ($this->isGitlabRepo($repositoryUrl)) {
-			// @todo add gitlab API support ot check branch
-			$branch = $branch ?? 'master';
+			$branch = $branch ?? Yii::$app->gitlabApi->getDefaultBranch($repositoryUrl) ?? 'master';
 			return "https://gitlab.com/{$path}/raw/{$branch}/{$file}";
 		}
 

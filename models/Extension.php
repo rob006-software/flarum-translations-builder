@@ -86,10 +86,18 @@ final class Extension {
 	}
 
 	public function isOutdated(array $supportedReleases): bool {
-		$required = $this->getComposerValue('require.flarum/core');
+		$lastTag = Yii::$app->extensionsRepository->detectLastTag($this->repositoryUrl);
+		if ($lastTag === null) {
+			return true;
+		}
+		$data = Yii::$app->extensionsRepository->getPackagistReleaseData($this->getComposerValue('name'), $lastTag);
+		if ($data === null || !isset($data['require']['flarum/core'])) {
+			return true;
+		}
+		$requiredFlarum = $data['require']['flarum/core'];
 		foreach ($supportedReleases as $release) {
 			// @todo this check is quite naive - we may need to replace it by regular constraint resolving
-			if (strpos($required, $release) !== false) {
+			if (strpos($requiredFlarum, $release) !== false) {
 				return false;
 			}
 		}
@@ -112,8 +120,16 @@ final class Extension {
 		return 'various';
 	}
 
-	public function getTranslationSourceUrl(): string {
-		return Yii::$app->extensionsRepository->detectTranslationSourceUrl($this->repositoryUrl);
+	public function getTranslationSourceUrl(?string $branchName = null): string {
+		return Yii::$app->extensionsRepository->detectTranslationSourceUrl($this->repositoryUrl, $branchName);
+	}
+
+	public function getStableTranslationSourceUrl(?array $prefixes = null): ?string {
+		$defaultTag = Yii::$app->extensionsRepository->detectLastTag($this->repositoryUrl, $prefixes);
+		if ($defaultTag === null) {
+			return null;
+		}
+		return $this->getTranslationSourceUrl($defaultTag);
 	}
 
 	private function getComposerValue(string $key, $default = null) {

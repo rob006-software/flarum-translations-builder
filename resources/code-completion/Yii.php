@@ -11,6 +11,8 @@
 
 use app\components\extensions\ExtensionsRepository;
 use app\components\GithubApi;
+use app\components\GitlabApi;
+use yii\caching\ArrayCache;
 use yii\mutex\FileMutex;
 
 /**
@@ -34,8 +36,12 @@ abstract class BaseApplication extends \yii\base\Application {
 	public $extensionsRepository;
 	/** @var GithubApi */
 	public $githubApi;
+	/** @var GitlabApi */
+	public $gitlabApi;
 	/** @var FileMutex */
 	public $mutex;
+	/** @var ArrayCache */
+	public $arrayCache;
 }
 
 class WebApplication extends \yii\web\Application {

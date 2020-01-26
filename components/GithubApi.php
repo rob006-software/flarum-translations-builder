@@ -11,8 +11,10 @@
 
 namespace app\components;
 
+use app\components\extensions\exceptions\GithubApiException;
 use Cache\Adapter\Filesystem\FilesystemCachePool;
 use Github\Client;
+use Github\Exception\RuntimeException as GithubRuntimeException;
 use League\Flysystem\Adapter\Local;
 use League\Flysystem\Filesystem;
 use mindplay\readable;
@@ -50,7 +52,28 @@ class GithubApi extends Component {
 
 	public function getRepoInfo(string $repoUrl): array {
 		[$userName, $repoName] = $this->explodeRepoUrl($repoUrl);
-		return $this->githubApiClient->repo()->show($userName, $repoName);
+		try {
+			return $this->githubApiClient->repo()->show($userName, $repoName);
+		} catch (GithubRuntimeException $exception) {
+			throw new GithubApiException(
+				'Unable to get GitHub API data for ' . readable::value($repoUrl) . '.',
+				$exception->getCode(),
+				$exception
+			);
+		}
+	}
+
+	public function getTags(string $repoUrl): array {
+		[$userName, $repoName] = $this->explodeRepoUrl($repoUrl);
+		try {
+			return $this->githubApiClient->repo()->tags($userName, $repoName);
+		} catch (GithubRuntimeException $exception) {
+			throw new GithubApiException(
+				'Unable to get GitHub API data for ' . readable::value($repoUrl) . '.',
+				$exception->getCode(),
+				$exception
+			);
+		}
 	}
 
 	public function openPullRequest(string $targetRepository, string $sourceRepository, string $branch, array $settings): array {
@@ -113,7 +136,7 @@ class GithubApi extends Component {
 		} elseif (strncmp($repoUrl, 'git@github.com:', 15) === 0) {
 			$path = trim(substr($repoUrl, 15), '/');
 		} else {
-			throw new InvalidArgumentException('Invalid GiHub repo URL: ' . readable::value($repoUrl) . '.');
+			throw new InvalidArgumentException('Invalid GitHub repo URL: ' . readable::value($repoUrl) . '.');
 		}
 
 		if (substr($path, '-4') === '.git') {

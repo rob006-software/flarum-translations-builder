@@ -20,10 +20,6 @@ use Dont\DontCallStatic;
 use Dont\DontGet;
 use Dont\DontSet;
 use Yii;
-use function array_keys;
-use function file_get_contents;
-use function file_put_contents;
-use function strcmp;
 
 /**
  * Class PullRequestGenerator.
@@ -56,6 +52,9 @@ class PullRequestGenerator {
 	 */
 	public function generateForNewExtensions(array $extensions, int $limit): void {
 		foreach ($extensions as $extension) {
+			if ($extension->getStableTranslationSourceUrl() === null) {
+				continue;
+			}
 			$branchName = "new/{$extension->getId()}";
 			if ($this->repository->hasBranch($branchName)) {
 				if ($this->updateBranch($branchName, $extension)) {
@@ -94,35 +93,8 @@ class PullRequestGenerator {
 		unset($components['core']);
 
 		$filePath = $this->repository->getPath() . "/config/{$project->getId()}-project.php";
-		$config = require $filePath;
-		$configContent = file_get_contents($filePath);
-		if (isset($config[$extension->getId()])) {
-			$configContent = strtr($configContent, [
-				"\n\t'{$extension->getId()}' => '{$config[$extension->getId()]}'," => "\n\t'{$extension->getId()}' => '{$extension->getTranslationSourceUrl()}',",
-			]);
-		} else {
-			$position = $this->findPrecedingComponent(array_keys($components), $extension->getId());
-			if ($position === null) {
-				$configContent = strtr($configContent, [
-					"\n\t/* extensions list end */" => "\n\t'{$extension->getId()}' => '{$extension->getTranslationSourceUrl()}',\n\t/* extensions list end */",
-				]);
-			} else {
-				$configContent = strtr($configContent, [
-					"\n\t'{$position}' => " => "\n\t'{$extension->getId()}' => '{$extension->getTranslationSourceUrl()}',\n\t'{$position}' => ",
-				]);
-			}
-		}
-		file_put_contents($filePath, $configContent);
-	}
-
-	private function findPrecedingComponent(array $components, string $subject): ?string {
-		foreach ($components as $component) {
-			if (strcmp($component, $subject) > 0) {
-				return $component;
-			}
-		}
-
-		return null;
+		$generator = new ConfigGenerator($filePath, $components);
+		$generator->addExtension($extension);
 	}
 
 	private function openPullRequestForNewExtension(string $branchName, Extension $extension): void {
