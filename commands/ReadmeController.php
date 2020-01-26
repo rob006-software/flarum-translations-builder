@@ -102,6 +102,7 @@ class ReadmeController extends ConsoleController {
 						if (
 							(!($subsplit instanceof LanguageSubsplit) || $component->isValidForLanguage($subsplit->getLanguage()))
 							&& $subsplit->isValidForComponent($project->getId(), $component->getId())
+							&& $subsplit->hasTranslationForComponent($component->getId())
 						) {
 							$extension = Yii::$app->extensionsRepository->getExtension($component->getId());
 							if ($extension !== null) {

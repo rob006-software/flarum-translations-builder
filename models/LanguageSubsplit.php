@@ -20,6 +20,7 @@ use Symfony\Component\Translation\MessageCatalogue;
 use Symfony\Component\Translation\Translator;
 use function array_filter;
 use function assert;
+use function file_exists;
 
 /**
  * Class LanguageSubsplit.
@@ -108,6 +109,10 @@ final class LanguageSubsplit extends Subsplit {
 			'as_tree' => true,
 			'inline' => 10,
 		]);
+	}
+
+	public function hasTranslationForComponent(string $componentId): bool {
+		return file_exists($this->getDir() . $this->getPath() . "/$componentId.yml");
 	}
 
 	public function getLanguage(): string {
