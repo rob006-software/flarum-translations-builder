@@ -38,7 +38,7 @@ class SelfUpdateController extends ConsoleController {
 		$repository = new Repository(Yii::$app->params['repository'], 'master', APP_ROOT);
 		$repository->update();
 
-		$process = new Process(['/usr/local/bin/composer', 'install', '-o'], APP_ROOT);
+		$process = new Process(['/usr/local/bin/composer', 'install'], APP_ROOT);
 		$process->setTimeout(5 * 60);
 		$process->mustRun();
 
