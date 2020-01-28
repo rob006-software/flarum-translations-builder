@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace app\components\extensions;
 
-use app\models\Component;
 use app\models\Extension;
 use Dont\DontCall;
 use Dont\DontCallStatic;
@@ -29,7 +28,7 @@ use function substr;
  *
  * @author Robert Korulczyk <robert@korulczyk.pl>
  */
-class ConfigGenerator {
+final class ConfigGenerator {
 
 	use DontCall;
 	use DontCallStatic;
@@ -37,17 +36,9 @@ class ConfigGenerator {
 	use DontSet;
 
 	private $configPath;
-	private $availableComponents;
 
-	/**
-	 * ConfigGenerator constructor.
-	 *
-	 * @param string $configFilePath
-	 * @param Component[] $availableComponents
-	 */
-	public function __construct(string $configFilePath, array $availableComponents) {
+	public function __construct(string $configFilePath) {
 		$this->configPath = $configFilePath;
-		$this->availableComponents = $availableComponents;
 	}
 
 	public function updateExtension(Extension $extension): void {
@@ -84,13 +75,16 @@ class ConfigGenerator {
 	}
 
 	private function findPrecedingComponent(string $subject): ?string {
-		$config = require $this->configPath;
-		foreach ($this->availableComponents as $component) {
+		foreach (require $this->configPath as $componentId => $config) {
 			if (
-				strcmp($component->getId(), $subject) > 0
-				&& isset($config[$component->getId()])
+				// ignore internal components and config keys
+				strncmp($componentId, '__', 2) === 0
+				|| in_array($componentId, ['core', 'validation'])
 			) {
-				return $component->getId();
+				continue;
+			}
+			if (strcmp($componentId, $subject) > 0) {
+				return $componentId;
 			}
 		}
 
@@ -113,7 +107,7 @@ class ConfigGenerator {
 				$extensionConfig[$key] = $extension->getStableTranslationSourceUrl([substr($key, 4)]);
 			}
 		}
-		$extensionConfig['branch'] =  $extension->getTranslationSourceUrl();
+		$extensionConfig['branch'] = $extension->getTranslationSourceUrl();
 		foreach ($extensionConfig as $key => $url) {
 			if (strncmp($key, 'branch:', 7) === 0) {
 				$extensionConfig[$key] = $extension->getTranslationSourceUrl(substr($key, 4));
