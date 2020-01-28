@@ -42,7 +42,7 @@ class GitlabApi extends Component {
 				->toArray();
 		} catch (HttpExceptionInterface $exception) {
 			throw new GitlabApiException(
-				"Unable to get GitLab API data for https://gitlab.com/api/v4/projects/$repoName/repository/tags/.",
+				"Unable to get GitLab API data for https://gitlab.com/api/v4/projects/$repoName/repository/branches/.",
 				$exception->getCode(),
 				$exception
 			);
