@@ -106,6 +106,15 @@ final class Project {
 		return $this->components;
 	}
 
+	/**
+	 * @return Component[]
+	 */
+	public function getExtensionsComponents(): array {
+		return array_filter($this->components, static function (Component $component) {
+			return $component->isExtension();
+		});
+	}
+
 	public function getComponent(string $id): Component {
 		if (!isset($this->components[$id])) {
 			throw new InvalidArgumentException('There is no component with ' . readable::value($id) . ' ID.');
@@ -204,8 +213,8 @@ final class Project {
 	}
 
 	private function validateSourcesChanges(MessageCatalogue $catalogue) {
-		foreach ($this->getComponents() as $component) {
-			if (!$component->isExtension() || !file_exists($this->getComponentSourcePath($component))) {
+		foreach ($this->getExtensionsComponents() as $component) {
+			if (!file_exists($this->getComponentSourcePath($component))) {
 				continue;
 			}
 			$new = ArrayConverter::expandToTree($catalogue->all($component->getId()));

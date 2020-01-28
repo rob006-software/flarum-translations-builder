@@ -58,7 +58,7 @@ class ReadmeController extends ConsoleController {
 		$readme = file_get_contents($translations->getDir() . '/README.md');
 		foreach ($translations->getProjects() as $project) {
 			$generator = new MainReadmeGenerator($project, $translations->getVendors($project->getId()));
-			foreach ($project->getComponents() as $component) {
+			foreach ($project->getExtensionsComponents() as $component) {
 				$extension = Yii::$app->extensionsRepository->getExtension($component->getId());
 				if ($extension !== null) {
 					$generator->addExtension($extension);
@@ -98,7 +98,7 @@ class ReadmeController extends ConsoleController {
 				$readme = file_get_contents($subsplit->getDir() . '/README.md');
 				foreach ($translations->getProjects() as $project) {
 					$generator = $subsplit->getReadmeGenerator($translations, $project);
-					foreach ($project->getComponents() as $component) {
+					foreach ($project->getExtensionsComponents() as $component) {
 						if (
 							(!($subsplit instanceof LanguageSubsplit) || $component->isValidForLanguage($subsplit->getLanguage()))
 							&& $subsplit->isValidForComponent($project->getId(), $component->getId())

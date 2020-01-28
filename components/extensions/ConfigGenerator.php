@@ -50,7 +50,7 @@ class ConfigGenerator {
 		$this->availableComponents = $availableComponents;
 	}
 
-	public function addExtension(Extension $extension): void {
+	public function updateExtension(Extension $extension): void {
 		$config = require $this->configPath;
 		$configContent = file_get_contents($this->configPath);
 		$position = $this->findPrecedingComponent($extension->getId());

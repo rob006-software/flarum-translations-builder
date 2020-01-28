@@ -84,8 +84,8 @@ class JanitorController extends Controller {
 
 		$found = false;
 		foreach ($translations->getProjects() as $project) {
-			foreach ($project->getComponents() as $component) {
-				if ($component->isExtension() && !isset($extensions[$component->getId()])) {
+			foreach ($project->getExtensionsComponents() as $component) {
+				if (!isset($extensions[$component->getId()])) {
 					$found = true;
 					echo $component->getId(), "\n";
 				}

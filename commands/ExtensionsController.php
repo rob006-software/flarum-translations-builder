@@ -45,7 +45,7 @@ class ExtensionsController extends ConsoleController {
 
 		$extensions = Yii::$app->extensionsRepository->getAllExtensions($this->useCache);
 		foreach ($translations->getProjects() as $project) {
-			foreach ($project->getComponents() as $component) {
+			foreach ($project->getExtensionsComponents() as $component) {
 				if (!isset($extensions[$component->getId()])) {
 					continue;
 				}
@@ -69,7 +69,7 @@ class ExtensionsController extends ConsoleController {
 			$this->useCache
 		);
 		foreach ($translations->getProjects() as $project) {
-			foreach ($project->getComponents() as $component) {
+			foreach ($project->getExtensionsComponents() as $component) {
 				unset($extensions[$component->getId()]);
 			}
 		}

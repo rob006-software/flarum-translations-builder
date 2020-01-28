@@ -89,12 +89,9 @@ class PullRequestGenerator {
 
 	private function addExtensionToConfig(Extension $extension): void {
 		$project = $this->translations->getProject($extension->getProjectId());
-		$components = $project->getComponents();
-		unset($components['core']);
-
 		$filePath = $this->repository->getPath() . "/config/{$project->getId()}-project.php";
-		$generator = new ConfigGenerator($filePath, $components);
-		$generator->addExtension($extension);
+		$generator = new ConfigGenerator($filePath, $project->getExtensionsComponents());
+		$generator->updateExtension($extension);
 	}
 
 	private function openPullRequestForNewExtension(string $branchName, Extension $extension): void {
