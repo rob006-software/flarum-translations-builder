@@ -14,7 +14,6 @@ namespace app\components\extensions;
 use app\components\GithubApi;
 use app\models\Extension;
 use app\models\ForkRepository;
-use app\models\Translations;
 use Dont\DontCall;
 use Dont\DontCallStatic;
 use Dont\DontGet;
@@ -34,15 +33,13 @@ class PullRequestGenerator {
 	use DontSet;
 
 	private $repository;
-	private $translations;
 	private $githubApi;
 
-	public function __construct(ForkRepository $repository, Translations $translations, ?GithubApi $githubApi = null) {
+	public function __construct(ForkRepository $repository, ?GithubApi $githubApi = null) {
 		$repository->rebase();
 		$repository->syncBranchesWithRemote();
 
 		$this->repository = $repository;
-		$this->translations = $translations;
 		$this->githubApi = $githubApi ?? Yii::$app->githubApi;
 	}
 

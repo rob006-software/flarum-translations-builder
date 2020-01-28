@@ -80,7 +80,7 @@ class ExtensionsController extends ConsoleController {
 			null,
 			APP_ROOT . '/runtime/translations-fork'
 		);
-		$generator = new PullRequestGenerator($repository, $translations);
+		$generator = new PullRequestGenerator($repository);
 		$generator->generateForNewExtensions($extensions, $limit);
 
 		$this->updateLimit($token);
