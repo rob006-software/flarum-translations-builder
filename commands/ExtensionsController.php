@@ -73,6 +73,11 @@ class ExtensionsController extends ConsoleController {
 				unset($extensions[$component->getId()]);
 			}
 		}
+		foreach ($extensions as $index => $extension) {
+			if (!$extension->hasTranslationSource()) {
+				unset($extensions[$index]);
+			}
+		}
 
 		$repository = new ForkRepository(
 			Yii::$app->params['translationsForkRepository'],

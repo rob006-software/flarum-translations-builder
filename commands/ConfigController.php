@@ -53,15 +53,9 @@ class ConfigController extends ConsoleController {
 		$translations = $this->getTranslations($configFile);
 
 		foreach ($translations->getProjects() as $project) {
-			if ($project->getId() === 'flarum') {
-				// do not update core project - all translations are kept in english language pack
-				continue;
-			}
-
 			if (empty($projects) || in_array($project->getId(), $projects, true)) {
 				$configGenerator = new ConfigGenerator(
-					$translations->getDir() . '/config/' . $project->getId() . '-project.php',
-					$project->getExtensionsComponents()
+					$translations->getDir() . '/config/' . $project->getId() . '-project.php'
 				);
 
 				foreach ($project->getExtensionsComponents() as $component) {

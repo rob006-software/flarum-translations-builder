@@ -212,13 +212,13 @@ class ExtensionsRepository extends Component {
 		return Yii::$app->cache->getOrSet(__METHOD__ . '#' . $repositoryUrl, $callback, $this->githubCacheDuration);
 	}
 
-	public function detectTranslationSourceUrl(string $repositoryUrl, ?string $branch = null): string {
-		$possiblePaths = [
-			'resources/locale/en.yml',
-			'locale/en.yml',
-			'resources/locale/en.yaml',
-			'locale/en.yaml',
-		];
+	public function detectTranslationSourceUrl(string $repositoryUrl, ?string $branch = null, ?array $possiblePaths = null): string {
+		$possiblePaths = $possiblePaths ?? [
+				'resources/locale/en.yml',
+				'locale/en.yml',
+				'resources/locale/en.yaml',
+				'locale/en.yaml',
+			];
 		foreach ($possiblePaths as $possiblePath) {
 			$url = $this->generateRawUrl($repositoryUrl, $possiblePath, $branch);
 			$response = $this->getClient()->request('GET', $url);

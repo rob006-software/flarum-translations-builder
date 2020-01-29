@@ -11,6 +11,7 @@
 
 namespace app\models;
 
+use app\components\extensions\ExtensionsRepository;
 use app\components\translations\JsonFileDumper;
 use app\components\translations\YamlLoader;
 use Dont\DontCall;
@@ -155,8 +156,11 @@ final class Project {
 		foreach ($this->getComponents() as $component) {
 			// reverse array to process top record at the end - it will overwrite any previous translation
 			foreach (array_reverse($component->getSources()) as $source) {
-				$response = $client->request('GET', $source);
-				$translator->addResource('yaml', $response->getContent(), 'en', $component->getId());
+				// don't try to download URLs with placeholder for missing translation
+				if (strpos($source, ExtensionsRepository::NO_TRANSLATION_FILE) === false) {
+					$response = $client->request('GET', $source);
+					$translator->addResource('yaml', $response->getContent(), 'en', $component->getId());
+				}
 			}
 		}
 		return $translator;

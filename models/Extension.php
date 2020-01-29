@@ -11,6 +11,7 @@
 
 namespace app\models;
 
+use app\components\extensions\ExtensionsRepository;
 use app\components\extensions\IssueGenerator;
 use app\models\packagist\SearchResult;
 use Dont\DontCall;
@@ -21,6 +22,7 @@ use Yii;
 use yii\helpers\ArrayHelper;
 use yii\helpers\Inflector;
 use function strncmp;
+use function strpos;
 
 /**
  * Class Extension.
@@ -121,15 +123,30 @@ final class Extension {
 	}
 
 	public function getTranslationSourceUrl(?string $branchName = null): string {
+		if ($this->getProjectId() === 'flarum') {
+			return Yii::$app->extensionsRepository->detectTranslationSourceUrl('https://github.com/flarum/lang-english', $branchName, [
+				"locale/{$this->getId()}.yml"
+			]);
+		}
+
 		return Yii::$app->extensionsRepository->detectTranslationSourceUrl($this->repositoryUrl, $branchName);
 	}
 
 	public function getStableTranslationSourceUrl(?array $prefixes = null): ?string {
-		$defaultTag = Yii::$app->extensionsRepository->detectLastTag($this->repositoryUrl, $prefixes);
+		if ($this->getProjectId() === 'flarum') {
+			$defaultTag = Yii::$app->extensionsRepository->detectLastTag('https://github.com/flarum/lang-english', $prefixes);
+		} else {
+			$defaultTag = Yii::$app->extensionsRepository->detectLastTag($this->repositoryUrl, $prefixes);
+		}
 		if ($defaultTag === null) {
 			return null;
 		}
 		return $this->getTranslationSourceUrl($defaultTag);
+	}
+
+	public function hasTranslationSource(): bool {
+		$url = $this->getStableTranslationSourceUrl();
+		return $url !== null && strpos($url, ExtensionsRepository::NO_TRANSLATION_FILE) === false;
 	}
 
 	private function getComposerValue(string $key, $default = null) {

@@ -11,12 +11,14 @@
 
 namespace app\commands;
 
+use app\models\Extension;
 use app\models\ForkRepository;
 use app\models\Translations;
 use Yii;
 use yii\console\Controller;
 use yii\helpers\FileHelper;
 use function array_combine;
+use function array_filter;
 use function array_merge;
 use function filemtime;
 use function strtotime;
@@ -48,6 +50,10 @@ class JanitorController extends Controller {
 			$translations->getSupportedVersions(),
 			$this->useCache
 		);
+		$extensions = array_filter($extensions, static function (Extension $extension) {
+			return $extension->hasTranslationSource();
+		});
+
 		$repository = new ForkRepository(
 			Yii::$app->params['translationsForkRepository'],
 			Yii::$app->params['translationsRepository'],
@@ -81,6 +87,9 @@ class JanitorController extends Controller {
 			$translations->getSupportedVersions(),
 			$this->useCache
 		);
+		$extensions = array_filter($extensions, static function (Extension $extension) {
+			return $extension->hasTranslationSource();
+		});
 
 		$found = false;
 		foreach ($translations->getProjects() as $project) {
