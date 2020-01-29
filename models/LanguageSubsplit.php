@@ -21,6 +21,7 @@ use Symfony\Component\Translation\Translator;
 use function array_filter;
 use function assert;
 use function file_exists;
+use function ksort;
 
 /**
  * Class LanguageSubsplit.
@@ -85,6 +86,7 @@ final class LanguageSubsplit extends Subsplit {
 					});
 
 					if (!empty($messages)) {
+						ksort($messages);
 						$translator->addResource('array', $messages, 'en', $component->getId());
 					}
 				}
