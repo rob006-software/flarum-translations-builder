@@ -158,8 +158,13 @@ final class Project {
 			foreach (array_reverse($component->getSources()) as $source) {
 				// don't try to download URLs with placeholder for missing translation
 				if (strpos($source, ExtensionsRepository::NO_TRANSLATION_FILE) === false) {
+					// @todo Catch and count 404 exceptions. After for example 5 errors we could run `config/update`
+					//       command to refresh URLs in config - this will prevent crashes after extensions
+					//       removes language packs from latest release or master branch.
 					$response = $client->request('GET', $source);
 					$translator->addResource('yaml', $response->getContent(), 'en', $component->getId());
+				} else {
+					Yii::warning("Skipped downloading $source.", __METHOD__ . '.skip');
 				}
 			}
 		}
