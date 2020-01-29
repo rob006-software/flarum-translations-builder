@@ -283,7 +283,7 @@ class ExtensionsRepository extends Component {
 
 	private function generateRawUrl(string $repositoryUrl, string $file, ?string $branch = null): string {
 		$path = trim(parse_url($repositoryUrl, PHP_URL_PATH), '/');
-		if (substr($path, '-4') === '.git') {
+		if (substr($path, -4) === '.git') {
 			$path = substr($path, 0, -4);
 		}
 		if ($this->isGithubRepo($repositoryUrl)) {

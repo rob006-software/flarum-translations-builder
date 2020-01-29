@@ -91,7 +91,7 @@ class GitlabApi extends Component {
 			throw new InvalidArgumentException('Invalid GitLab repo URL: ' . readable::value($repoUrl) . '.');
 		}
 
-		if (substr($path, '-4') === '.git') {
+		if (substr($path, -4) === '.git') {
 			$path = substr($path, 0, -4);
 		}
 		return $path;

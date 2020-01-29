@@ -141,7 +141,7 @@ class GithubApi extends Component {
 			throw new InvalidArgumentException('Invalid GitHub repo URL: ' . readable::value($repoUrl) . '.');
 		}
 
-		if (substr($path, '-4') === '.git') {
+		if (substr($path, -4) === '.git') {
 			$path = substr($path, 0, -4);
 		}
 		return explode('/', trim($path, '/'), 2);
