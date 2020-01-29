@@ -9,6 +9,8 @@
  * with this source code in the file LICENSE.
  */
 
+declare(strict_types=1);
+
 namespace app\models;
 
 use Dont\DontCall;
@@ -72,6 +74,9 @@ final class Translations {
 			$sourcesDir = ArrayHelper::remove($projectConfig, '__sourcesDir', "$this->sourcesDir/$projectId");
 			$translationsDir = ArrayHelper::remove($projectConfig, '__translationsDir', "$this->translationsDir/$projectId");
 			$weblateId = ArrayHelper::remove($projectConfig, '__weblateId', $projectId);
+			assert(is_string($sourcesDir));
+			assert(is_string($translationsDir));
+			assert(is_string($weblateId));
 			$this->projects[$projectId] = new Project(
 				$projectId,
 				$weblateId,

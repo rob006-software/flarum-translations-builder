@@ -9,6 +9,8 @@
  * with this source code in the file LICENSE.
  */
 
+declare(strict_types=1);
+
 use app\components\extensions\ExtensionsRepository;
 use app\components\GithubApi;
 use app\components\GitlabApi;
