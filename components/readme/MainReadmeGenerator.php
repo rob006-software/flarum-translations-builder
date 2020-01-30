@@ -32,7 +32,7 @@ final class MainReadmeGenerator extends ReadmeGenerator {
 		$output = "\n\n| Extension | Status |\n| --- | --- |\n";
 		foreach ($extensions as $extension) {
 			$output .= "| [{$extension->getName()}{$this->generateVendorName($extension)}]({$extension->getRepositoryUrl()}) ";
-			$icon = "![Translation status](https://weblate.rob006.net/widgets/{$this->getProject()->getWeblateId()}/-/{$extension->getId()}/svg-badge.svg)";
+			$icon = "![Translation status](https://weblate.rob006.net/widgets/{$this->getProject()->getWeblateId()}/-/{$extension->getId()}/multi-auto.svg)";
 			$output .= "| [$icon](https://weblate.rob006.net/projects/{$this->getProject()->getWeblateId()}/{$extension->getId()}/) ";
 			$output .= "|\n";
 		}
