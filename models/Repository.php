@@ -38,6 +38,10 @@ class Repository {
 	use DontGet;
 	use DontSet;
 
+	public const CHANGE_ADDED = 'A';
+	public const CHANGE_MODIFIED = 'M';
+	public const CHANGE_DELETED = 'D';
+
 	private $remote;
 	private $branch;
 	private $git;
@@ -92,6 +96,33 @@ class Repository {
 
 	public function getPath(): string {
 		return $this->workingCopyDir;
+	}
+
+	public function getTags(): array {
+		return $this->git->tags()->all();
+	}
+
+	public function getDiff(): string {
+		return $this->git->diff();
+	}
+
+	/**
+	 * @param string $reference
+	 * @return string[] Change types (M, A or D) indexed by files paths.
+	 */
+	public function getChangesFrom(string $reference): array {
+		$changes = explode("\n", $this->git->diff('--name-status', $reference));
+		$changedFiles = [];
+		foreach ($changes as $change) {
+			$change = trim($change);
+			if (!isset($change[0])) {
+				continue;
+			}
+
+			$changedFiles[trim(substr($change, 1))] = $change[0];
+		}
+
+		return $changedFiles;
 	}
 
 	protected function getWorkingCopy(): GitWorkingCopy {

@@ -91,6 +91,12 @@ class GithubApi extends Component {
 			]);
 	}
 
+	public function createRelease(string $repository, string $tagName, array $settings): array {
+		[$username, $repositoryName] = $this->explodeRepoUrl($repository);
+		return $this->githubApiClient->repos()->releases()
+			->create($username, $repositoryName, ['tag_name' => $tagName] + $settings);
+	}
+
 	public function addPullRequestComment(string $targetRepository, string $sourceRepository, string $branch, array $settings): array {
 		$pullRequest = $this->getPullRequestForBranch($targetRepository, $sourceRepository, $branch);
 		if ($pullRequest === null) {

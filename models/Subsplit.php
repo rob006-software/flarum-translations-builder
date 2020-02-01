@@ -14,10 +14,12 @@ declare(strict_types=1);
 namespace app\models;
 
 use app\components\readme\ReadmeGenerator;
+use app\components\release\ReleaseGenerator;
 use Dont\DontCall;
 use Dont\DontCallStatic;
 use Dont\DontGet;
 use Dont\DontSet;
+use yii\base\InvalidConfigException;
 
 /**
  * Class Subsplit.
@@ -36,17 +38,33 @@ abstract class Subsplit {
 	private $path;
 	private $components;
 	private $updateReadme;
+	private $releaseGenerator;
+	private $repositoryUrl;
 
-	public function __construct(string $id, string $repository, string $branch, string $path, ?array $components, ?bool $updateReadme = false) {
+	public function __construct(
+		string $id,
+		string $repository,
+		string $branch,
+		string $path,
+		?array $components,
+		?bool $updateReadme = false,
+		?string $releaseGenerator = null
+	) {
 		$this->id = $id;
 		$this->path = $path;
 		$this->components = $components;
 		$this->updateReadme = $updateReadme;
+		$this->releaseGenerator = $releaseGenerator;
+		$this->repositoryUrl = $repository;
 		$this->repository = new Repository($repository, $branch, APP_ROOT . "/runtime/subsplits/$id");
 	}
 
 	public function getRepository(): Repository {
 		return $this->repository;
+	}
+
+	public function getRepositoryUrl(): string {
+		return $this->repositoryUrl;
 	}
 
 	public function getId(): string {
@@ -73,4 +91,12 @@ abstract class Subsplit {
 	abstract public function split(Translations $translations): void;
 
 	abstract public function getReadmeGenerator(Translations $translations, Project $project): ReadmeGenerator;
+
+	public function createReleaseGenerator(): ReleaseGenerator {
+		if ($this->releaseGenerator === null) {
+			throw new InvalidConfigException('$releaseGenerator is not configured for this subsplit.');
+		}
+
+		return new $this->releaseGenerator($this);
+	}
 }
