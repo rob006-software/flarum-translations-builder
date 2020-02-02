@@ -30,7 +30,7 @@ use const APP_ROOT;
  *
  * @author Robert Korulczyk <robert@korulczyk.pl>
  */
-class GithubApi extends Component {
+final class GithubApi extends Component {
 
 	public $authToken;
 	public $authPassword;

@@ -30,7 +30,7 @@ use function substr;
  *
  * @author Robert Korulczyk <robert@korulczyk.pl>
  */
-class ReadmeController extends ConsoleController {
+final class ReadmeController extends ConsoleController {
 
 	public $defaultAction = 'update';
 

@@ -27,7 +27,7 @@ use function time;
  *
  * @author Robert Korulczyk <robert@korulczyk.pl>
  */
-class ConfigController extends ConsoleController {
+final class ConfigController extends ConsoleController {
 
 	public $defaultAction = 'update';
 

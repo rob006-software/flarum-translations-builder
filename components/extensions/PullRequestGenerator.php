@@ -27,7 +27,7 @@ use Yii;
  *
  * @author Robert Korulczyk <robert@korulczyk.pl>
  */
-class PullRequestGenerator {
+final class PullRequestGenerator {
 
 	use DontCall;
 	use DontCallStatic;

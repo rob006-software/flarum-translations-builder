@@ -22,7 +22,7 @@ use Symfony\Component\Translation\Util\ArrayConverter;
  *
  * @author Robert Korulczyk <robert@korulczyk.pl>
  */
-class JsonFileDumper extends BaseJsonFileDumper {
+final class JsonFileDumper extends BaseJsonFileDumper {
 
 	public function formatCatalogue(MessageCatalogue $messages, $domain, array $options = []) {
 		$flags = $options['json_encoding'] ?? JSON_PRETTY_PRINT;

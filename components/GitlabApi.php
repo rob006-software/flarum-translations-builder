@@ -32,7 +32,7 @@ use const PHP_URL_PATH;
  *
  * @author Robert Korulczyk <robert@korulczyk.pl>
  */
-class GitlabApi extends Component {
+final class GitlabApi extends Component {
 
 	private $_client;
 

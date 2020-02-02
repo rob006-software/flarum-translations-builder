@@ -31,7 +31,7 @@ use function unlink;
  *
  * @author Robert Korulczyk <robert@korulczyk.pl>
  */
-class JanitorController extends Controller {
+final class JanitorController extends Controller {
 
 	public $useCache = false;
 

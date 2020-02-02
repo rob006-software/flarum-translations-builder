@@ -25,7 +25,7 @@ use const APP_ROOT;
  *
  * @author Robert Korulczyk <robert@korulczyk.pl>
  */
-class ExtensionsController extends ConsoleController {
+final class ExtensionsController extends ConsoleController {
 
 	public $update = true;
 	public $verbose = false;

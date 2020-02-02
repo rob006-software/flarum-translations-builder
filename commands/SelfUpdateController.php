@@ -24,7 +24,7 @@ use const APP_ROOT;
  *
  * @author Robert Korulczyk <robert@korulczyk.pl>
  */
-class SelfUpdateController extends ConsoleController {
+final class SelfUpdateController extends ConsoleController {
 
 	public $defaultAction = 'run';
 

@@ -25,7 +25,7 @@ use Yii;
  *
  * @author Robert Korulczyk <robert@korulczyk.pl>
  */
-class TranslationsController extends ConsoleController {
+final class TranslationsController extends ConsoleController {
 
 	public $defaultAction = 'update';
 

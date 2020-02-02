@@ -34,7 +34,7 @@ use function file_get_contents;
  *
  * @author Robert Korulczyk <robert@korulczyk.pl>
  */
-class TranslationsImporter {
+final class TranslationsImporter {
 
 	use DontCall;
 	use DontCallStatic;

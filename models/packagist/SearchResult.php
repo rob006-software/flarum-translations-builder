@@ -9,6 +9,8 @@
  * with this source code in the file LICENSE.
  */
 
+declare(strict_types=1);
+
 namespace app\models\packagist;
 
 use Dont\DontCall;
@@ -22,7 +24,7 @@ use Yii;
  *
  * @author Robert Korulczyk <robert@korulczyk.pl>
  */
-class SearchResult {
+final class SearchResult {
 
 	use DontCall;
 	use DontCallStatic;

@@ -27,7 +27,7 @@ use function time;
  *
  * @author Robert Korulczyk <robert@korulczyk.pl>
  */
-class StatsController extends Controller {
+final class StatsController extends Controller {
 
 	public $defaultAction = 'update';
 

@@ -25,7 +25,7 @@ use Yii;
  *
  * @author Robert Korulczyk <robert@korulczyk.pl>
  */
-class IssueGenerator {
+final class IssueGenerator {
 
 	use DontCall;
 	use DontCallStatic;

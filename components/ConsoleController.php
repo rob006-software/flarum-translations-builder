@@ -22,7 +22,7 @@ use yii\console\Controller;
  *
  * @author Robert Korulczyk <robert@korulczyk.pl>
  */
-class ConsoleController extends Controller {
+abstract class ConsoleController extends Controller {
 
 	public function beforeAction($action) {
 		if (!Yii::$app->mutex->acquire(__CLASS__, 900)) {

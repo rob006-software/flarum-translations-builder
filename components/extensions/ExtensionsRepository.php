@@ -41,7 +41,7 @@ use function strncmp;
  *
  * @author Robert Korulczyk <robert@korulczyk.pl>
  */
-class ExtensionsRepository extends Component {
+final class ExtensionsRepository extends Component {
 
 	public const NO_TRANSLATION_FILE = 'no-translation-source.yml';
 

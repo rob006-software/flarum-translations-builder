@@ -24,7 +24,7 @@ use Symfony\Component\Yaml\Yaml;
  *
  * @author Robert Korulczyk <robert@korulczyk.pl>
  */
-class YamlFileDumper extends BaseYamlFileDumper {
+final class YamlFileDumper extends BaseYamlFileDumper {
 
 	private $prefixGenerator;
 

@@ -24,7 +24,7 @@ use function array_merge;
  *
  * @author Robert Korulczyk <robert@korulczyk.pl>
  */
-class ReleaseController extends Controller {
+final class ReleaseController extends Controller {
 
 	public $defaultAction = 'release';
 

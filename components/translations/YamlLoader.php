@@ -21,7 +21,7 @@ use Symfony\Component\Yaml\Yaml;
  *
  * @author Robert Korulczyk <robert@korulczyk.pl>
  */
-class YamlLoader extends ArrayLoader {
+final class YamlLoader extends ArrayLoader {
 
 	public function load($resource, $locale, $domain = 'messages') {
 		$messages = Yaml::parse($resource);
