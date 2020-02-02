@@ -62,7 +62,6 @@ final class PolishReleaseGenerator extends ReleaseGenerator {
 			$content .= "**Zaktualizowano tłumaczenia dla rozszerzeń**:\n\n";
 			/* @var $extension Extension */
 			foreach ($changed as $id => $extension) {
-				echo $id, "\n";
 				$content .= "* [`{$extension->getPackageName()}`]({$extension->getRepositoryUrl()})\n";
 			}
 			$content .= "\n\n";
