@@ -44,7 +44,7 @@ final class ConfigGenerator {
 	public function updateExtension(Extension $extension): void {
 		$config = require $this->configPath;
 		$configContent = file_get_contents($this->configPath);
-		$position = $this->findPrecedingComponent($extension->getId());
+		$position = $this->findFollowingComponent($extension->getId());
 
 		if ($position === null) {
 			$end = strpos($configContent, '/* extensions list end */');
@@ -74,7 +74,7 @@ final class ConfigGenerator {
 		return $result;
 	}
 
-	private function findPrecedingComponent(string $subject): ?string {
+	private function findFollowingComponent(string $subject): ?string {
 		foreach (require $this->configPath as $componentId => $config) {
 			if (
 				// ignore internal components and config keys
