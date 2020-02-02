@@ -41,7 +41,7 @@ final class Extension {
 	private $id;
 	private $repositoryUrl;
 	private $composerData;
-	private $packagistSearchData;
+	private $packagistBasicData;
 
 	public function __construct(string $id, string $repositoryUrl) {
 		$this->id = $id;
@@ -50,7 +50,7 @@ final class Extension {
 
 	public static function createFromPackagistSearchResult(SearchResult $result): Extension {
 		$extension = new Extension(static::nameToId($result->getName()), $result->getRepository());
-		$extension->packagistSearchData = $result;
+		$extension->packagistBasicData = $result;
 
 		return $extension;
 	}
@@ -69,7 +69,7 @@ final class Extension {
 	}
 
 	public function getPackageName(): string {
-		return $this->getPackagistData()->getName();
+		return $this->getPackagistBasicData()->getName();
 	}
 
 	public function getThreadUrl(): ?string {
@@ -82,11 +82,11 @@ final class Extension {
 
 	public function isAbandoned(): bool {
 		// abandoned packages without replacement have empty string in `abandoned` field
-		return $this->getPackagistData()->getAbandoned() !== null;
+		return $this->getPackagistBasicData()->getAbandoned() !== null;
 	}
 
 	public function getReplacement(): ?string {
-		return $this->getPackagistData()->getAbandoned();
+		return $this->getPackagistBasicData()->getAbandoned();
 	}
 
 	public function isOutdated(array $supportedReleases): bool {
@@ -163,12 +163,12 @@ final class Extension {
 		return $this->composerData;
 	}
 
-	private function getPackagistData(): SearchResult {
-		if ($this->packagistSearchData === null) {
-			$this->packagistSearchData = Yii::$app->extensionsRepository->getPackagistData($this->getComposerValue('name'));
+	private function getPackagistBasicData(): SearchResult {
+		if ($this->packagistBasicData === null) {
+			$this->packagistBasicData = Yii::$app->extensionsRepository->getPackagistBasicData($this->getComposerValue('name'));
 		}
 
-		return $this->packagistSearchData;
+		return $this->packagistBasicData;
 	}
 
 	public function verifyName(): bool {

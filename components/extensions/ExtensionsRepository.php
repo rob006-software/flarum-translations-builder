@@ -147,7 +147,7 @@ class ExtensionsRepository extends Component {
 		return $this->getAllExtensions($useCache)[$id] ?? null;
 	}
 
-	public function getPackagistData(string $name): ?SearchResult {
+	public function getPackagistBasicData(string $name): ?SearchResult {
 		return Yii::$app->cache->getOrSet(__METHOD__ . '#' . $name, function () use ($name) {
 			$results = $this->searchPackagist([
 				'q' => $name,
@@ -161,6 +161,18 @@ class ExtensionsRepository extends Component {
 					return $result;
 				}
 			}
+		}, $this->packagistCacheDuration);
+	}
+
+	public function getPackagistData(string $name): ?array {
+		return Yii::$app->cache->getOrSet(__METHOD__ . '#' . $name, function () use ($name) {
+			try {
+				$response = $this->getClient()->request('GET', "https://packagist.org/packages/$name.json")->toArray();
+			} catch (HttpExceptionInterface $exception) {
+				return null;
+			}
+
+			return $response['package'] ?? null;
 		}, $this->packagistCacheDuration);
 	}
 
