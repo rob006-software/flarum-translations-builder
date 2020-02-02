@@ -21,6 +21,7 @@ use Dont\DontSet;
 use function file_get_contents;
 use function file_put_contents;
 use function strcmp;
+use function strpos;
 use function substr;
 
 /**
@@ -42,33 +43,43 @@ final class ConfigGenerator {
 	}
 
 	public function updateExtension(Extension $extension): void {
+		$this->saveExtensionConfig($extension->getId(), $this->generateConfig($extension, $config[$extension->getId()] ?? null));
+	}
+
+	public function removeExtension(string $extensionId): void {
+		$this->saveExtensionConfig($extensionId, null);
+	}
+
+	private function saveExtensionConfig(string $extensionId, ?string $extensionConfig): void {
 		$config = require $this->configPath;
 		$configContent = file_get_contents($this->configPath);
-		$position = $this->findFollowingComponent($extension->getId());
+		$position = $this->findFollowingComponent($extensionId);
 
 		if ($position === null) {
 			$end = strpos($configContent, '/* extensions list end */');
 		} else {
 			$end = strpos($configContent, "'{$position}' => ");
 		}
-		if (isset($config[$extension->getId()])) {
-			$begin = strpos($configContent, "'{$extension->getId()}' => ");
+		if (isset($config[$extensionId])) {
+			$begin = strpos($configContent, "'{$extensionId}' => ");
 		} else {
 			$begin = $end;
 		}
 
-		$extensionConfig = $this->injectConfig(
+		$newConfig = $this->injectConfig(
 			$begin,
 			$end,
 			$configContent,
-			$this->generateConfig($extension, $config[$extension->getId()] ?? null)
+			$extensionConfig
 		);
-		file_put_contents($this->configPath, $extensionConfig);
+		file_put_contents($this->configPath, $newConfig);
 	}
 
-	private function injectConfig(int $begin, int $end, string $originalConfig, string $toInject): string {
+	private function injectConfig(int $begin, int $end, string $originalConfig, ?string $toInject): string {
 		$result = substr($originalConfig, 0, $begin);
-		$result .= $toInject . "\n\t";
+		if ($toInject !== null) {
+			$result .= $toInject . "\n\t";
+		}
 		$result .= substr($originalConfig, $end);
 
 		return $result;

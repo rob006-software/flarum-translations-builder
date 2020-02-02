@@ -173,12 +173,12 @@ final class Project {
 		return $translator;
 	}
 
-	public function getComponentSourcePath(Component $component): string {
-		return "$this->sourcesDir/{$component->getId()}.json";
+	public function getComponentSourcePath(string $componentId): string {
+		return "$this->sourcesDir/{$componentId}.json";
 	}
 
-	public function getComponentTranslationPath(Component $component, string $language): string {
-		return "$this->translationsDir/$language/{$component->getId()}.json";
+	public function getComponentTranslationPath(string $componentId, string $language): string {
+		return "$this->translationsDir/$language/{$componentId}.json";
 	}
 
 	public function getTranslationsPath(string $language): string {
@@ -191,7 +191,7 @@ final class Project {
 		$translator->addLoader('array', new ArrayLoader());
 
 		foreach ($this->getComponents() as $component) {
-			$filePath = $this->getComponentTranslationPath($component, $language);
+			$filePath = $this->getComponentTranslationPath($component->getId(), $language);
 			if (!$component->isValidForLanguage($language)) {
 				if (file_exists($filePath)) {
 					unlink($filePath);
@@ -225,11 +225,11 @@ final class Project {
 
 	private function validateSourcesChanges(MessageCatalogue $catalogue) {
 		foreach ($this->getExtensionsComponents() as $component) {
-			if (!file_exists($this->getComponentSourcePath($component))) {
+			if (!file_exists($this->getComponentSourcePath($component->getId()))) {
 				continue;
 			}
 			$new = ArrayConverter::expandToTree($catalogue->all($component->getId()));
-			$old = json_decode(file_get_contents($this->getComponentSourcePath($component)), true);
+			$old = json_decode(file_get_contents($this->getComponentSourcePath($component->getId())), true);
 			if ($old !== $new) {
 				$extension = Yii::$app->extensionsRepository->getExtension($component->getId());
 				if ($extension === null) {

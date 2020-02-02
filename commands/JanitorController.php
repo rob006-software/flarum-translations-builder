@@ -13,15 +13,19 @@ declare(strict_types=1);
 
 namespace app\commands;
 
+use app\components\extensions\ConfigGenerator;
 use app\models\Extension;
 use app\models\ForkRepository;
 use app\models\Translations;
 use Yii;
 use yii\console\Controller;
+use yii\console\ExitCode;
 use yii\helpers\FileHelper;
 use function array_combine;
 use function array_filter;
+use function array_flip;
 use function array_merge;
+use function file_exists;
 use function filemtime;
 use function strtotime;
 use function unlink;
@@ -105,6 +109,65 @@ final class JanitorController extends Controller {
 
 		if (!$found) {
 			echo "No outdated components found.\n";
+		}
+	}
+
+	public function actionRemoveExtension(string $extensionsId, string $projectId, string $configFile = '@app/translations/config.php') {
+		$translations = $this->getTranslations($configFile);
+		$configGenerator = new ConfigGenerator(
+			$translations->getDir() . '/config/' . $projectId . '-project.php'
+		);
+		$configGenerator->removeExtension($extensionsId);
+
+		$sourcePath = $translations->getProject($projectId)->getComponentSourcePath($extensionsId);
+		if (file_exists($sourcePath)) {
+			unlink($sourcePath);
+		}
+
+		foreach ($translations->getLanguages() as $language) {
+			$translationPath = $translations->getProject($projectId)->getComponentTranslationPath($extensionsId, $language);
+			if (file_exists($translationPath)) {
+				unlink($translationPath);
+			}
+		}
+	}
+
+	public function actionOrphans(string $configFile = '@app/translations/config.php') {
+		$translations = $this->getTranslations($configFile);
+		$expectedFiles = [];
+		foreach ($translations->getProjects() as $project) {
+			foreach ($project->getComponents() as $component) {
+				$expectedFiles[] = $translations->getProject($project->getId())->getComponentSourcePath($component->getId());
+				foreach ($component->getLanguages() as $language) {
+					$expectedFiles[] = $translations->getProject($project->getId())->getComponentTranslationPath($component->getId(), $language);
+				}
+			}
+		}
+
+		$existingFile = array_merge(
+			FileHelper::findFiles($translations->getSourcesDir()),
+			FileHelper::findFiles($translations->getTranslationsDir())
+		);
+
+		$expectedFilesMap = array_flip($expectedFiles);
+		$orphans = [];
+		foreach ($existingFile as $file) {
+			if (!isset($expectedFilesMap[$file])) {
+				$orphans[] = $file;
+			}
+		}
+
+		if (empty($orphans)) {
+			echo "No orphans found.\n";
+			return ExitCode::OK;
+		}
+
+		echo count($orphans), " orphans found:\n", implode("\n", $orphans), "\n";
+		if ($this->confirm('Remove?')) {
+			foreach ($orphans as $orphan) {
+				unlink($orphan);
+				echo "$orphan removed.\n";
+			}
 		}
 	}
 

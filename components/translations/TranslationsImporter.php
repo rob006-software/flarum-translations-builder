@@ -65,7 +65,7 @@ final class TranslationsImporter {
 		$translator->addLoader('json', new JsonFileLoader());
 		$translator->addResource(
 			'json',
-			$this->project->getComponentTranslationPath($this->component, $language),
+			$this->project->getComponentTranslationPath($this->component->getId(), $language),
 			$language,
 			$this->component->getId()
 		);

@@ -67,7 +67,7 @@ final class LanguageSubsplit extends Subsplit {
 					$components[$component->getId()] = $components[$component->getId()] ?? $component;
 					$translator->addResource(
 						'json_file',
-						$project->getComponentTranslationPath($component, $this->language),
+						$project->getComponentTranslationPath($component->getId(), $this->language),
 						$this->language,
 						$component->getId()
 					);
