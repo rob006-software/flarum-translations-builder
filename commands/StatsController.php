@@ -74,7 +74,7 @@ final class StatsController extends Controller {
 		}
 
 		$date = date('Y-m-d');
-		$this->postProcessRepository($repository, "Update translations status per $date.");
+		$this->postProcessRepository($repository, "Update translations status as per $date.");
 		$this->updateLimit($token);
 	}
 
