@@ -43,6 +43,7 @@ final class ConfigGenerator {
 	}
 
 	public function updateExtension(Extension $extension): void {
+		$config = require $this->configPath;
 		$this->saveExtensionConfig($extension->getId(), $this->generateConfig($extension, $config[$extension->getId()] ?? null));
 	}
 
