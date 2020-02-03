@@ -235,13 +235,31 @@ final class ExtensionsRepository extends Component {
 			];
 		foreach ($possiblePaths as $possiblePath) {
 			$url = $this->generateRawUrl($repositoryUrl, $possiblePath, $branch);
-			$response = $this->getClient()->request('GET', $url);
-			if ($response->getStatusCode() < 300 && $response->getContent() !== '') {
+			if ($this->testSourceUrl($url)) {
 				return $url;
 			}
 		}
 
 		return $this->generateRawUrl($repositoryUrl, static::NO_TRANSLATION_FILE);
+	}
+
+	private function testSourceUrl(string $url, int $tries = 5): bool {
+		while ($tries-- > 0) {
+			$response = $this->getClient()->request('GET', $url);
+			if ($response->getStatusCode() < 300) {
+				return $response->getContent() !== '';
+			}
+			if (in_array($response->getStatusCode(), [404, 403])) {
+				return false;
+			}
+			Yii::warning(
+				"Cannot load $url: " . readable::values($response->getInfo()),
+				__METHOD__ . ':' . $response->getStatusCode()
+			);
+			sleep(1);
+		}
+
+		return false;
 	}
 
 	/**
