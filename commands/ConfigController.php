@@ -68,7 +68,10 @@ final class ConfigController extends ConsoleController {
 					}
 
 					$configGenerator->updateExtension($extension);
-					$this->commitRepository($translations->getRepository(), "Update config for {$component->getId()}.");
+					$this->commitRepository(
+						$translations->getRepository(),
+						"Update config for {$component->getId()}.\n\n{$extension->getTagsUrl()}"
+					);
 				}
 			}
 		}

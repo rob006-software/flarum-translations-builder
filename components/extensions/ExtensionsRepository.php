@@ -311,6 +311,30 @@ final class ExtensionsRepository extends Component {
 		return Semver::rsort($tags)[0];
 	}
 
+	public function getTagsUrl(string $repositoryUrl): string {
+		if ($this->isGithubRepo($repositoryUrl)) {
+			return Yii::$app->githubApi->getTagsUrl($repositoryUrl);
+		}
+
+		if ($this->isGitlabRepo($repositoryUrl)) {
+			return Yii::$app->gitlabApi->getTagsUrl($repositoryUrl);
+		}
+
+		throw new InvalidRepositoryUrlException('Invalid repository URL: ' . readable::value($repositoryUrl) . '.');
+	}
+
+	public function getTagUrl(string $repositoryUrl, string $tagName): string {
+		if ($this->isGithubRepo($repositoryUrl)) {
+			return Yii::$app->githubApi->getTagUrl($repositoryUrl, $tagName);
+		}
+
+		if ($this->isGitlabRepo($repositoryUrl)) {
+			return Yii::$app->gitlabApi->getTagUrl($repositoryUrl, $tagName);
+		}
+
+		throw new InvalidRepositoryUrlException('Invalid repository URL: ' . readable::value($repositoryUrl) . '.');
+	}
+
 	private function generateRawUrl(string $repositoryUrl, string $file, ?string $branch = null): string {
 		$path = trim(parse_url($repositoryUrl, PHP_URL_PATH), '/');
 		if (substr($path, -4) === '.git') {

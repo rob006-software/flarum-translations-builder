@@ -74,6 +74,16 @@ final class GitlabApi extends Component {
 		}
 	}
 
+	public function getTagsUrl(string $repoUrl): string {
+		$repoName = $this->extractRepoName($repoUrl);
+		return "https://gitlab.com/$repoName/-/tags";
+	}
+
+	public function getTagUrl(string $repoUrl, string $tagName): string {
+		$repoName = $this->extractRepoName($repoUrl);
+		return "https://gitlab.com/$repoName/-/tags/$tagName";
+	}
+
 	private function getClient(): HttpClientInterface {
 		if ($this->_client === null) {
 			$this->_client = HttpClient::create();

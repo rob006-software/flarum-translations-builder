@@ -80,6 +80,15 @@ final class Extension {
 		return $this->repositoryUrl;
 	}
 
+	public function getTagsUrl(): string {
+		return Yii::$app->extensionsRepository->getTagsUrl($this->repositoryUrl);
+	}
+
+	public function getTagUrl(?string $tagName = null): string {
+		$tagName = $tagName ?? Yii::$app->extensionsRepository->detectLastTag($this->getTranslationsRepository());
+		return Yii::$app->extensionsRepository->getTagUrl($this->repositoryUrl, $tagName);
+	}
+
 	public function isAbandoned(): bool {
 		// abandoned packages without replacement have empty string in `abandoned` field
 		return $this->getPackagistBasicData()->getAbandoned() !== null;
@@ -125,25 +134,23 @@ final class Extension {
 	}
 
 	public function getTranslationSourceUrl(?string $branchName = null): string {
-		if ($this->getProjectId() === 'flarum') {
-			return Yii::$app->extensionsRepository->detectTranslationSourceUrl('https://github.com/flarum/lang-english', $branchName, [
-				"locale/{$this->getId()}.yml"
-			]);
-		}
-
-		return Yii::$app->extensionsRepository->detectTranslationSourceUrl($this->repositoryUrl, $branchName);
+		return Yii::$app->extensionsRepository->detectTranslationSourceUrl($this->getTranslationsRepository(), $branchName);
 	}
 
 	public function getStableTranslationSourceUrl(?array $prefixes = null): ?string {
-		if ($this->getProjectId() === 'flarum') {
-			$defaultTag = Yii::$app->extensionsRepository->detectLastTag('https://github.com/flarum/lang-english', $prefixes);
-		} else {
-			$defaultTag = Yii::$app->extensionsRepository->detectLastTag($this->repositoryUrl, $prefixes);
-		}
+		$defaultTag = Yii::$app->extensionsRepository->detectLastTag($this->getTranslationsRepository(), $prefixes);
 		if ($defaultTag === null) {
 			return null;
 		}
 		return $this->getTranslationSourceUrl($defaultTag);
+	}
+
+	private function getTranslationsRepository(): string {
+		if ($this->getProjectId() === 'flarum') {
+			return 'https://github.com/flarum/lang-english';
+		}
+
+		return $this->repositoryUrl;
 	}
 
 	public function hasTranslationSource(): bool {

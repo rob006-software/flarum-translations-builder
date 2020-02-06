@@ -78,6 +78,16 @@ final class GithubApi extends Component {
 		}
 	}
 
+	public function getTagsUrl(string $repoUrl): string {
+		[$userName, $repoName] = $this->explodeRepoUrl($repoUrl);
+		return "https://github.com/$userName/$repoName/releases";
+	}
+
+	public function getTagUrl(string $repoUrl, string $tagName): string {
+		[$userName, $repoName] = $this->explodeRepoUrl($repoUrl);
+		return "https://github.com/$userName/$repoName/releases/tag/$tagName";
+	}
+
 	public function openPullRequest(string $targetRepository, string $sourceRepository, string $branch, array $settings): array {
 		[$targetUserName, $targetRepoName] = $this->explodeRepoUrl($targetRepository);
 		[$sourceUserName,] = $this->explodeRepoUrl($sourceRepository);
