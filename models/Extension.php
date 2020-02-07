@@ -80,13 +80,13 @@ final class Extension {
 		return $this->repositoryUrl;
 	}
 
-	public function getTagsUrl(): string {
-		return Yii::$app->extensionsRepository->getTagsUrl($this->repositoryUrl);
+	public function getTranslationTagsUrl(): string {
+		return Yii::$app->extensionsRepository->getTagsUrl($this->getTranslationsRepository());
 	}
 
-	public function getTagUrl(?string $tagName = null): string {
+	public function getTranslationTagUrl(?string $tagName = null): string {
 		$tagName = $tagName ?? Yii::$app->extensionsRepository->detectLastTag($this->getTranslationsRepository());
-		return Yii::$app->extensionsRepository->getTagUrl($this->repositoryUrl, $tagName);
+		return Yii::$app->extensionsRepository->getTagUrl($this->getTranslationsRepository(), $tagName);
 	}
 
 	public function isAbandoned(): bool {
@@ -134,7 +134,14 @@ final class Extension {
 	}
 
 	public function getTranslationSourceUrl(?string $branchName = null): string {
-		return Yii::$app->extensionsRepository->detectTranslationSourceUrl($this->getTranslationsRepository(), $branchName);
+		if ($this->getProjectId() === 'flarum') {
+			return Yii::$app->extensionsRepository
+				->detectTranslationSourceUrl('https://github.com/flarum/lang-english', $branchName, [
+					"locale/{$this->getId()}.yml",
+				]);
+		}
+
+		return Yii::$app->extensionsRepository->detectTranslationSourceUrl($this->repositoryUrl, $branchName);
 	}
 
 	public function getStableTranslationSourceUrl(?array $prefixes = null): ?string {
