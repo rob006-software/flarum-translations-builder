@@ -33,6 +33,7 @@ use yii\base\InvalidArgumentException;
 use yii\base\InvalidConfigException;
 use function file_exists;
 use function file_get_contents;
+use function getenv;
 use function json_decode;
 
 /**
@@ -213,7 +214,7 @@ final class Project {
 		$this->saveTranslations($catalogue, $this->getTranslationsPath($language));
 	}
 
-	public function saveTranslations(MessageCatalogue $catalogue, string $path) {
+	public function saveTranslations(MessageCatalogue $catalogue, string $path): void {
 		$dumper = new JsonFileDumper();
 		$dumper->setRelativePathTemplate('%domain%.%extension%');
 		$dumper->dump($catalogue, [
@@ -223,7 +224,10 @@ final class Project {
 		]);
 	}
 
-	private function validateSourcesChanges(MessageCatalogue $catalogue) {
+	private function validateSourcesChanges(MessageCatalogue $catalogue): void {
+		if (getenv('TRAVIS')) {
+			return;
+		}
 		foreach ($this->getExtensionsComponents() as $component) {
 			if (!file_exists($this->getComponentSourcePath($component->getId()))) {
 				continue;
