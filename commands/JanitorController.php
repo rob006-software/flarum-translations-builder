@@ -18,8 +18,10 @@ use app\models\Extension;
 use app\models\ForkRepository;
 use app\models\Translations;
 use Yii;
+use yii\base\InvalidConfigException;
 use yii\console\Controller;
 use yii\console\ExitCode;
+use yii\helpers\Console;
 use yii\helpers\FileHelper;
 use function array_combine;
 use function array_filter;
@@ -27,6 +29,7 @@ use function array_flip;
 use function array_merge;
 use function file_exists;
 use function filemtime;
+use function rename;
 use function strtotime;
 use function unlink;
 
@@ -112,22 +115,68 @@ final class JanitorController extends Controller {
 		}
 	}
 
-	public function actionRemoveExtension(string $extensionsId, string $projectId, string $configFile = '@app/translations/config.php') {
+	public function actionRemoveExtension(string $extensionId, string $projectId, string $configFile = '@app/translations/config.php') {
 		$translations = $this->getTranslations($configFile);
 		$configGenerator = new ConfigGenerator(
 			$translations->getDir() . '/config/' . $projectId . '-project.php'
 		);
-		$configGenerator->removeExtension($extensionsId);
+		$configGenerator->removeExtension($extensionId);
 
-		$sourcePath = $translations->getProject($projectId)->getComponentSourcePath($extensionsId);
+		$sourcePath = $translations->getProject($projectId)->getComponentSourcePath($extensionId);
 		if (file_exists($sourcePath)) {
 			unlink($sourcePath);
+			echo "Removed $sourcePath source.\n";
 		}
 
 		foreach ($translations->getLanguages() as $language) {
-			$translationPath = $translations->getProject($projectId)->getComponentTranslationPath($extensionsId, $language);
+			$translationPath = $translations->getProject($projectId)->getComponentTranslationPath($extensionId, $language);
 			if (file_exists($translationPath)) {
 				unlink($translationPath);
+				echo "Removed $sourcePath translation.\n";
+			}
+		}
+	}
+
+	public function actionMigrateExtension(
+		string $oldExtensionId,
+		string $oldProjectId,
+		string $newExtensionId,
+		string $newProjectId,
+		string $configFile = '@app/translations/config.php'
+	) {
+		$translations = $this->getTranslations($configFile);
+
+		$oldConfigGenerator = new ConfigGenerator(
+			$translations->getDir() . '/config/' . $oldProjectId . '-project.php'
+		);
+		$oldConfigGenerator->removeExtension($oldExtensionId);
+
+		$newConfigGenerator = new ConfigGenerator(
+			$translations->getDir() . '/config/' . $newProjectId . '-project.php'
+		);
+		$extension = Yii::$app->extensionsRepository->getExtension($newExtensionId, false);
+		if ($extension === null) {
+			throw new InvalidConfigException("Invalid extension: $newExtensionId.");
+		}
+		$newConfigGenerator->updateExtension($extension);
+
+		$oldSourcePath = $translations->getProject($oldProjectId)->getComponentSourcePath($oldExtensionId);
+		$newSourcePath = $translations->getProject($newProjectId)->getComponentSourcePath($newExtensionId);
+		if (file_exists($oldSourcePath)) {
+			rename($oldSourcePath, $newSourcePath);
+			echo "Moved $oldSourcePath source to $newSourcePath.\n";
+		} else {
+			echo Console::renderColoredString("Translation file not found at $oldSourcePath.", Console::BG_RED), "\n";
+		}
+
+		foreach ($translations->getLanguages() as $language) {
+			$oldTranslationPath = $translations->getProject($oldProjectId)->getComponentTranslationPath($oldExtensionId, $language);
+			$newTranslationPath = $translations->getProject($newProjectId)->getComponentTranslationPath($newExtensionId, $language);
+			if (file_exists($oldTranslationPath)) {
+				rename($oldTranslationPath, $newTranslationPath);
+				echo "Moved $oldTranslationPath translation to $newTranslationPath.\n";
+			} else {
+				echo Console::renderColoredString("Translation file not found at $oldTranslationPath.", Console::BG_RED), "\n";
 			}
 		}
 	}
