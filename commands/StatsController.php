@@ -20,6 +20,7 @@ use Yii;
 use yii\console\Controller;
 use function array_merge;
 use function in_array;
+use function sort;
 use function time;
 
 /**
@@ -50,7 +51,7 @@ final class StatsController extends Controller {
 
 	public function actionUpdate(array $languages = [], string $configFile = '@app/translations/config.php') {
 		$translations = $this->getTranslations($configFile);
-		$token = __METHOD__;
+		$token = __METHOD__ . '#' . $this->getComponentsListHash($translations);
 		if ($this->isLimited($token)) {
 			return;
 		}
@@ -76,6 +77,18 @@ final class StatsController extends Controller {
 		$date = date('Y-m-d');
 		$this->postProcessRepository($repository, "Update translations status as per $date.");
 		$this->updateLimit($token);
+	}
+
+	private function getComponentsListHash(Translations $translations): string {
+		$components = [];
+		foreach ($translations->getProjects() as $project) {
+			foreach ($project->getComponents() as $component) {
+				$components[] = "{$project->getId()}:{$component->getId()}";
+			}
+		}
+		sort($components);
+
+		return md5(implode(';', $components));
 	}
 
 	private function getTranslations(string $configFile): Translations {
