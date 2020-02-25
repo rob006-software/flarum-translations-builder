@@ -114,6 +114,10 @@ final class ConfigController extends ConsoleController {
 		}
 	}
 
+	public static function resetFrequencyLimit(): void {
+		Yii::$app->cache->delete(__CLASS__ . '::actionUpdate');
+	}
+
 	private function isLimited(string $hash): bool {
 		if ($this->frequency <= 0) {
 			return false;

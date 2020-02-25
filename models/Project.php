@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace app\models;
 
+use app\commands\ConfigController;
 use app\components\extensions\ExtensionsRepository;
 use app\components\translations\JsonFileDumper;
 use app\components\translations\YamlLoader;
@@ -27,6 +28,7 @@ use Symfony\Component\Translation\Loader\JsonFileLoader;
 use Symfony\Component\Translation\MessageCatalogue;
 use Symfony\Component\Translation\Translator;
 use Symfony\Component\Translation\Util\ArrayConverter;
+use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Yii;
 use yii\base\Exception;
 use yii\base\InvalidArgumentException;
@@ -34,7 +36,9 @@ use yii\base\InvalidConfigException;
 use function file_exists;
 use function file_get_contents;
 use function getenv;
+use function in_array;
 use function json_decode;
+use function sleep;
 
 /**
  * Class Project.
@@ -161,17 +165,35 @@ final class Project {
 			foreach (array_reverse($component->getSources()) as $source) {
 				// don't try to download URLs with placeholder for missing translation
 				if (strpos($source, ExtensionsRepository::NO_TRANSLATION_FILE) === false) {
-					// @todo Catch and count 404 exceptions. After for example 5 errors we could run `config/update`
-					//       command to refresh URLs in config - this will prevent crashes after extensions
-					//       removes language packs from latest release or master branch.
-					$response = $client->request('GET', $source);
-					$translator->addResource('yaml', $response->getContent(), 'en', $component->getId());
+					$translator->addResource('yaml', $this->fetchUrl($client, $source), 'en', $component->getId());
 				} else {
 					Yii::warning("Skipped downloading $source.", __METHOD__ . '.skip');
 				}
 			}
 		}
 		return $translator;
+	}
+
+	private function fetchUrl(HttpClientInterface $client, string $url): string {
+		$tries = 3;
+		while ($tries-- > 0) {
+			$response = $client->request('GET', $url);
+			if ($response->getStatusCode() < 300) {
+				return $response->getContent();
+			}
+			if (in_array($response->getStatusCode(), [404, 403])) {
+				// it should be done by queue, but there is no queue support at the moment, so this must be enough for now
+				ConfigController::resetFrequencyLimit();
+			}
+			Yii::warning(
+				"Cannot load $url: " . readable::values($response->getInfo()),
+				__METHOD__ . ':' . $response->getStatusCode()
+			);
+			sleep(1);
+		}
+
+		/* @noinspection PhpUndefinedVariableInspection */
+		return $response->getContent();
 	}
 
 	public function getComponentSourcePath(string $componentId): string {
