@@ -184,6 +184,7 @@ final class Project {
 			if (in_array($response->getStatusCode(), [404, 403])) {
 				// it should be done by queue, but there is no queue support at the moment, so this must be enough for now
 				ConfigController::resetFrequencyLimit();
+				return $response->getContent();
 			}
 			Yii::warning(
 				"Cannot load $url: " . readable::values($response->getInfo()),
