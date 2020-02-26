@@ -199,15 +199,15 @@ HTML;
 		}
 
 		$string = strtr($string, [
-			'/flarum-ext-' => '/...',
-			'/flarum-' => '/...',
+			'/flarum-ext-' => '/…',
+			'/flarum-' => '/…',
 		]);
 
 		if (mb_strlen($string) <= $limit) {
 			return $string;
 		}
 
-		return StringHelper::truncate($string, $limit);
+		return StringHelper::truncate($string, $limit, '…');
 	}
 
 	private function getStats(string $name): array {
