@@ -119,7 +119,7 @@ final class ConfigGenerator {
 				$extensionConfig[$key] = $extension->getStableTranslationSourceUrl([substr($key, 4)]);
 			}
 		}
-		if (isset($extension['branch'])) {
+		if (isset($extensionConfig['branch'])) {
 			$extensionConfig['branch'] = $extension->getTranslationSourceUrl();
 		}
 		foreach ($extensionConfig as $key => $url) {
