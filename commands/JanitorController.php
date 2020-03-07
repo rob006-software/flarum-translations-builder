@@ -186,9 +186,9 @@ final class JanitorController extends Controller {
 		$expectedFiles = [];
 		foreach ($translations->getProjects() as $project) {
 			foreach ($project->getComponents() as $component) {
-				$expectedFiles[] = $translations->getProject($project->getId())->getComponentSourcePath($component->getId());
+				$expectedFiles[] = $project->getComponentSourcePath($component->getId());
 				foreach ($component->getLanguages() as $language) {
-					$expectedFiles[] = $translations->getProject($project->getId())->getComponentTranslationPath($component->getId(), $language);
+					$expectedFiles[] = $project->getComponentTranslationPath($component->getId(), $language);
 				}
 			}
 		}
@@ -216,6 +216,15 @@ final class JanitorController extends Controller {
 			foreach ($orphans as $orphan) {
 				unlink($orphan);
 				echo "$orphan removed.\n";
+			}
+		}
+	}
+
+	public function actionCleanupTranslations(array $languages, string $configFile = '@app/translations/config.php') {
+		$translations = $this->getTranslations($configFile);
+		foreach ($languages as $language) {
+			foreach ($translations->getProjects() as $project) {
+				$project->cleanupComponents($language);
 			}
 		}
 	}

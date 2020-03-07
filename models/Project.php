@@ -33,6 +33,7 @@ use Yii;
 use yii\base\Exception;
 use yii\base\InvalidArgumentException;
 use yii\base\InvalidConfigException;
+use function array_intersect_key;
 use function file_exists;
 use function file_get_contents;
 use function getenv;
@@ -233,6 +234,29 @@ final class Project {
 		}
 
 		$catalogue = $translator->getCatalogue();
+		assert($catalogue instanceof MessageCatalogue);
+		$this->saveTranslations($catalogue, $this->getTranslationsPath($language));
+	}
+
+	public function cleanupComponents(string $language): void {
+		$translator = new Translator($language);
+		$translator->addLoader('json_file', new JsonFileLoader());
+		$translator->addLoader('array', new ArrayLoader());
+
+		foreach ($this->getComponents() as $component) {
+			$translationFilePath = $this->getComponentTranslationPath($component->getId(), $language);
+			$translator->addResource('json_file', $translationFilePath, $language, $component->getId());
+			$sourceFilePath = $this->getComponentSourcePath($component->getId());
+			$translator->addResource('json_file', $sourceFilePath, 'en', $component->getId());
+		}
+		foreach ($this->getComponents() as $component) {
+			$translations = $translator->getCatalogue($language)->all($component->getId());
+			$sources = $translator->getCatalogue('en')->all($component->getId());
+			// use only translations for phrases available in sources
+			$translator->getCatalogue($language)->replace(array_intersect_key($translations, $sources), $component->getId());
+		}
+
+		$catalogue = $translator->getCatalogue($language);
 		assert($catalogue instanceof MessageCatalogue);
 		$this->saveTranslations($catalogue, $this->getTranslationsPath($language));
 	}
