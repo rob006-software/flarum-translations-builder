@@ -245,15 +245,19 @@ final class Project {
 
 		foreach ($this->getComponents() as $component) {
 			$translationFilePath = $this->getComponentTranslationPath($component->getId(), $language);
-			$translator->addResource('json_file', $translationFilePath, $language, $component->getId());
+			if (file_exists($translationFilePath)) {
+				$translator->addResource('json_file', $translationFilePath, $language, $component->getId());
+			}
 			$sourceFilePath = $this->getComponentSourcePath($component->getId());
 			$translator->addResource('json_file', $sourceFilePath, 'en', $component->getId());
 		}
 		foreach ($this->getComponents() as $component) {
 			$translations = $translator->getCatalogue($language)->all($component->getId());
-			$sources = $translator->getCatalogue('en')->all($component->getId());
-			// use only translations for phrases available in sources
-			$translator->getCatalogue($language)->replace(array_intersect_key($translations, $sources), $component->getId());
+			if (!empty($translations)) {
+				$sources = $translator->getCatalogue('en')->all($component->getId());
+				// use only translations for phrases available in sources
+				$translator->getCatalogue($language)->replace(array_intersect_key($translations, $sources), $component->getId());
+			}
 		}
 
 		$catalogue = $translator->getCatalogue($language);
