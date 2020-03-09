@@ -125,7 +125,11 @@ abstract class ReleaseGenerator {
 		if ($this->nextVersion === null) {
 			$previous = $this->getPreviousVersion();
 			$parts = $this->tokenizeVersion($previous);
-			if ($this->isMinorUpdate()) {
+			if ($this->isMajorUpdate()) {
+				$parts['Major']++;
+				$parts['Minor'] = 0;
+				$parts['Patch'] = 0;
+			} elseif ($this->isMinorUpdate()) {
 				$parts['Minor']++;
 				$parts['Patch'] = 0;
 			} else {
@@ -145,6 +149,16 @@ abstract class ReleaseGenerator {
 	protected function isMinorUpdate(): bool {
 		foreach ($this->getChangedExtensions() as $changeType) {
 			if ($changeType === Repository::CHANGE_ADDED) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	protected function isMajorUpdate(): bool {
+		foreach ($this->getChangedExtensions() as $changeType) {
+			if ($changeType === Repository::CHANGE_DELETED) {
 				return true;
 			}
 		}
