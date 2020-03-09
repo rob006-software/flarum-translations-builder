@@ -104,16 +104,11 @@ final class ConfigGenerator {
 	}
 
 	private function generateConfig(Extension $extension, $extensionConfig): string {
-		$tagUrl = $extension->getStableTranslationSourceUrl();
-		if (strpos($tagUrl, ExtensionsRepository::NO_TRANSLATION_FILE) !== false) {
-			return "'{$extension->getId()}' => '$tagUrl',";
-		}
-
 		if (!is_array($extensionConfig)) {
 			$extensionConfig = [];
 		}
 
-		$extensionConfig['tag'] = $tagUrl;
+		$extensionConfig['tag'] = $extension->getStableTranslationSourceUrl();
 		foreach ($extensionConfig as $key => $url) {
 			if (strncmp($key, 'tag:', 4) === 0) {
 				$extensionConfig[$key] = $extension->getStableTranslationSourceUrl([substr($key, 4)]);
