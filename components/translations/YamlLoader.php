@@ -15,6 +15,7 @@ namespace app\components\translations;
 
 use Symfony\Component\Translation\Loader\ArrayLoader;
 use Symfony\Component\Yaml\Yaml;
+use function is_array;
 
 /**
  * Class YamlLoader.
@@ -25,6 +26,22 @@ final class YamlLoader extends ArrayLoader {
 
 	public function load($resource, $locale, $domain = 'messages') {
 		$messages = Yaml::parse($resource);
+		$messages =  $this->filter($messages);
 		return parent::load($messages, $locale, $domain);
+	}
+
+	private function filter($item) {
+		if (is_array($item)) {
+			foreach ($item as $key => $value) {
+				$filtered = $this->filter($value);
+				if ($filtered === null) {
+					unset($item[$key]);
+				} else {
+					$item[$key] = $filtered;
+				}
+			}
+		}
+
+		return $item;
 	}
 }
