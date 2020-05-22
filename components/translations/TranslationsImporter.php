@@ -63,12 +63,14 @@ final class TranslationsImporter {
 		$translator = new Translator($language);
 		$translator->addLoader('array', new ArrayLoader());
 		$translator->addLoader('json', new JsonFileLoader());
-		$translator->addResource(
-			'json',
-			$this->project->getComponentTranslationPath($this->component->getId(), $language),
-			$language,
-			$this->component->getId()
-		);
+		if (file_exists($this->project->getComponentTranslationPath($this->component->getId(), $language))) {
+			$translator->addResource(
+				'json',
+				$this->project->getComponentTranslationPath($this->component->getId(), $language),
+				$language,
+				$this->component->getId()
+			);
+		}
 
 		// do not import empty translations
 		$newTranslations = array_filter($sourceTranslator->getCatalogue()->all('sources'), static function ($data) {
