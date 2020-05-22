@@ -17,7 +17,6 @@ use app\components\ConsoleController;
 use app\components\translations\TranslationsImporter;
 use app\models\Repository;
 use app\models\Translations;
-use mindplay\readable;
 use Yii;
 
 /**
@@ -90,10 +89,10 @@ final class TranslationsController extends ConsoleController {
 
 		$this->postProcessRepository(
 			$translations->getRepository(),
-			strtr('Importing {component} component in {project} project from {source}.', [
-				'{component}' => readable::value($component),
-				'{project}' => readable::value($project),
-				'{source}' => readable::value($source),
+			strtr('Importing "{component}" component in "{project}" project from "{source}".', [
+				'{component}' => $component,
+				'{project}' => $project,
+				'{source}' => $source,
 			])
 		);
 	}
