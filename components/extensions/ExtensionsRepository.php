@@ -19,6 +19,8 @@ use app\components\extensions\exceptions\UnableLoadComposerJsonException;
 use app\components\extensions\exceptions\UnprocessableExtensionInterface;
 use app\models\Extension;
 use app\models\packagist\SearchResult;
+use app\models\PremiumExtension;
+use app\models\RegularExtension;
 use Composer\Semver\Semver;
 use Composer\Semver\VersionParser;
 use mindplay\readable;
@@ -50,6 +52,7 @@ final class ExtensionsRepository extends Component {
 
 	private $_extensions;
 	private $_client;
+	private $premiumExtensions = [];
 
 	/**
 	 * @param bool $useCache
@@ -94,6 +97,26 @@ final class ExtensionsRepository extends Component {
 		return $extensions;
 	}
 
+	// @todo I hope this is temporary solution - premium extensions config should be fetched directly from
+	//       https://extiverse.com/, but I don't know any public and stable API for this.
+	public function setPremiumExtensions(array $extensionsConfig): void {
+		$this->_extensions = null;
+		$this->premiumExtensions = [];
+		foreach ($extensionsConfig as $id => $extension) {
+			if (!$extension instanceof PremiumExtension) {
+				$extension = new PremiumExtension(
+					$id,
+					$extension['name'],
+					$extension['vendor'],
+					$extension['packageName'],
+					$extension['repositoryUrl']
+				);
+
+				$this->premiumExtensions[$id] = $extension;
+			}
+		}
+	}
+
 	private function getClient(): HttpClientInterface {
 		if ($this->_client === null) {
 			$this->_client = HttpClient::create();
@@ -108,10 +131,10 @@ final class ExtensionsRepository extends Component {
 			'per_page' => 100,
 		]);
 
-		$extensions = [];
+		$extensions = $this->premiumExtensions;
 		foreach ($results as $result) {
 			assert($result instanceof SearchResult);
-			$extension = Extension::createFromPackagistSearchResult($result);
+			$extension = RegularExtension::createFromPackagistSearchResult($result);
 			if (
 				!isset($extensions[$extension->getId()])
 				// handle ID conflicts
@@ -124,7 +147,7 @@ final class ExtensionsRepository extends Component {
 		return $extensions;
 	}
 
-	private function compareExtensions(Extension $a, Extension $b): int {
+	private function compareExtensions(RegularExtension $a, RegularExtension $b): int {
 		if ($b->isAbandoned()) {
 			return 1;
 		}

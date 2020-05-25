@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace app\components\extensions;
 
 use app\models\Extension;
+use app\models\RegularExtension;
 use Dont\DontCall;
 use Dont\DontCallStatic;
 use Dont\DontGet;
@@ -108,18 +109,20 @@ final class ConfigGenerator {
 			$extensionConfig = [];
 		}
 
-		$extensionConfig['tag'] = $extension->getStableTranslationSourceUrl();
-		foreach ($extensionConfig as $key => $url) {
-			if (strncmp($key, 'tag:', 4) === 0) {
-				$extensionConfig[$key] = $extension->getStableTranslationSourceUrl([substr($key, 4)]);
+		if ($extension instanceof RegularExtension) {
+			$extensionConfig['tag'] = $extension->getStableTranslationSourceUrl();
+			foreach ($extensionConfig as $key => $url) {
+				if (strncmp($key, 'tag:', 4) === 0) {
+					$extensionConfig[$key] = $extension->getStableTranslationSourceUrl([substr($key, 4)]);
+				}
 			}
-		}
-		if (isset($extensionConfig['branch'])) {
-			$extensionConfig['branch'] = $extension->getTranslationSourceUrl();
-		}
-		foreach ($extensionConfig as $key => $url) {
-			if (strncmp($key, 'branch:', 7) === 0) {
-				$extensionConfig[$key] = $extension->getTranslationSourceUrl(substr($key, 4));
+			if (isset($extensionConfig['branch'])) {
+				$extensionConfig['branch'] = $extension->getTranslationSourceUrl();
+			}
+			foreach ($extensionConfig as $key => $url) {
+				if (strncmp($key, 'branch:', 7) === 0) {
+					$extensionConfig[$key] = $extension->getTranslationSourceUrl(substr($key, 4));
+				}
 			}
 		}
 

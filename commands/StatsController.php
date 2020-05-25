@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace app\commands;
 
 use app\components\extensions\LanguageStatsGenerator;
+use app\models\RegularExtension;
 use app\models\Repository;
 use app\models\Translations;
 use Yii;
@@ -64,7 +65,7 @@ final class StatsController extends Controller {
 				foreach ($translations->getProjects() as $project) {
 					foreach ($project->getExtensionsComponents() as $component) {
 						$extension = Yii::$app->extensionsRepository->getExtension($component->getId());
-						if ($extension !== null) {
+						if ($extension instanceof RegularExtension) {
 							$generator->addExtension($extension, !$component->isValidForLanguage($language));
 						}
 					}
@@ -97,6 +98,7 @@ final class StatsController extends Controller {
 			null,
 			require Yii::getAlias($configFile)
 		);
+		Yii::$app->extensionsRepository->setPremiumExtensions($translations->getPremiumExtensionsConfig());
 		if ($this->update) {
 			$output = $translations->getRepository()->update();
 			if ($this->verbose) {

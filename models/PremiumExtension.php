@@ -1,0 +1,66 @@
+<?php
+
+/*
+ * This file is part of the flarum-translations-builder.
+ *
+ * Copyright (c) 2020 Robert Korulczyk <robert@korulczyk.pl>
+ *
+ * This source file is subject to the MIT license that is bundled
+ * with this source code in the file LICENSE.
+ */
+
+declare(strict_types=1);
+
+namespace app\models;
+
+/**
+ * Premium extension handled manually.
+ *
+ * @see https://extiverse.com/
+ *
+ * @todo Reconsider naming.
+ *
+ * @author Robert Korulczyk <robert@korulczyk.pl>
+ */
+final class PremiumExtension extends Extension {
+
+	private $name;
+	private $vendor;
+	private $packageName;
+	private $repositoryUrl;
+
+	public function __construct(
+		string $id,
+		string $name,
+		string $vendor,
+		string $packageName,
+		string $repositoryUrl
+	) {
+		$this->name = $name;
+		$this->vendor = $vendor;
+		$this->packageName = $packageName;
+		$this->repositoryUrl = $repositoryUrl;
+
+		parent::__construct($id);
+	}
+
+	public function getName(): string {
+		return $this->name;
+	}
+
+	public function getVendor(): string {
+		return $this->vendor;
+	}
+
+	public function getPackageName(): string {
+		return $this->packageName;
+	}
+
+	public function getRepositoryUrl(): string {
+		return $this->repositoryUrl;
+	}
+
+	public function verifyName(): bool {
+		return true;
+	}
+}

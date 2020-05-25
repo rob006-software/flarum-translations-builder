@@ -16,7 +16,7 @@ declare(strict_types=1);
 
 namespace app\components\extensions;
 
-use app\models\Extension;
+use app\models\RegularExtension;
 use app\models\Project;
 use Dont\DontCall;
 use Dont\DontCallStatic;
@@ -43,7 +43,7 @@ final class LanguageStatsGenerator {
 	use DontGet;
 	use DontSet;
 
-	/** @var Extension[] */
+	/** @var RegularExtension[] */
 	private $extensions = [];
 	/** @var bool */
 	private $disabledExtensions = [];
@@ -72,7 +72,7 @@ final class LanguageStatsGenerator {
 		}
 	}
 
-	public function addExtension(Extension $extension, bool $isDisabled): void {
+	public function addExtension(RegularExtension $extension, bool $isDisabled): void {
 		$this->extensions[] = $extension;
 		$this->stats[$extension->getId()] = $this->getStats($extension->getPackageName());
 		$this->disabledExtensions[$extension->getId()] = $isDisabled;
@@ -80,7 +80,7 @@ final class LanguageStatsGenerator {
 
 	public function generate(): string {
 		$extensions = $this->extensions;
-		usort($extensions, function (Extension $a, Extension $b) {
+		usort($extensions, function (RegularExtension $a, RegularExtension $b) {
 			$result = $this->stats[$b->getId()][$this->sortingCriteria] <=> $this->stats[$a->getId()][$this->sortingCriteria];
 			if ($result === 0) {
 				$result = $this->stats[$b->getId()]['total'] <=> $this->stats[$a->getId()]['total'];
@@ -163,7 +163,7 @@ HTML;
 		]);
 	}
 
-	private function stats(Extension $extension, string $statsType) : string {
+	private function stats(RegularExtension $extension, string $statsType) : string {
 		$badge = $this->statsChangeBadge($extension->getPackageName(), $statsType, $this->stats[$extension->getId()][$statsType]);
 		$statsUrl = "https://packagist.org/packages/{$extension->getPackageName()}/stats";
 

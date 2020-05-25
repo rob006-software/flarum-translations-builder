@@ -14,7 +14,7 @@ declare(strict_types=1);
 namespace app\components\extensions;
 
 use app\components\GithubApi;
-use app\models\Extension;
+use app\models\RegularExtension;
 use app\models\ForkRepository;
 use Dont\DontCall;
 use Dont\DontCallStatic;
@@ -46,7 +46,7 @@ final class PullRequestGenerator {
 	}
 
 	/**
-	 * @param Extension[] $extensions
+	 * @param RegularExtension[] $extensions
 	 * @param int $limit
 	 */
 	public function generateForNewExtensions(array $extensions, int $limit): void {
@@ -77,7 +77,7 @@ final class PullRequestGenerator {
 		}
 	}
 
-	private function updateBranch(string $branchName, Extension $extension): bool {
+	private function updateBranch(string $branchName, RegularExtension $extension): bool {
 		$this->repository->checkoutBranch($branchName);
 		$this->addExtensionToConfig($extension);
 		$this->repository->commit("Update config for {$extension->getPackageName()}.", $commited);
@@ -86,13 +86,13 @@ final class PullRequestGenerator {
 		return $commited;
 	}
 
-	private function addExtensionToConfig(Extension $extension): void {
+	private function addExtensionToConfig(RegularExtension $extension): void {
 		$filePath = $this->repository->getPath() . "/config/{$extension->getProjectId()}-project.php";
 		$generator = new ConfigGenerator($filePath);
 		$generator->updateExtension($extension);
 	}
 
-	private function openPullRequestForNewExtension(string $branchName, Extension $extension): void {
+	private function openPullRequestForNewExtension(string $branchName, RegularExtension $extension): void {
 		$this->githubApi->openPullRequest(
 			Yii::$app->params['translationsRepository'],
 			Yii::$app->params['translationsForkRepository'],
@@ -115,7 +115,7 @@ final class PullRequestGenerator {
 		);
 	}
 
-	private function generatePullRequestBadges(Extension $extension): string {
+	private function generatePullRequestBadges(RegularExtension $extension): string {
 		$name = $extension->getPackageName();
 
 		$output = <<<MD
