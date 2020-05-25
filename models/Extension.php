@@ -18,9 +18,12 @@ use Dont\DontCall;
 use Dont\DontCallStatic;
 use Dont\DontGet;
 use Dont\DontSet;
+use yii\helpers\Inflector;
+use function explode;
 use function strncmp;
 use function strpos;
 use function strtolower;
+use function substr;
 
 /**
  * Class Extension.
@@ -44,9 +47,20 @@ abstract class Extension {
 		return $this->id;
 	}
 
-	abstract public function getName(): string;
+	public function getName(): string {
+		$title = explode('/', $this->getPackageName())[1];
+		if (strncmp($title, 'flarum-ext-', 11) === 0) {
+			$title = substr($title, 11);
+		} elseif (strncmp($title, 'flarum-', 7) === 0) {
+			$title = substr($title, 7);
+		}
 
-	abstract public function getVendor(): string;
+		return Inflector::titleize(strtr($title, ['-' => ' ']));
+	}
+
+	public function getVendor(): string {
+		return explode('/', $this->getPackageName())[0];
+	}
 
 	abstract public function getPackageName(): string;
 

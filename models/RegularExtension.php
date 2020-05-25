@@ -17,7 +17,6 @@ use app\components\extensions\IssueGenerator;
 use app\models\packagist\SearchResult;
 use Yii;
 use yii\helpers\ArrayHelper;
-use yii\helpers\Inflector;
 use function strpos;
 
 /**
@@ -47,12 +46,7 @@ final class RegularExtension extends Extension {
 	}
 
 	public function getName(): string {
-		return $this->getComposerValue('extra.flarum-extension.title')
-			?? Inflector::titleize(strtr(explode('/', $this->getPackageName())[1], ['-' => ' ']));
-	}
-
-	public function getVendor(): string {
-		return explode('/', $this->getPackageName())[0];
+		return $this->getComposerValue('extra.flarum-extension.title') ?? parent::getName();
 	}
 
 	public function getPackageName(): string {

@@ -13,9 +13,6 @@ declare(strict_types=1);
 
 namespace app\models;
 
-use yii\helpers\Inflector;
-use function explode;
-
 /**
  * Premium extension handled manually.
  *
@@ -52,11 +49,11 @@ final class PremiumExtension extends Extension {
 	}
 
 	public function getName(): string {
-		return $this->name ?? Inflector::titleize(strtr(explode('/', $this->getPackageName())[1], ['-' => ' ']));
+		return $this->name ?? parent::getName();
 	}
 
 	public function getVendor(): string {
-		return $this->vendor ?? explode('/', $this->getPackageName())[0];
+		return $this->vendor ?? parent::getVendor();
 	}
 
 	public function getRepositoryUrl(): string {
