@@ -80,6 +80,9 @@ final class ExtensionsRepository extends Component {
 	public function getValidExtensions(array $supportedVersions, bool $useCache = true): array {
 		$extensions = $this->getAllExtensions($useCache);
 		foreach ($extensions as $index => $extension) {
+			if (!$extension instanceof RegularExtension) {
+				continue;
+			}
 			try {
 				if ($extension->isAbandoned()) {
 					unset($extensions[$index]);
