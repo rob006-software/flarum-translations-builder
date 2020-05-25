@@ -106,10 +106,10 @@ final class ExtensionsRepository extends Component {
 			if (!$extension instanceof PremiumExtension) {
 				$extension = new PremiumExtension(
 					$id,
-					$extension['name'],
-					$extension['vendor'],
 					$extension['packageName'],
-					$extension['repositoryUrl']
+					$extension['name'] ?? null,
+					$extension['vendor'] ?? null,
+					$extension['repositoryUrl'] ?? null
 				);
 
 				$this->premiumExtensions[$id] = $extension;

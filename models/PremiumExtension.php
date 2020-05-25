@@ -13,6 +13,9 @@ declare(strict_types=1);
 
 namespace app\models;
 
+use yii\helpers\Inflector;
+use function explode;
+
 /**
  * Premium extension handled manually.
  *
@@ -31,10 +34,10 @@ final class PremiumExtension extends Extension {
 
 	public function __construct(
 		string $id,
-		string $name,
-		string $vendor,
 		string $packageName,
-		string $repositoryUrl
+		?string $name,
+		?string $vendor,
+		?string $repositoryUrl
 	) {
 		$this->name = $name;
 		$this->vendor = $vendor;
@@ -44,20 +47,20 @@ final class PremiumExtension extends Extension {
 		parent::__construct($id);
 	}
 
-	public function getName(): string {
-		return $this->name;
-	}
-
-	public function getVendor(): string {
-		return $this->vendor;
-	}
-
 	public function getPackageName(): string {
 		return $this->packageName;
 	}
 
+	public function getName(): string {
+		return $this->name ?? Inflector::titleize(strtr(explode('/', $this->getPackageName())[1], ['-' => ' ']));
+	}
+
+	public function getVendor(): string {
+		return $this->vendor ?? explode('/', $this->getPackageName())[0];
+	}
+
 	public function getRepositoryUrl(): string {
-		return $this->repositoryUrl;
+		return $this->repositoryUrl ?? "https://extiverse.com/extension/{$this->getPackageName()}";
 	}
 
 	public function verifyName(): bool {
