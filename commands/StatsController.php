@@ -52,7 +52,7 @@ final class StatsController extends Controller {
 
 	public function actionUpdate(array $languages = [], string $configFile = '@app/translations/config.php') {
 		$translations = $this->getTranslations($configFile);
-		$token = __METHOD__ . '#' . $this->getComponentsListHash($translations);
+		$token = __METHOD__ . '#' . LanguageStatsGenerator::getWeek() . '#' . $this->getComponentsListHash($translations);
 		if ($this->isLimited($token)) {
 			return;
 		}

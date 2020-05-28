@@ -16,8 +16,8 @@ declare(strict_types=1);
 
 namespace app\components\extensions;
 
-use app\models\RegularExtension;
 use app\models\Project;
+use app\models\RegularExtension;
 use Dont\DontCall;
 use Dont\DontCallStatic;
 use Dont\DontGet;
@@ -27,7 +27,10 @@ use Webmozart\Assert\Assert;
 use Yii;
 use yii\helpers\Html;
 use yii\helpers\StringHelper;
+use function date;
 use function mb_strlen;
+use function strtotime;
+use function time;
 use function urlencode;
 use function usort;
 
@@ -94,7 +97,6 @@ final class LanguageStatsGenerator {
 # $languageName translation status of extensions
 
 
-<!--suppress HtmlDeprecatedAttribute -->
 <table>
 <thead>
 	<tr>
@@ -163,7 +165,7 @@ HTML;
 		]);
 	}
 
-	private function stats(RegularExtension $extension, string $statsType) : string {
+	private function stats(RegularExtension $extension, string $statsType): string {
 		$badge = $this->statsChangeBadge($extension->getPackageName(), $statsType, $this->stats[$extension->getId()][$statsType]);
 		$statsUrl = "https://packagist.org/packages/{$extension->getPackageName()}/stats";
 
@@ -188,9 +190,9 @@ HTML;
 		}
 
 		return '<br />' . Html::img('https://img.shields.io/badge/-' . urlencode($label) . '-' . $color, [
-			'alt' => $label,
-			'title' => 'Change from last week',
-		]);
+				'alt' => $label,
+				'title' => 'Change from last week',
+			]);
 	}
 
 	private function truncate(string $string, int $limit = 40): string {
@@ -211,17 +213,19 @@ HTML;
 	}
 
 	private function getStats(string $name): array {
-		$stats = Yii::$app->extensionsRepository->getPackagistData($name);
-		$defaultStats = [
-			'total' => 0,
-			'monthly' => 0,
-			'daily' => 0,
-		];
-		if ($stats === null || empty($stats['downloads'])) {
-			return $defaultStats;
-		}
+		return Yii::$app->cache->getOrSet($this->buildStatsKey($name, 'all'), static function () use ($name) {
+			$stats = Yii::$app->extensionsRepository->getPackagistData($name);
+			$defaultStats = [
+				'total' => 0,
+				'monthly' => 0,
+				'daily' => 0,
+			];
+			if ($stats === null || empty($stats['downloads'])) {
+				return $defaultStats;
+			}
 
-		return $stats['downloads'] + $defaultStats;
+			return $stats['downloads'] + $defaultStats;
+		});
 	}
 
 	private function getPreviousStats(string $packageName, string $statsType): ?int {
@@ -238,6 +242,12 @@ HTML;
 	}
 
 	private function buildStatsKey(string $packageName, string $statsType, ?int $timestamp = null): string {
-		return __CLASS__ . "#stats:$packageName:$statsType:" . date('W', $timestamp ?? time());
+		return __CLASS__ . "#stats:$packageName:$statsType:" . self::getWeek($timestamp);
+	}
+
+	public static function getWeek(?int $timestamp = null): string {
+		// We're delaying beginning of the week to Tuesday. In Monday stats from last 24h will include Sunday, so
+		// they're not measurable.
+		return date('W', strtotime('-1 day', $timestamp ?? time()));
 	}
 }
