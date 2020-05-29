@@ -60,6 +60,10 @@ final class PremiumExtension extends Extension {
 		return $this->repositoryUrl ?? "https://extiverse.com/extension/{$this->getPackageName()}";
 	}
 
+	public function getTranslationSourceUrl(): string {
+		return "https://raw.githubusercontent.com/extiverse/premium-translations/master/{$this->getId()}.yml";
+	}
+
 	public function verifyName(): bool {
 		return true;
 	}

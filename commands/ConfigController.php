@@ -15,7 +15,6 @@ namespace app\commands;
 
 use app\components\ConsoleController;
 use app\components\extensions\ConfigGenerator;
-use app\models\RegularExtension;
 use app\models\Repository;
 use app\models\Translations;
 use Yii;
@@ -67,13 +66,11 @@ final class ConfigController extends ConsoleController {
 						Yii::warning("Unable to update {$component->getId()} extension.", __METHOD__);
 						continue;
 					}
-					if ($extension instanceof RegularExtension) {
-						$configGenerator->updateExtension($extension);
-						$this->commitRepository(
-							$translations->getRepository(),
-							"Update config for {$component->getId()}.\n\n{$extension->getTranslationTagsUrl()}"
-						);
-					}
+					$configGenerator->updateExtension($extension);
+					$this->commitRepository(
+						$translations->getRepository(),
+						"Update config for {$component->getId()}.\n\n{$extension->getTranslationTagsUrl()}"
+					);
 				}
 			}
 		}

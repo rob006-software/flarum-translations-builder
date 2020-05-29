@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace app\components\extensions;
 
 use app\models\Extension;
+use app\models\PremiumExtension;
 use app\models\RegularExtension;
 use Dont\DontCall;
 use Dont\DontCallStatic;
@@ -124,6 +125,8 @@ final class ConfigGenerator {
 					$extensionConfig[$key] = $extension->getTranslationSourceUrl(substr($key, 4));
 				}
 			}
+		} elseif ($extension instanceof PremiumExtension) {
+			$extensionConfig['tag'] = $extension->getTranslationSourceUrl();
 		}
 
 		$result = "'{$extension->getId()}' => [\n";
