@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace app\models;
 
+use app\components\extensions\ExtensionsRepository;
 use app\components\extensions\IssueGenerator;
 use app\models\packagist\SearchResult;
 use Yii;
@@ -101,6 +102,11 @@ final class RegularExtension extends Extension {
 
 	public function isLanguagePack(): bool {
 		return $this->getComposerValue('extra.flarum-locale') !== null;
+	}
+
+	public function hasTranslationSource(): bool {
+		$url = $this->getStableTranslationSourceUrl();
+		return $url !== null && strpos($url, ExtensionsRepository::NO_TRANSLATION_FILE) === false;
 	}
 
 	public function getTranslationSourceUrl(?string $branchName = null): string {

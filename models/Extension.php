@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace app\models;
 
-use app\components\extensions\ExtensionsRepository;
 use Dont\DontCall;
 use Dont\DontCallStatic;
 use Dont\DontGet;
@@ -21,7 +20,6 @@ use Dont\DontSet;
 use yii\helpers\Inflector;
 use function explode;
 use function strncmp;
-use function strpos;
 use function strtolower;
 use function substr;
 
@@ -77,10 +75,7 @@ abstract class Extension {
 		return 'various';
 	}
 
-	public function hasTranslationSource(): bool {
-		$url = $this->getStableTranslationSourceUrl();
-		return $url !== null && strpos($url, ExtensionsRepository::NO_TRANSLATION_FILE) === false;
-	}
+	abstract public function hasTranslationSource(): bool;
 
 	/**
 	 * @return bool `true` if name was not changed, `false` otherwise.

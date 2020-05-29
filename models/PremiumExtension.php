@@ -64,6 +64,10 @@ final class PremiumExtension extends Extension {
 		return "https://raw.githubusercontent.com/extiverse/premium-translations/master/{$this->getId()}.yml";
 	}
 
+	public function hasTranslationSource(): bool {
+		return true;
+	}
+
 	public function verifyName(): bool {
 		return true;
 	}
