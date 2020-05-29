@@ -15,6 +15,7 @@ namespace app\commands;
 
 use app\components\ConsoleController;
 use app\components\extensions\ConfigGenerator;
+use app\models\RegularExtension;
 use app\models\Repository;
 use app\models\Translations;
 use Yii;
@@ -67,9 +68,10 @@ final class ConfigController extends ConsoleController {
 						continue;
 					}
 					$configGenerator->updateExtension($extension);
+					$url = $extension instanceof RegularExtension ? $extension->getTranslationTagsUrl() : $extension->getRepositoryUrl();
 					$this->commitRepository(
 						$translations->getRepository(),
-						"Update config for {$component->getId()}.\n\n{$extension->getTranslationTagsUrl()}"
+						"Update config for {$component->getId()}.\n\n{$url}"
 					);
 				}
 			}
