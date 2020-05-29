@@ -14,8 +14,9 @@ declare(strict_types=1);
 namespace app\components\extensions;
 
 use app\components\GithubApi;
-use app\models\RegularExtension;
+use app\models\Extension;
 use app\models\ForkRepository;
+use app\models\RegularExtension;
 use Dont\DontCall;
 use Dont\DontCallStatic;
 use Dont\DontGet;
@@ -46,12 +47,12 @@ final class PullRequestGenerator {
 	}
 
 	/**
-	 * @param RegularExtension[] $extensions
+	 * @param Extension[] $extensions
 	 * @param int $limit
 	 */
 	public function generateForNewExtensions(array $extensions, int $limit): void {
 		foreach ($extensions as $extension) {
-			if ($extension->getStableTranslationSourceUrl() === null) {
+			if ($extension instanceof RegularExtension && $extension->getStableTranslationSourceUrl() === null) {
 				continue;
 			}
 			$branchName = "new/{$extension->getId()}";
@@ -77,7 +78,7 @@ final class PullRequestGenerator {
 		}
 	}
 
-	private function updateBranch(string $branchName, RegularExtension $extension): bool {
+	private function updateBranch(string $branchName, Extension $extension): bool {
 		$this->repository->checkoutBranch($branchName);
 		$this->addExtensionToConfig($extension);
 		$this->repository->commit("Update config for {$extension->getPackageName()}.", $commited);
@@ -86,20 +87,20 @@ final class PullRequestGenerator {
 		return $commited;
 	}
 
-	private function addExtensionToConfig(RegularExtension $extension): void {
+	private function addExtensionToConfig(Extension $extension): void {
 		$filePath = $this->repository->getPath() . "/config/{$extension->getProjectId()}-project.php";
 		$generator = new ConfigGenerator($filePath);
 		$generator->updateExtension($extension);
 	}
 
-	private function openPullRequestForNewExtension(string $branchName, RegularExtension $extension): void {
+	private function openPullRequestForNewExtension(string $branchName, Extension $extension): void {
 		$this->githubApi->openPullRequest(
 			Yii::$app->params['translationsRepository'],
 			Yii::$app->params['translationsForkRepository'],
 			$branchName,
 			[
 				'title' => "Add {$extension->getPackageName()}",
-				'body' => $this->generatePullRequestBadges($extension),
+				'body' => $this->generatePullRequestBody($extension),
 			]
 		);
 	}
@@ -113,6 +114,14 @@ final class PullRequestGenerator {
 				'body' => 'Pull request updated.',
 			]
 		);
+	}
+
+	private function generatePullRequestBody(Extension $extension): string {
+		if ($extension instanceof RegularExtension) {
+			return $this->generatePullRequestBadges($extension);
+		}
+
+		return $extension->getRepositoryUrl() . "\n";
 	}
 
 	private function generatePullRequestBadges(RegularExtension $extension): string {

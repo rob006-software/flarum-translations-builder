@@ -16,7 +16,6 @@ namespace app\commands;
 use app\components\ConsoleController;
 use app\components\extensions\PullRequestGenerator;
 use app\models\ForkRepository;
-use app\models\RegularExtension;
 use app\models\Translations;
 use Yii;
 use const APP_ROOT;
@@ -78,9 +77,6 @@ final class ExtensionsController extends ConsoleController {
 		}
 		foreach ($extensions as $index => $extension) {
 			if (!$extension->hasTranslationSource()) {
-				unset($extensions[$index]);
-			}
-			if (!$extension instanceof RegularExtension) {
 				unset($extensions[$index]);
 			}
 		}
