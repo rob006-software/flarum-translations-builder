@@ -155,7 +155,7 @@ MD;
 		}
 
 		$output .= "## Other\n\n";
-		$output .= "https://flagrow.io/extensions/{$extension->getPackageName()}\n";
+		$output .= "https://extiverse.com/extension/{$extension->getPackageName()}\n";
 		$discussUrl = $extension->getThreadUrl();
 		if ($discussUrl !== null) {
 			$output .= "$discussUrl\n";
