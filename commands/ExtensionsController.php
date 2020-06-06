@@ -43,6 +43,16 @@ final class ExtensionsController extends ConsoleController {
 	public $frequency;
 
 	public function options($actionId) {
+		if ($actionId === 'update-cache') {
+			return array_merge(parent::options($actionId), [
+				'frequency',
+				'verbose',
+				'update',
+				'commit',
+				'push',
+			]);
+		}
+
 		return array_merge(parent::options($actionId), [
 			'frequency',
 			'verbose',
