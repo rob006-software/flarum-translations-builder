@@ -14,6 +14,7 @@
 declare(strict_types=1);
 
 use app\components\extensions\ExtensionsRepository;
+use app\components\ExtiverseApi;
 use app\components\GithubApi;
 use app\components\GitlabApi;
 use yii\caching\ArrayCache;
@@ -42,6 +43,8 @@ abstract class BaseApplication extends \yii\base\Application {
 	public $githubApi;
 	/** @var GitlabApi */
 	public $gitlabApi;
+	/** @var ExtiverseApi */
+	public $extiverseApi;
 	/** @var FileMutex */
 	public $mutex;
 	/** @var ArrayCache */

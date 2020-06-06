@@ -12,6 +12,7 @@
 declare(strict_types=1);
 
 use app\components\extensions\ExtensionsRepository;
+use app\components\ExtiverseApi;
 use app\components\GithubApi;
 use app\components\GitlabApi;
 use yii\caching\ArrayCache;
@@ -110,6 +111,9 @@ return [
 		],
 		'gitlabApi' => [
 			'class' => GitlabApi::class,
+		],
+		'extiverseApi' => [
+			'class' => ExtiverseApi::class,
 		],
 	],
 	'params' => [

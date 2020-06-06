@@ -255,7 +255,6 @@ final class JanitorController extends Controller {
 			null,
 			require Yii::getAlias($configFile)
 		);
-		Yii::$app->extensionsRepository->setPremiumExtensions($translations->getPremiumExtensionsConfig());
 		$translations->getRepository()->update();
 
 		return $translations;

@@ -23,6 +23,9 @@ $localConfig = ArrayHelper::merge($localConfig, [
 		'githubApi' => [
 			'authToken' => null, // @todo fill me
 		],
+		'extiverseApi' => [
+			'authToken' => null, // @todo fill me
+		],
 	],
 ]);
 

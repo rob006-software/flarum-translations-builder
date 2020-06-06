@@ -51,7 +51,6 @@ final class Translations {
 	private $vendors;
 	private $languages;
 	private $supportedVersions;
-	private $premiumExtensions;
 
 	private $repository;
 
@@ -62,7 +61,6 @@ final class Translations {
 		$this->sourcesDir = $config['sourcesDir'];
 		$this->translationsDir = $config['translationsDir'];
 		$this->languages = array_keys($config['languages']);
-		$this->premiumExtensions = $config['premiumExtensions'];
 		$this->vendors = $config['vendors'];
 		$this->subsplits = $config['subsplits'];
 		$this->supportedVersions = $config['supportedVersions'];
@@ -202,10 +200,6 @@ final class Translations {
 
 	public function getVendors(string $projectId): ?array {
 		return $this->vendors[$projectId] ?? null;
-	}
-
-	public function getPremiumExtensionsConfig(): array {
-		return $this->premiumExtensions;
 	}
 
 	public function getSupportedVersions(): array {

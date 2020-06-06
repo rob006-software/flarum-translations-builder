@@ -75,6 +75,12 @@ abstract class Extension {
 		return 'various';
 	}
 
+	abstract public function isAbandoned(): bool;
+
+	abstract public function isLanguagePack(): bool;
+
+	abstract public function isOutdated(array $supportedReleases): bool;
+
 	abstract public function hasTranslationSource(): bool;
 
 	/**

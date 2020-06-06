@@ -16,9 +16,16 @@ namespace app\commands;
 use app\components\ConsoleController;
 use app\components\extensions\PullRequestGenerator;
 use app\models\ForkRepository;
+use app\models\Repository;
 use app\models\Translations;
 use Yii;
+use function file_put_contents;
+use function json_encode;
+use function ksort;
 use const APP_ROOT;
+use const JSON_PRETTY_PRINT;
+use const JSON_UNESCAPED_SLASHES;
+use const JSON_UNESCAPED_UNICODE;
 
 /**
  * Class ExtensionsController.
@@ -28,6 +35,8 @@ use const APP_ROOT;
 final class ExtensionsController extends ConsoleController {
 
 	public $update = true;
+	public $commit = false;
+	public $push = false;
 	public $verbose = false;
 	public $useCache = false;
 	/** @var int */
@@ -93,13 +102,41 @@ final class ExtensionsController extends ConsoleController {
 		$this->updateLimit($token);
 	}
 
+	// Save API response to cache, since API is not publicly available.
+	public function actionUpdateCache(string $configFile = '@app/translations/config.php') {
+		$translations = $this->getTranslations($configFile);
+		if ($this->isLimited(__METHOD__)) {
+			return;
+		}
+
+		$extensions = Yii::$app->extiverseApi->searchExtensions();
+		ksort($extensions);
+		$result = [];
+		foreach ($extensions as $id => $extension) {
+			$result[$id] = [
+				'name' => $extension->getName(),
+				'title' => $extension->getTitle(),
+				'description' => $extension->getDescription(),
+				'version' => $extension->getVersion(),
+			];
+		}
+
+		file_put_contents(
+			$translations->getDir() . '/cache/extiverse.json',
+			json_encode($result, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n"
+		);
+
+		$this->commitRepository($translations->getRepository(), 'Update cache for premium extensions.');
+		$this->pushRepository($translations->getRepository());
+		$this->updateLimit(__METHOD__);
+	}
+
 	private function getTranslations(string $configFile): Translations {
 		$translations = new Translations(
 			Yii::$app->params['translationsRepository'],
 			null,
 			require Yii::getAlias($configFile)
 		);
-		Yii::$app->extensionsRepository->setPremiumExtensions($translations->getPremiumExtensionsConfig());
 		if ($this->update) {
 			$output = $translations->getRepository()->update();
 			if ($this->verbose) {
@@ -108,6 +145,24 @@ final class ExtensionsController extends ConsoleController {
 		}
 
 		return $translations;
+	}
+
+	private function commitRepository(Repository $repository, string $commitMessage): void {
+		if ($this->commit || $this->push) {
+			$output = $repository->commit($commitMessage);
+			if ($this->verbose) {
+				echo $output;
+			}
+		}
+	}
+
+	private function pushRepository(Repository $repository): void {
+		if ($this->push) {
+			$output = $repository->push();
+			if ($this->verbose) {
+				echo $output;
+			}
+		}
 	}
 
 	private function isLimited(string $hash): bool {

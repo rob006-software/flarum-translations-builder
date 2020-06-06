@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+./yii self-update;
+./yii extensions/update-cache --frequency=21600 --push;
+./yii config/update --frequency=21600 --push;
+./yii translations/update --frequency=21600 --push;
+./yii translations/split --frequency=21600 --push;
+./yii readme/update --frequency=21600 --push;
+./yii readme/update-subsplits --frequency=21600 --push;
+./yii extensions/detect-new 10 --frequency=21600;

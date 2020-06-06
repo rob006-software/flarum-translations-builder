@@ -52,7 +52,6 @@ final class ExtensionsRepository extends Component {
 
 	private $_extensions;
 	private $_client;
-	private $premiumExtensions = [];
 
 	/**
 	 * @param bool $useCache
@@ -80,9 +79,6 @@ final class ExtensionsRepository extends Component {
 	public function getValidExtensions(array $supportedVersions, bool $useCache = true): array {
 		$extensions = $this->getAllExtensions($useCache);
 		foreach ($extensions as $index => $extension) {
-			if (!$extension instanceof RegularExtension) {
-				continue;
-			}
 			try {
 				if ($extension->isAbandoned()) {
 					unset($extensions[$index]);
@@ -100,26 +96,6 @@ final class ExtensionsRepository extends Component {
 		return $extensions;
 	}
 
-	// @todo I hope this is temporary solution - premium extensions config should be fetched directly from
-	//       https://extiverse.com/, but I don't know any public and stable API for this.
-	public function setPremiumExtensions(array $extensionsConfig): void {
-		$this->_extensions = null;
-		$this->premiumExtensions = [];
-		foreach ($extensionsConfig as $id => $extension) {
-			if (!$extension instanceof PremiumExtension) {
-				$extension = new PremiumExtension(
-					$id,
-					$extension['packageName'],
-					$extension['name'] ?? null,
-					$extension['vendor'] ?? null,
-					$extension['repositoryUrl'] ?? null
-				);
-
-				$this->premiumExtensions[$id] = $extension;
-			}
-		}
-	}
-
 	private function getClient(): HttpClientInterface {
 		if ($this->_client === null) {
 			$this->_client = HttpClient::create();
@@ -129,12 +105,22 @@ final class ExtensionsRepository extends Component {
 	}
 
 	private function fetchExtensions(): array {
+		$extensions = [];
+		foreach (Yii::$app->extiverseApi->getCachedExtensions() as $result) {
+			$extension = PremiumExtension::createFromExtiverseCache($result);
+			if (
+				!isset($extensions[$extension->getId()])
+				// handle ID conflicts
+				|| $this->compareExtensions($extension, $extensions[$extension->getId()]) > 0
+			) {
+				$extensions[$extension->getId()] = $extension;
+			}
+		}
+
 		$results = $this->searchPackagist([
 			'type' => 'flarum-extension',
 			'per_page' => 100,
 		]);
-
-		$extensions = $this->premiumExtensions;
 		foreach ($results as $result) {
 			assert($result instanceof SearchResult);
 			$extension = RegularExtension::createFromPackagistSearchResult($result);
@@ -150,7 +136,7 @@ final class ExtensionsRepository extends Component {
 		return $extensions;
 	}
 
-	private function compareExtensions(RegularExtension $a, RegularExtension $b): int {
+	private function compareExtensions(Extension $a, Extension $b): int {
 		if ($b->isAbandoned()) {
 			return 1;
 		}
@@ -159,7 +145,7 @@ final class ExtensionsRepository extends Component {
 		}
 
 		// `a-b-c` ID could be created by `a/b-c` package or `a-b/c` package. Prefer this one with shorter vendor - it
-		// will ber harder to create malicious package with conflicting ID.
+		// will be harder to create malicious package with conflicting ID.
 		if ($a->getVendor() !== $b->getVendor()) {
 			return strlen($b->getVendor()) - strlen($a->getVendor());
 		}
@@ -387,6 +373,8 @@ final class ExtensionsRepository extends Component {
 	}
 
 	/**
+	 * @todo Move this to separate component.
+	 *
 	 * @param array $filters
 	 * @return SearchResult[]
 	 */

@@ -25,7 +25,6 @@ namespace app\models;
 final class PremiumExtension extends Extension {
 
 	private $name;
-	private $vendor;
 	private $packageName;
 	private $repositoryUrl;
 
@@ -33,15 +32,22 @@ final class PremiumExtension extends Extension {
 		string $id,
 		string $packageName,
 		?string $name,
-		?string $vendor,
 		?string $repositoryUrl
 	) {
 		$this->name = $name;
-		$this->vendor = $vendor;
 		$this->packageName = $packageName;
 		$this->repositoryUrl = $repositoryUrl;
 
 		parent::__construct($id);
+	}
+
+	public static function createFromExtiverseCache(array $data): self {
+		return new self(
+			self::nameToId($data['name']),
+			$data['name'],
+			$data['title'] ?? null,
+			$data['url'] ?? null
+		);
 	}
 
 	public function getPackageName(): string {
@@ -52,16 +58,24 @@ final class PremiumExtension extends Extension {
 		return $this->name ?? parent::getName();
 	}
 
-	public function getVendor(): string {
-		return $this->vendor ?? parent::getVendor();
-	}
-
 	public function getRepositoryUrl(): string {
 		return $this->repositoryUrl ?? "https://extiverse.com/extension/{$this->getPackageName()}";
 	}
 
 	public function getTranslationSourceUrl(): string {
 		return "https://raw.githubusercontent.com/extiverse/premium-translations/master/{$this->getId()}.yml";
+	}
+
+	public function isAbandoned(): bool {
+		return false;
+	}
+
+	public function isLanguagePack(): bool {
+		return false;
+	}
+
+	public function isOutdated(array $supportedReleases): bool {
+		return false;
 	}
 
 	public function hasTranslationSource(): bool {

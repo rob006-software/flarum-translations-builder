@@ -147,7 +147,6 @@ final class ReadmeController extends ConsoleController {
 			null,
 			require Yii::getAlias($configFile)
 		);
-		Yii::$app->extensionsRepository->setPremiumExtensions($translations->getPremiumExtensionsConfig());
 		if ($this->update) {
 			$output = $translations->getRepository()->update();
 			if ($this->verbose) {
