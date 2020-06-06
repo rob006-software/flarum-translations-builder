@@ -16,7 +16,10 @@ namespace app\components;
 use app\models\extiverse\ApiResult;
 use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
+use Yii;
 use yii\base\Component;
+use yii\caching\CacheInterface;
+use yii\di\Instance;
 use function json_decode;
 
 /**
@@ -30,26 +33,45 @@ class ExtiverseApi extends Component {
 	public $apiUrl = 'https://extiverse.com/api/v1';
 	public $cacheUrl = 'https://raw.githubusercontent.com/rob006-software/flarum-translations/master/cache/extiverse.json';
 
+	/** @var string|array|CacheInterface */
+	public $cache = 'arrayCache';
+
 	private $_client;
 	private $_cachedExtensions;
 
+	public function init(): void {
+		parent::init();
+
+		$this->cache = Instance::ensure($this->cache, CacheInterface::class);
+	}
+
 	/**
+	 * @param bool $useCache
 	 * @return ApiResult[]
 	 */
-	public function searchExtensions(): array {
-		$response['links']['next'] = $this->apiUrl . '/extensions?sort=-created_at&filter[is][]=premium';
+	public function searchExtensions(bool $useCache = true): array {
+		$callback = function () {
+			$response['links']['next'] = $this->apiUrl . '/extensions?sort=-created_at&filter[is][]=premium';
 
-		$results = [];
-		do {
-			$response = $this->getClient()->request('GET', $response['links']['next'])->toArray();
-			foreach ($response['data'] as $item) {
+			$results = [];
+			do {
+				$response = $this->getClient()->request('GET', $response['links']['next'])->toArray();
+				foreach ($response['data'] as $item) {
+					$result = ApiResult::createFromApiResponse($item);
+					$results[$result->getName()] = $result;
+				}
+			} while (isset($response['links']['next']));
 
-				$result = ApiResult::createFromApiResponse($item);
-				$results[$result->getName()] = $result;
-			}
-		} while (isset($response['links']['next']));
+			return $results;
+		};
 
-		return $results;
+		if ($useCache) {
+			return $this->cache->getOrSet(__METHOD__, $callback);
+		}
+
+		$result = $callback();
+		Yii::$app->cache->set(__METHOD__, $result);
+		return $result;
 	}
 
 	public function getCachedExtensions(): array {

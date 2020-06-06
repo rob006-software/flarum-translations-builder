@@ -16,6 +16,8 @@ declare(strict_types=1);
 
 namespace app\components\extensions;
 
+use app\models\Extension;
+use app\models\PremiumExtension;
 use app\models\Project;
 use app\models\RegularExtension;
 use Dont\DontCall;
@@ -48,10 +50,14 @@ final class LanguageStatsGenerator {
 
 	/** @var RegularExtension[] */
 	private $extensions = [];
+	/** @var PremiumExtension[] */
+	private $premiumExtensions = [];
 	/** @var bool */
 	private $disabledExtensions = [];
 	/** @var int[][] */
 	private $stats = [];
+	/** @var int[][] */
+	private $premiumStats = [];
 
 	/** @var string */
 	private $language;
@@ -75,13 +81,22 @@ final class LanguageStatsGenerator {
 		}
 	}
 
-	public function addExtension(RegularExtension $extension, bool $isDisabled): void {
-		$this->extensions[] = $extension;
-		$this->stats[$extension->getId()] = $this->getStats($extension->getPackageName());
+	public function addExtension(Extension $extension, bool $isDisabled): void {
+		if ($extension instanceof RegularExtension) {
+			$this->extensions[] = $extension;
+			$this->stats[$extension->getId()] = $this->getStatsFromPackagist($extension->getPackageName());
+		} elseif ($extension instanceof PremiumExtension) {
+			$this->premiumExtensions[] = $extension;
+			$this->premiumStats[$extension->getId()] = $this->getStatsFromExtiverse($extension->getPackageName());
+		}
 		$this->disabledExtensions[$extension->getId()] = $isDisabled;
 	}
 
 	public function generate(): string {
+		return $this->generateRegularExtensions() . "\n" . $this->generatePremiumExtensions();
+	}
+
+	public function generateRegularExtensions(): string {
 		$extensions = $this->extensions;
 		usort($extensions, function (RegularExtension $a, RegularExtension $b) {
 			$result = $this->stats[$b->getId()][$this->sortingCriteria] <=> $this->stats[$a->getId()][$this->sortingCriteria];
@@ -153,6 +168,72 @@ HTML;
 		return $output;
 	}
 
+	public function generatePremiumExtensions(): string {
+		$extensions = $this->premiumExtensions;
+		usort($extensions, function (PremiumExtension $a, PremiumExtension $b) {
+			$result = $this->premiumStats[$b->getId()]['subscribers'] <=> $this->premiumStats[$a->getId()]['subscribers'];
+			if ($result === 0) {
+				$result = $this->premiumStats[$b->getId()]['downloads'] <=> $this->premiumStats[$a->getId()]['downloads'];
+			}
+
+			return $result;
+		});
+
+		$languageName = Locale::getDisplayLanguage($this->language, 'en');
+		$output = <<<HTML
+# $languageName translation status of premium extensions
+
+
+<table>
+<thead>
+	<tr>
+		<th>Extension</th>
+		<th>Rank</th>
+		<th>Subscribers</th>
+		<th>Downloads</th>
+		<th>Status</th>
+	</tr>
+</thead>
+<tbody>
+
+HTML;
+
+		$rank = 0;
+		foreach ($extensions as $extension) {
+			$rank++;
+			$this->saveStats($extension->getPackageName(), 'subscribers', $this->premiumStats[$extension->getId()]['subscribers']);
+			$this->saveStats($extension->getPackageName(), 'downloads', $this->premiumStats[$extension->getId()]['downloads']);
+			$this->saveStats($extension->getPackageName(), 'rank', $rank);
+
+			$project = $this->projects[$extension->getProjectId()];
+			if ($this->disabledExtensions[$extension->getId()]) {
+				$statusIcon = $this->image('https://img.shields.io/badge/status-disabled-inactive.svg', 'Translation status');
+			} else {
+				$icon = $this->image("https://weblate.rob006.net/widgets/{$project->getWeblateId()}/{$this->language}/{$extension->getId()}/svg-badge.svg", 'Translation status');
+				$statusIcon = $this->link($icon, "https://weblate.rob006.net/projects/{$project->getWeblateId()}/{$extension->getId()}/{$this->language}/");
+			}
+
+			$output .= <<<HTML
+	<tr>
+		<td>{$this->link("<code>{$this->truncate($extension->getPackageName())}</code>", $extension->getRepositoryUrl(), $extension->getPackageName())}</td>
+		<td align="center">{$rank}{$this->statsChangeBadge($extension->getPackageName(), 'rank', $rank, true)}</td>
+		<td align="center">{$this->premiumStats($extension, 'subscribers')}</td>
+		<td align="center">{$this->premiumStats($extension, 'downloads')}</td>
+		<td>$statusIcon</td>
+	</tr>
+
+HTML;
+		}
+
+		$output .= <<<HTML
+</tbody>
+</table>
+
+HTML;
+
+		return $output;
+	}
+
 	private function link(string $text, string $url, ?string $title = null): string {
 		return Html::a($text, $url, [
 			'title' => $title,
@@ -170,6 +251,11 @@ HTML;
 		$statsUrl = "https://packagist.org/packages/{$extension->getPackageName()}/stats";
 
 		return $this->link($this->stats[$extension->getId()][$statsType] . $badge, $statsUrl);
+	}
+
+	private function premiumStats(PremiumExtension $extension, string $statsType): string {
+		return $this->premiumStats[$extension->getId()][$statsType]
+			. $this->statsChangeBadge($extension->getPackageName(), $statsType, $this->premiumStats[$extension->getId()][$statsType]);
 	}
 
 	private function statsChangeBadge(string $packageName, string $statsType, int $currentValue, bool $reverseColor = false): string {
@@ -212,7 +298,7 @@ HTML;
 		return StringHelper::truncate($string, $limit, '…');
 	}
 
-	private function getStats(string $name): array {
+	private function getStatsFromPackagist(string $name): array {
 		return Yii::$app->cache->getOrSet($this->buildStatsKey($name, 'all'), static function () use ($name) {
 			$stats = Yii::$app->extensionsRepository->getPackagistData($name);
 			$defaultStats = [
@@ -225,7 +311,24 @@ HTML;
 			}
 
 			return $stats['downloads'] + $defaultStats;
-		});
+		}, 31 * 24 * 3600);
+	}
+
+	private function getStatsFromExtiverse(string $name): array {
+		return Yii::$app->cache->getOrSet($this->buildStatsKey($name, 'all'), static function () use ($name) {
+			$stats = Yii::$app->extiverseApi->searchExtensions()[$name] ?? null;
+			if ($stats === null) {
+				return [
+					'downloads' => 0,
+					'subscribers' => 0,
+				];
+			}
+
+			return [
+				'downloads' => $stats->getDownloads(),
+				'subscribers' => $stats->getSubscribers(),
+			];
+		}, 31 * 24 * 3600);
 	}
 
 	private function getPreviousStats(string $packageName, string $statsType): ?int {
