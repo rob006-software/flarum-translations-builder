@@ -64,11 +64,11 @@ final class ApiResult {
 		return $this->name;
 	}
 
-	public function getTitle(): string {
+	public function getTitle(): ?string {
 		return $this->title;
 	}
 
-	public function getDescription(): string {
+	public function getDescription(): ?string {
 		return $this->description;
 	}
 
