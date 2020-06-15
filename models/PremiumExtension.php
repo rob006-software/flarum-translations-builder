@@ -13,6 +13,10 @@ declare(strict_types=1);
 
 namespace app\models;
 
+use app\components\extensions\ExtensionsRepository;
+use Yii;
+use function strpos;
+
 /**
  * Premium extension handled manually.
  *
@@ -79,7 +83,10 @@ final class PremiumExtension extends Extension {
 	}
 
 	public function hasTranslationSource(): bool {
-		return true;
+		$url = Yii::$app->extensionsRepository->detectTranslationSourceUrl('https://github.com/extiverse/premium-translations', 'master', [
+			"{$this->getId()}.yml",
+		]);
+		return $url !== null && strpos($url, ExtensionsRepository::NO_TRANSLATION_FILE) === false;
 	}
 
 	public function verifyName(): bool {
