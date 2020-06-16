@@ -19,7 +19,11 @@ use app\models\ForkRepository;
 use app\models\Repository;
 use app\models\Translations;
 use Yii;
+use yii\helpers\ArrayHelper;
+use function file_exists;
+use function file_get_contents;
 use function file_put_contents;
+use function json_decode;
 use function json_encode;
 use function ksort;
 use const APP_ROOT;
@@ -131,8 +135,14 @@ final class ExtensionsController extends ConsoleController {
 			];
 		}
 
+		$cachePath = $translations->getDir() . '/cache/extiverse.json';
+		if (file_exists($cachePath)) {
+			$oldCache = (array) json_decode(file_get_contents($cachePath), true);
+			$result = ArrayHelper::merge($oldCache, $result);
+		}
+
 		file_put_contents(
-			$translations->getDir() . '/cache/extiverse.json',
+			$cachePath,
 			json_encode($result, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n"
 		);
 
