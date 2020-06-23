@@ -101,12 +101,10 @@ final class JanitorController extends Controller {
 		});
 
 		$found = false;
-		foreach ($translations->getProjects() as $project) {
-			foreach ($project->getExtensionsComponents() as $component) {
-				if (!isset($extensions[$component->getId()])) {
-					$found = true;
-					echo $component->getId(), "\n";
-				}
+		foreach ($translations->getExtensionsComponents() as $component) {
+			if (!isset($extensions[$component->getId()])) {
+				$found = true;
+				echo $component->getId(), "\n";
 			}
 		}
 
@@ -115,21 +113,19 @@ final class JanitorController extends Controller {
 		}
 	}
 
-	public function actionRemoveExtension(string $extensionId, string $projectId, string $configFile = '@app/translations/config.php') {
+	public function actionRemoveExtension(string $extensionId, string $configFile = '@app/translations/config.php') {
 		$translations = $this->getTranslations($configFile);
-		$configGenerator = new ConfigGenerator(
-			$translations->getDir() . '/config/' . $projectId . '-project.php'
-		);
+		$configGenerator = new ConfigGenerator($translations->getDir() . '/config/components.php');
 		$configGenerator->removeExtension($extensionId);
 
-		$sourcePath = $translations->getProject($projectId)->getComponentSourcePath($extensionId);
+		$sourcePath = $translations->getComponentSourcePath($extensionId);
 		if (file_exists($sourcePath)) {
 			unlink($sourcePath);
 			echo "Removed $sourcePath source.\n";
 		}
 
 		foreach ($translations->getLanguages() as $language) {
-			$translationPath = $translations->getProject($projectId)->getComponentTranslationPath($extensionId, $language);
+			$translationPath = $translations->getComponentTranslationPath($extensionId, $language);
 			if (file_exists($translationPath)) {
 				unlink($translationPath);
 				echo "Removed $sourcePath translation.\n";
@@ -139,29 +135,21 @@ final class JanitorController extends Controller {
 
 	public function actionMigrateExtension(
 		string $oldExtensionId,
-		string $oldProjectId,
 		string $newExtensionId,
-		string $newProjectId,
 		string $configFile = '@app/translations/config.php'
 	) {
 		$translations = $this->getTranslations($configFile);
-
-		$oldConfigGenerator = new ConfigGenerator(
-			$translations->getDir() . '/config/' . $oldProjectId . '-project.php'
-		);
-		$oldConfigGenerator->removeExtension($oldExtensionId);
-
-		$newConfigGenerator = new ConfigGenerator(
-			$translations->getDir() . '/config/' . $newProjectId . '-project.php'
-		);
 		$extension = Yii::$app->extensionsRepository->getExtension($newExtensionId, false);
 		if ($extension === null) {
 			throw new InvalidConfigException("Invalid extension: $newExtensionId.");
 		}
-		$newConfigGenerator->updateExtension($extension);
 
-		$oldSourcePath = $translations->getProject($oldProjectId)->getComponentSourcePath($oldExtensionId);
-		$newSourcePath = $translations->getProject($newProjectId)->getComponentSourcePath($newExtensionId);
+		$configGenerator = new ConfigGenerator($translations->getDir() . '/config/components.php');
+		$configGenerator->removeExtension($oldExtensionId);
+		$configGenerator->updateExtension($extension);
+
+		$oldSourcePath = $translations->getComponentSourcePath($oldExtensionId);
+		$newSourcePath = $translations->getComponentSourcePath($newExtensionId);
 		if (file_exists($oldSourcePath)) {
 			rename($oldSourcePath, $newSourcePath);
 			echo "Moved $oldSourcePath source to $newSourcePath.\n";
@@ -170,8 +158,8 @@ final class JanitorController extends Controller {
 		}
 
 		foreach ($translations->getLanguages() as $language) {
-			$oldTranslationPath = $translations->getProject($oldProjectId)->getComponentTranslationPath($oldExtensionId, $language);
-			$newTranslationPath = $translations->getProject($newProjectId)->getComponentTranslationPath($newExtensionId, $language);
+			$oldTranslationPath = $translations->getComponentTranslationPath($oldExtensionId, $language);
+			$newTranslationPath = $translations->getComponentTranslationPath($newExtensionId, $language);
 			if (file_exists($oldTranslationPath)) {
 				rename($oldTranslationPath, $newTranslationPath);
 				echo "Moved $oldTranslationPath translation to $newTranslationPath.\n";
@@ -184,12 +172,10 @@ final class JanitorController extends Controller {
 	public function actionOrphans(string $configFile = '@app/translations/config.php') {
 		$translations = $this->getTranslations($configFile);
 		$expectedFiles = [];
-		foreach ($translations->getProjects() as $project) {
-			foreach ($project->getComponents() as $component) {
-				$expectedFiles[] = $project->getComponentSourcePath($component->getId());
-				foreach ($component->getLanguages() as $language) {
-					$expectedFiles[] = $project->getComponentTranslationPath($component->getId(), $language);
-				}
+		foreach ($translations->getComponents() as $component) {
+			$expectedFiles[] = $translations->getComponentSourcePath($component->getId());
+			foreach ($component->getLanguages() as $language) {
+				$expectedFiles[] = $translations->getComponentTranslationPath($component->getId(), $language);
 			}
 		}
 
@@ -223,9 +209,7 @@ final class JanitorController extends Controller {
 	public function actionCleanupTranslations(array $languages, string $configFile = '@app/translations/config.php') {
 		$translations = $this->getTranslations($configFile);
 		foreach ($languages as $language) {
-			foreach ($translations->getProjects() as $project) {
-				$project->cleanupComponents($language);
-			}
+			$translations->cleanupComponents($language);
 		}
 	}
 

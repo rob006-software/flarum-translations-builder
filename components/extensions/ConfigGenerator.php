@@ -93,7 +93,7 @@ final class ConfigGenerator {
 			if (
 				// ignore internal components and config keys
 				strncmp($componentId, '__', 2) === 0
-				|| in_array($componentId, ['core', 'validation'])
+				|| in_array($componentId, ['core', 'validation'], true)
 			) {
 				continue;
 			}

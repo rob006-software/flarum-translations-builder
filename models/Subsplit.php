@@ -83,14 +83,13 @@ abstract class Subsplit {
 		return $this->getRepository()->getPath();
 	}
 
-	public function isValidForComponent(string $projectId, string $componentId): bool {
-		return $this->components === null
-			|| (!empty($this->components[$projectId]) && in_array($componentId, $this->components[$projectId], true));
+	public function isValidForComponent(string $componentId): bool {
+		return $this->components === null || in_array($componentId, $this->components, true);
 	}
 
 	abstract public function split(Translations $translations): void;
 
-	abstract public function getReadmeGenerator(Translations $translations, Project $project): ReadmeGenerator;
+	abstract public function getReadmeGenerator(Translations $translations): ReadmeGenerator;
 
 	public function createReleaseGenerator(): ReleaseGenerator {
 		if ($this->releaseGenerator === null) {

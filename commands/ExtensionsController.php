@@ -69,16 +69,14 @@ final class ExtensionsController extends ConsoleController {
 		$translations = $this->getTranslations($configFile);
 
 		$extensions = Yii::$app->extensionsRepository->getAllExtensions($this->useCache);
-		foreach ($translations->getProjects() as $project) {
-			foreach ($project->getExtensionsComponents() as $component) {
-				if (!isset($extensions[$component->getId()])) {
-					continue;
-				}
-				$extension = $extensions[$component->getId()];
-				echo $component->getId() . ' - '
-					. "[`{$extension->getPackageName()}`]({$extension->getRepositoryUrl()})"
-					. "\n";
+		foreach ($translations->getExtensionsComponents() as $component) {
+			if (!isset($extensions[$component->getId()])) {
+				continue;
 			}
+			$extension = $extensions[$component->getId()];
+			echo $component->getId() . ' - '
+				. "[`{$extension->getPackageName()}`]({$extension->getRepositoryUrl()})"
+				. "\n";
 		}
 	}
 
@@ -93,10 +91,8 @@ final class ExtensionsController extends ConsoleController {
 			$translations->getSupportedVersions(),
 			$this->useCache
 		);
-		foreach ($translations->getProjects() as $project) {
-			foreach ($project->getExtensionsComponents() as $component) {
-				unset($extensions[$component->getId()]);
-			}
+		foreach ($translations->getExtensionsComponents() as $component) {
+			unset($extensions[$component->getId()]);
 		}
 		foreach ($extensions as $index => $extension) {
 			if (!$extension->hasTranslationSource()) {

@@ -20,7 +20,6 @@ use Yii;
 use yii\console\Controller;
 use function array_merge;
 use function in_array;
-use function sort;
 use function time;
 
 /**
@@ -60,13 +59,11 @@ final class StatsController extends Controller {
 
 		foreach ($translations->getLanguages() as $language) {
 			if (empty($languages) || in_array($language, $languages, true)) {
-				$generator = new LanguageStatsGenerator($language, $translations->getProjects());
-				foreach ($translations->getProjects() as $project) {
-					foreach ($project->getExtensionsComponents() as $component) {
-						$extension = Yii::$app->extensionsRepository->getExtension($component->getId());
-						if ($extension !== null) {
-							$generator->addExtension($extension, !$component->isValidForLanguage($language));
-						}
+				$generator = new LanguageStatsGenerator($language);
+				foreach ($translations->getExtensionsComponents() as $component) {
+					$extension = Yii::$app->extensionsRepository->getExtension($component->getId());
+					if ($extension !== null) {
+						$generator->addExtension($extension, !$component->isValidForLanguage($language));
 					}
 				}
 
@@ -80,15 +77,7 @@ final class StatsController extends Controller {
 	}
 
 	private function getComponentsListHash(Translations $translations): string {
-		$components = [];
-		foreach ($translations->getProjects() as $project) {
-			foreach ($project->getComponents() as $component) {
-				$components[] = "{$project->getId()}:{$component->getId()}";
-			}
-		}
-		sort($components);
-
-		return md5(implode(';', $components));
+		return md5(implode(';', array_keys($translations->getComponents())));
 	}
 
 	private function getTranslations(string $configFile): Translations {

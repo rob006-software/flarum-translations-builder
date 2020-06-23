@@ -14,12 +14,12 @@ declare(strict_types=1);
 namespace app\components\readme;
 
 use app\models\Extension;
-use app\models\Project;
 use Dont\DontCall;
 use Dont\DontCallStatic;
 use Dont\DontGet;
 use Dont\DontSet;
 use yii\helpers\Inflector;
+use function in_array;
 
 /**
  * Class ReadmeGenerator.
@@ -35,11 +35,9 @@ abstract class ReadmeGenerator {
 
 	private $extensions = [];
 
-	private $project;
 	private $vendors;
 
-	public function __construct(Project $project, ?array $vendors) {
-		$this->project = $project;
+	public function __construct(array $vendors) {
 		$this->vendors = $vendors;
 	}
 
@@ -55,22 +53,18 @@ abstract class ReadmeGenerator {
 	}
 
 	/**
-	 * @return string[]|null
+	 * @return string[]
 	 */
-	protected function getVendors(): ?array {
+	protected function getVendors(): array {
 		return $this->vendors;
 	}
 
 	protected function generateVendorName(Extension $extension): string {
-		if ($this->vendors === null) {
+		if (in_array($extension->getVendor(), ['fof', 'flarum'], true)) {
 			return '';
 		}
 
 		return ' by ' . ($this->vendors[$extension->getId()] ?? Inflector::titleize(strtr($extension->getVendor(), ['-' => ' '])));
-	}
-
-	protected function getProject(): Project {
-		return $this->project;
 	}
 
 	abstract public function generate(): string;

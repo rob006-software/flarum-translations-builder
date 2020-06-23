@@ -18,14 +18,12 @@ namespace app\components\extensions;
 
 use app\models\Extension;
 use app\models\PremiumExtension;
-use app\models\Project;
 use app\models\RegularExtension;
 use Dont\DontCall;
 use Dont\DontCallStatic;
 use Dont\DontGet;
 use Dont\DontSet;
 use Locale;
-use Webmozart\Assert\Assert;
 use Yii;
 use yii\helpers\Html;
 use yii\helpers\StringHelper;
@@ -61,24 +59,17 @@ final class LanguageStatsGenerator {
 
 	/** @var string */
 	private $language;
-	/** @var Project[] */
-	private $projects = [];
 	private $sortingCriteria;
 
 	/**
 	 * LanguageStatsReadmeGenerator constructor.
 	 *
 	 * @param string $language
-	 * @param Project[] $projects
 	 * @param string $sortingCriteria
 	 */
-	public function __construct(string $language, array $projects, string $sortingCriteria = 'monthly') {
+	public function __construct(string $language, string $sortingCriteria = 'monthly') {
 		$this->language = $language;
 		$this->sortingCriteria = $sortingCriteria;
-		foreach ($projects as $project) {
-			Assert::isInstanceOf($project, Project::class);
-			$this->projects[$project->getId()] = $project;
-		}
 	}
 
 	public function addExtension(Extension $extension, bool $isDisabled): void {
@@ -138,12 +129,11 @@ HTML;
 			$this->saveStats($extension->getPackageName(), 'daily', $this->stats[$extension->getId()]['daily']);
 			$this->saveStats($extension->getPackageName(), 'rank', $rank);
 
-			$project = $this->projects[$extension->getProjectId()];
 			if ($this->disabledExtensions[$extension->getId()]) {
 				$statusIcon = $this->image('https://img.shields.io/badge/status-disabled-inactive.svg', 'Translation status');
 			} else {
-				$icon = $this->image("https://weblate.rob006.net/widgets/{$project->getWeblateId()}/{$this->language}/{$extension->getId()}/svg-badge.svg", 'Translation status');
-				$statusIcon = $this->link($icon, "https://weblate.rob006.net/projects/{$project->getWeblateId()}/{$extension->getId()}/{$this->language}/");
+				$icon = $this->image("https://weblate.rob006.net/widgets/flarum/{$this->language}/{$extension->getId()}/svg-badge.svg", 'Translation status');
+				$statusIcon = $this->link($icon, "https://weblate.rob006.net/projects/flarum/{$extension->getId()}/{$this->language}/");
 			}
 
 			$output .= <<<HTML
@@ -205,12 +195,11 @@ HTML;
 			$this->saveStats($extension->getPackageName(), 'downloads', $this->premiumStats[$extension->getId()]['downloads']);
 			$this->saveStats($extension->getPackageName(), 'rank', $rank);
 
-			$project = $this->projects[$extension->getProjectId()];
 			if ($this->disabledExtensions[$extension->getId()]) {
 				$statusIcon = $this->image('https://img.shields.io/badge/status-disabled-inactive.svg', 'Translation status');
 			} else {
-				$icon = $this->image("https://weblate.rob006.net/widgets/{$project->getWeblateId()}/{$this->language}/{$extension->getId()}/svg-badge.svg", 'Translation status');
-				$statusIcon = $this->link($icon, "https://weblate.rob006.net/projects/{$project->getWeblateId()}/{$extension->getId()}/{$this->language}/");
+				$icon = $this->image("https://weblate.rob006.net/widgets/flarum/{$this->language}/{$extension->getId()}/svg-badge.svg", 'Translation status');
+				$statusIcon = $this->link($icon, "https://weblate.rob006.net/projects/flarum/{$extension->getId()}/{$this->language}/");
 			}
 
 			$output .= <<<HTML

@@ -45,19 +45,15 @@ final class TranslationsController extends ConsoleController {
 		]);
 	}
 
-	public function actionUpdate(array $projects = [], string $configFile = '@app/translations/config.php') {
+	public function actionUpdate(string $configFile = '@app/translations/config.php') {
 		$translations = $this->getTranslations($configFile);
 		$token = __METHOD__ . '#' . $translations->getHash();
 		if ($this->isLimited($token)) {
 			return;
 		}
-		foreach ($translations->getProjects() as $project) {
-			if (empty($projects) || in_array($project->getId(), $projects, true)) {
-				$catalogue = $project->updateSources();
-				foreach ($project->getLanguages() as $language) {
-					$project->updateComponents($language, $catalogue);
-				}
-			}
+		$catalogue = $translations->updateSources();
+		foreach ($translations->getLanguages() as $language) {
+			$translations->updateComponents($language, $catalogue);
 		}
 
 		$this->postProcessRepository($translations->getRepository(), 'Update sources from extensions.');
@@ -79,19 +75,15 @@ final class TranslationsController extends ConsoleController {
 		$this->updateLimit($token);
 	}
 
-	public function actionImport(string $source, string $project, string $component, string $language, string $configFile = '@app/translations/config.php') {
+	public function actionImport(string $source, string $component, string $language, string $configFile = '@app/translations/config.php') {
 		$translations = $this->getTranslations($configFile);
-		$importer = new TranslationsImporter(
-			$translations->getProject($project),
-			$translations->getProject($project)->getComponent($component)
-		);
+		$importer = new TranslationsImporter($translations, $translations->getComponent($component));
 		$importer->import(Yii::getAlias($source), $language);
 
 		$this->postProcessRepository(
 			$translations->getRepository(),
-			strtr('Importing "{component}" component in "{project}" project from "{source}".', [
+			strtr('Importing "{component}" component from "{source}".', [
 				'{component}' => $component,
-				'{project}' => $project,
 				'{source}' => $source,
 			])
 		);

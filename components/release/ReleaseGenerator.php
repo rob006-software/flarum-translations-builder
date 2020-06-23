@@ -187,7 +187,7 @@ abstract class ReleaseGenerator {
 			if (
 				strncmp($file, $prefix, strlen($prefix)) === 0
 				&& substr($file, -4) === '.yml'
-				&& !in_array($file, ["{$prefix}core.yml", "{$prefix}validation.yml"])
+				&& !in_array($file, ["{$prefix}core.yml", "{$prefix}validation.yml"], true)
 			) {
 				$changedExtensions[substr($file, strlen($prefix), -4)] = $changeType;
 			}
@@ -206,7 +206,7 @@ abstract class ReleaseGenerator {
 				"{$prefix}validation.yml",
 				"{$prefix}config.js",
 				"{$prefix}config.css",
-			])) {
+			], true)) {
 				$coreChanges[substr($file, strlen($prefix))] = $changeType;
 			}
 		}

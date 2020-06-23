@@ -14,7 +14,7 @@ declare(strict_types=1);
 namespace app\components\translations;
 
 use app\models\Component;
-use app\models\Project;
+use app\models\Translations;
 use Dont\DontCall;
 use Dont\DontCallStatic;
 use Dont\DontGet;
@@ -41,13 +41,13 @@ final class TranslationsImporter {
 	use DontGet;
 	use DontSet;
 
-	/** @var Project */
-	private $project;
+	/** @var Translations */
+	private $translations;
 	/** @var Component */
 	private $component;
 
-	public function __construct(Project $project, Component $component) {
-		$this->project = $project;
+	public function __construct(Translations $translations, Component $component) {
+		$this->translations = $translations;
 		$this->component = $component;
 	}
 
@@ -63,10 +63,10 @@ final class TranslationsImporter {
 		$translator = new Translator($language);
 		$translator->addLoader('array', new ArrayLoader());
 		$translator->addLoader('json', new JsonFileLoader());
-		if (file_exists($this->project->getComponentTranslationPath($this->component->getId(), $language))) {
+		if (file_exists($this->translations->getComponentTranslationPath($this->component->getId(), $language))) {
 			$translator->addResource(
 				'json',
-				$this->project->getComponentTranslationPath($this->component->getId(), $language),
+				$this->translations->getComponentTranslationPath($this->component->getId(), $language),
 				$language,
 				$this->component->getId()
 			);
@@ -80,6 +80,6 @@ final class TranslationsImporter {
 
 		$catalogue = $translator->getCatalogue($language);
 		assert($catalogue instanceof MessageCatalogue);
-		$this->project->saveTranslations($catalogue, $this->project->getTranslationsPath($language));
+		$this->translations->saveTranslations($catalogue, $this->translations->getTranslationsPath($language));
 	}
 }

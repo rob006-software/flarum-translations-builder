@@ -15,6 +15,7 @@ namespace app\commands;
 
 use app\components\ConsoleController;
 use app\components\readme\MainReadmeGenerator;
+use app\models\Extension;
 use app\models\LanguageSubsplit;
 use app\models\Repository;
 use app\models\Translations;
@@ -22,6 +23,7 @@ use mindplay\readable;
 use Yii;
 use yii\base\InvalidArgumentException;
 use function file_get_contents;
+use function in_array;
 use function strpos;
 use function substr;
 
@@ -31,6 +33,13 @@ use function substr;
  * @author Robert Korulczyk <robert@korulczyk.pl>
  */
 final class ReadmeController extends ConsoleController {
+
+	private const GROUPS = [
+		'all',
+		'flarum',
+		'fof',
+		'various',
+	];
 
 	public $defaultAction = 'update';
 
@@ -58,22 +67,22 @@ final class ReadmeController extends ConsoleController {
 			return;
 		}
 		$readme = file_get_contents($translations->getDir() . '/README.md');
-		foreach ($translations->getProjects() as $project) {
-			$generator = new MainReadmeGenerator($project, $translations->getVendors($project->getId()));
-			foreach ($project->getExtensionsComponents() as $component) {
-				$extension = Yii::$app->extensionsRepository->getExtension($component->getId());
-				if ($extension !== null) {
-					$generator->addExtension($extension);
-				}
-			}
-
+		foreach (self::GROUPS as $group) {
 			if (
-				strpos($readme, "<!-- {$project->getId()}-extensions-list-start -->") !== false
-				&& strpos($readme, "<!-- {$project->getId()}-extensions-list-stop -->") !== false
+				strpos($readme, "<!-- {$group}-extensions-list-start -->") !== false
+				&& strpos($readme, "<!-- {$group}-extensions-list-stop -->") !== false
 			) {
+				$generator = new MainReadmeGenerator($translations->getVendors());
+				foreach ($group->getExtensionsComponents() as $component) {
+					$extension = Yii::$app->extensionsRepository->getExtension($component->getId());
+					if ($extension !== null && $this->isValidForGroup($extension, $group)) {
+						$generator->addExtension($extension);
+					}
+				}
+
 				$readme = $this->replaceBetween(
-					"<!-- {$project->getId()}-extensions-list-start -->",
-					"<!-- {$project->getId()}-extensions-list-stop -->",
+					"<!-- {$group}-extensions-list-start -->",
+					"<!-- {$group}-extensions-list-stop -->",
 					$readme,
 					$generator->generate()
 				);
@@ -98,27 +107,32 @@ final class ReadmeController extends ConsoleController {
 				&& $subsplit->shouldUpdateReadme()
 			) {
 				$readme = file_get_contents($subsplit->getDir() . '/README.md');
-				foreach ($translations->getProjects() as $project) {
-					$generator = $subsplit->getReadmeGenerator($translations, $project);
-					foreach ($project->getExtensionsComponents() as $component) {
-						if (
-							(!($subsplit instanceof LanguageSubsplit) || $component->isValidForLanguage($subsplit->getLanguage()))
-							&& $subsplit->isValidForComponent($project->getId(), $component->getId())
-							&& $subsplit->hasTranslationForComponent($component->getId())
-						) {
-							$extension = Yii::$app->extensionsRepository->getExtension($component->getId());
-							if ($extension !== null) {
-								$generator->addExtension($extension);
+				foreach (self::GROUPS as $group) {
+					if (
+						strpos($readme, "<!-- {$group}-extensions-list-start -->") !== false
+						&& strpos($readme, "<!-- {$group}-extensions-list-stop -->") !== false
+					) {
+						$generator = $subsplit->getReadmeGenerator($translations);
+						foreach ($group->getExtensionsComponents() as $component) {
+							if (
+								(!($subsplit instanceof LanguageSubsplit) || $component->isValidForLanguage($subsplit->getLanguage()))
+								&& $subsplit->isValidForComponent($component->getId())
+								&& $subsplit->hasTranslationForComponent($component->getId())
+							) {
+								$extension = Yii::$app->extensionsRepository->getExtension($component->getId());
+								if ($extension !== null && $this->isValidForGroup($extension, $group)) {
+									$generator->addExtension($extension);
+								}
 							}
 						}
-					}
 
-					$readme = $this->replaceBetween(
-						"<!-- {$project->getId()}-extensions-list-start -->",
-						"<!-- {$project->getId()}-extensions-list-stop -->",
-						$readme,
-						$generator->generate()
-					);
+						$readme = $this->replaceBetween(
+							"<!-- {$group->getId()}-extensions-list-start -->",
+							"<!-- {$group->getId()}-extensions-list-stop -->",
+							$readme,
+							$generator->generate()
+						);
+					}
 				}
 
 				file_put_contents($subsplit->getDir() . '/README.md', $readme);
@@ -187,5 +201,16 @@ final class ReadmeController extends ConsoleController {
 
 	private function updateLimit(string $hash): void {
 		Yii::$app->cache->set($hash, time(), 31 * 24 * 60 * 60);
+	}
+
+	private function isValidForGroup(Extension $extension, string $group): bool {
+		if ($group === 'all') {
+			return true;
+		}
+		if (in_array($group, ['flarum', 'fof'], true)) {
+			return $group === $extension->getVendor();
+		}
+
+		return !in_array($extension->getVendor(), ['flarum', 'fof'], true);
 	}
 }

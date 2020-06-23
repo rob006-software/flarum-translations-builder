@@ -32,7 +32,6 @@ final class Component {
 
 	private $sources;
 	private $id;
-	private $project;
 	private $languages;
 
 	/**
@@ -40,13 +39,11 @@ final class Component {
 	 *
 	 * @param string[] $sources
 	 * @param string $id
-	 * @param string $project
 	 * @param string[] $languages
 	 */
-	public function __construct(array $sources, string $id, string $project, array $languages) {
+	public function __construct(array $sources, string $id, array $languages) {
 		$this->sources = $sources;
 		$this->id = $id;
-		$this->project = $project;
 		$this->languages = $languages;
 	}
 
@@ -59,10 +56,6 @@ final class Component {
 
 	public function getId(): string {
 		return $this->id;
-	}
-
-	public function getProject(): string {
-		return $this->project;
 	}
 
 	/**

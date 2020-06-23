@@ -64,17 +64,6 @@ abstract class Extension {
 
 	abstract public function getRepositoryUrl(): string;
 
-	public function getProjectId(): string {
-		if (strncmp('fof/', $this->getPackageName(), 4) === 0) {
-			return 'fof';
-		}
-		if (strncmp('flarum/', $this->getPackageName(), 7) === 0) {
-			return 'flarum';
-		}
-
-		return 'various';
-	}
-
 	abstract public function isAbandoned(): bool;
 
 	abstract public function isLanguagePack(): bool;

@@ -88,7 +88,7 @@ final class PullRequestGenerator {
 	}
 
 	private function addExtensionToConfig(Extension $extension): void {
-		$filePath = $this->repository->getPath() . "/config/{$extension->getProjectId()}-project.php";
+		$filePath = $this->repository->getPath() . '/config/components.php';
 		$generator = new ConfigGenerator($filePath);
 		$generator->updateExtension($extension);
 	}

@@ -261,7 +261,7 @@ final class ExtensionsRepository extends Component {
 			if ($response->getStatusCode() < 300) {
 				return $response->getContent() !== '';
 			}
-			if (in_array($response->getStatusCode(), [404, 403])) {
+			if (in_array($response->getStatusCode(), [404, 403], true)) {
 				return false;
 			}
 			Yii::warning(

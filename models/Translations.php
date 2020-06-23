@@ -13,22 +13,50 @@ declare(strict_types=1);
 
 namespace app\models;
 
+use app\commands\ConfigController;
+use app\components\extensions\ExtensionsRepository;
+use app\components\translations\JsonFileDumper;
+use app\components\translations\YamlLoader;
 use Dont\DontCall;
 use Dont\DontCallStatic;
 use Dont\DontGet;
 use Dont\DontSet;
 use mindplay\readable;
+use Symfony\Component\HttpClient\HttpClient;
+use Symfony\Component\Translation\Loader\ArrayLoader;
+use Symfony\Component\Translation\Loader\JsonFileLoader;
+use Symfony\Component\Translation\MessageCatalogue;
+use Symfony\Component\Translation\Translator;
+use Symfony\Component\Translation\Util\ArrayConverter;
+use Symfony\Contracts\HttpClient\HttpClientInterface;
+use Yii;
+use yii\base\Exception;
 use yii\base\InvalidArgumentException;
 use yii\base\InvalidConfigException;
-use yii\helpers\ArrayHelper;
+use function array_filter;
+use function array_intersect_key;
+use function array_reverse;
+use function assert;
 use function dir;
+use function file_exists;
+use function file_get_contents;
+use function getenv;
 use function implode;
 use function in_array;
+use function is_array;
 use function is_dir;
+use function is_string;
+use function json_decode;
 use function json_encode;
 use function md5;
 use function md5_file;
 use function pathinfo;
+use function sleep;
+use function strpos;
+use function unlink;
+use const JSON_PRETTY_PRINT;
+use const JSON_UNESCAPED_SLASHES;
+use const JSON_UNESCAPED_UNICODE;
 
 /**
  * Class Translations.
@@ -46,7 +74,7 @@ final class Translations {
 	private $dir;
 	private $sourcesDir;
 	private $translationsDir;
-	private $projects = [];
+	private $components = [];
 	private $subsplits;
 	private $vendors;
 	private $languages;
@@ -64,43 +92,58 @@ final class Translations {
 		$this->vendors = $config['vendors'];
 		$this->subsplits = $config['subsplits'];
 		$this->supportedVersions = $config['supportedVersions'];
-		foreach ($config['projects'] as $projectId => $projectConfig) {
+		foreach ($config['components'] as $componentId => $componentConfig) {
 			$languages = [];
-			foreach ($config['languages'] as $language => $languageConfig) {
-				if (isset($languageConfig[$projectId])) {
-					$languages[$language] = $languageConfig[$projectId];
+			foreach ($config['languages'] as $language => $languageComponents) {
+				if (in_array($componentId, $languageComponents, true)) {
+					$languages[] = $language;
 				}
 			}
-			$sourcesDir = ArrayHelper::remove($projectConfig, '__sourcesDir', "$this->sourcesDir/$projectId");
-			$translationsDir = ArrayHelper::remove($projectConfig, '__translationsDir', "$this->translationsDir/$projectId");
-			$weblateId = ArrayHelper::remove($projectConfig, '__weblateId', $projectId);
-			assert(is_string($sourcesDir));
-			assert(is_string($translationsDir));
-			assert(is_string($weblateId));
-			$this->projects[$projectId] = new Project(
-				$projectId,
-				$weblateId,
-				$projectConfig,
-				$languages,
-				$sourcesDir,
-				$translationsDir
-			);
+
+			if (is_string($componentConfig)) {
+				$this->components[$componentId] = new Component([$componentConfig], $componentId, $languages);
+			} elseif (is_array($componentConfig)) {
+				$this->components[$componentId] = new Component($componentConfig, $componentId, $languages);
+			} else {
+				throw new InvalidConfigException('Invalid $config: ' . readable::value($componentConfig) . '.');
+			}
 		}
 	}
 
 	/**
-	 * @return Project[]
+	 * @return Component[]
 	 */
-	public function getProjects(): array {
-		return $this->projects;
+	public function getComponents(): array {
+		return $this->components;
 	}
 
-	public function getProject(string $id): Project {
-		if (!isset($this->projects[$id])) {
-			throw new InvalidArgumentException('There is no project with ' . readable::value($id) . ' ID.');
+	/**
+	 * @return Component[]
+	 */
+	public function getExtensionsComponents(): array {
+		return array_filter($this->components, static function (Component $component) {
+			return $component->isExtension();
+		});
+	}
+
+	public function getComponent(string $id): Component {
+		if (!isset($this->components[$id])) {
+			throw new InvalidArgumentException('There is no component with ' . readable::value($id) . ' ID.');
 		}
 
-		return $this->projects[$id];
+		return $this->components[$id];
+	}
+
+	public function getComponentSourcePath(string $componentId): string {
+		return "$this->sourcesDir/{$componentId}.json";
+	}
+
+	public function getComponentTranslationPath(string $componentId, string $language): string {
+		return "$this->translationsDir/$language/{$componentId}.json";
+	}
+
+	public function getTranslationsPath(string $language): string {
+		return "$this->translationsDir/$language";
 	}
 
 	/**
@@ -198,11 +241,155 @@ final class Translations {
 		return md5(implode(':', $hashes));
 	}
 
-	public function getVendors(string $projectId): ?array {
-		return $this->vendors[$projectId] ?? null;
+	public function getVendors(): array {
+		return $this->vendors;
 	}
 
 	public function getSupportedVersions(): array {
 		return $this->supportedVersions;
+	}
+
+	public function updateSources(): MessageCatalogue {
+		$translator = $this->fetchSources();
+		$catalogue = $translator->getCatalogue();
+		assert($catalogue instanceof MessageCatalogue);
+		$this->validateSourcesChanges($catalogue);
+		$this->saveTranslations($catalogue, $this->sourcesDir);
+
+		return $catalogue;
+	}
+
+	private function fetchSources(): Translator {
+		$client = HttpClient::create();
+		$translator = new Translator('en');
+		$translator->addLoader('yaml', new YamlLoader());
+		foreach ($this->getComponents() as $component) {
+			// reverse array to process top record at the end - it will overwrite any previous translation
+			foreach (array_reverse($component->getSources()) as $source) {
+				// don't try to download URLs with placeholder for missing translation
+				if (strpos($source, ExtensionsRepository::NO_TRANSLATION_FILE) === false) {
+					$translator->addResource('yaml', $this->fetchUrl($client, $source), 'en', $component->getId());
+				} else {
+					Yii::warning("Skipped downloading $source.", __METHOD__ . '.skip');
+				}
+			}
+		}
+		return $translator;
+	}
+
+	private function fetchUrl(HttpClientInterface $client, string $url): string {
+		$tries = 3;
+		while ($tries-- > 0) {
+			$response = $client->request('GET', $url);
+			if ($response->getStatusCode() < 300) {
+				return $response->getContent();
+			}
+			if (in_array($response->getStatusCode(), [404, 403], true)) {
+				// it should be done by queue, but there is no queue support at the moment, so this must be enough for now
+				ConfigController::resetFrequencyLimit();
+				return $response->getContent();
+			}
+			Yii::warning(
+				"Cannot load $url: " . readable::values($response->getInfo()),
+				__METHOD__ . ':' . $response->getStatusCode()
+			);
+			sleep(1);
+		}
+
+		/* @noinspection PhpUndefinedVariableInspection */
+		return $response->getContent();
+	}
+
+	public function updateComponents(string $language, MessageCatalogue $sourcesCatalogue): void {
+		$translator = new Translator($language);
+		$translator->addLoader('json_file', new JsonFileLoader());
+		$translator->addLoader('array', new ArrayLoader());
+
+		foreach ($this->getComponents() as $component) {
+			$filePath = $this->getComponentTranslationPath($component->getId(), $language);
+			if (!$component->isValidForLanguage($language)) {
+				if (file_exists($filePath)) {
+					unlink($filePath);
+				}
+			} else {
+				$sources = $sourcesCatalogue->all($component->getId());
+				foreach ($sources as $key => $source) {
+					$sources[$key] = '';
+				}
+				$translator->addResource('array', $sources, $language, $component->getId());
+				if (file_exists($filePath)) {
+					$translator->addResource('json_file', $filePath, $language, $component->getId());
+				}
+			}
+		}
+
+		$catalogue = $translator->getCatalogue();
+		assert($catalogue instanceof MessageCatalogue);
+		$this->saveTranslations($catalogue, $this->getTranslationsPath($language));
+	}
+
+	public function cleanupComponents(string $language): void {
+		$translator = new Translator($language);
+		$translator->addLoader('json_file', new JsonFileLoader());
+		$translator->addLoader('array', new ArrayLoader());
+
+		foreach ($this->getComponents() as $component) {
+			$translationFilePath = $this->getComponentTranslationPath($component->getId(), $language);
+			if (file_exists($translationFilePath)) {
+				$translator->addResource('json_file', $translationFilePath, $language, $component->getId());
+			}
+			$sourceFilePath = $this->getComponentSourcePath($component->getId());
+			$translator->addResource('json_file', $sourceFilePath, 'en', $component->getId());
+		}
+		foreach ($this->getComponents() as $component) {
+			$translations = $translator->getCatalogue($language)->all($component->getId());
+			if (!empty($translations)) {
+				$sources = $translator->getCatalogue('en')->all($component->getId());
+				// use only translations for phrases available in sources
+				$translator->getCatalogue($language)->replace(array_intersect_key($translations, $sources), $component->getId());
+			}
+		}
+
+		$catalogue = $translator->getCatalogue($language);
+		assert($catalogue instanceof MessageCatalogue);
+		$this->saveTranslations($catalogue, $this->getTranslationsPath($language));
+	}
+
+	public function saveTranslations(MessageCatalogue $catalogue, string $path): void {
+		$dumper = new JsonFileDumper();
+		$dumper->setRelativePathTemplate('%domain%.%extension%');
+		$dumper->dump($catalogue, [
+			'path' => $path,
+			'as_tree' => true,
+			'json_encoding' => JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES,
+		]);
+	}
+
+	private function validateSourcesChanges(MessageCatalogue $catalogue): void {
+		if (getenv('TRAVIS')) {
+			return;
+		}
+		foreach ($this->getExtensionsComponents() as $component) {
+			if (!file_exists($this->getComponentSourcePath($component->getId()))) {
+				continue;
+			}
+			$new = ArrayConverter::expandToTree($catalogue->all($component->getId()));
+			$old = json_decode(file_get_contents($this->getComponentSourcePath($component->getId())), true);
+			if ($old !== $new) {
+				$extension = Yii::$app->extensionsRepository->getExtension($component->getId());
+				if ($extension === null) {
+					throw new Exception("Unable to find extension for '{$component->getId()}' component.");
+				}
+				if (!$extension->verifyName()) {
+					// If name was changed, ignore new source. Such cases should be handled manually - verifyName()
+					// will open issue about it on issue tracker.
+					// @see https://github.com/rob006-software/flarum-translations-builder/issues/6
+					$catalogue->replace(
+						(new ArrayLoader())->load($old, 'en', $component->getId())->all($component->getId()),
+						$component->getId()
+					);
+				}
+			}
+		}
 	}
 }

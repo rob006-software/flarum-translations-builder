@@ -20,7 +20,6 @@ use app\models\Repository;
 use app\models\Translations;
 use Yii;
 use function array_merge;
-use function in_array;
 use function time;
 
 /**
@@ -49,32 +48,26 @@ final class ConfigController extends ConsoleController {
 		]);
 	}
 
-	public function actionUpdate(array $projects = [], string $configFile = '@app/translations/config.php') {
+	public function actionUpdate(string $configFile = '@app/translations/config.php') {
 		if ($this->isLimited(__METHOD__)) {
 			return;
 		}
 		$translations = $this->getTranslations($configFile);
 
-		foreach ($translations->getProjects() as $project) {
-			if (empty($projects) || in_array($project->getId(), $projects, true)) {
-				$configGenerator = new ConfigGenerator(
-					$translations->getDir() . '/config/' . $project->getId() . '-project.php'
-				);
+		$configGenerator = new ConfigGenerator($translations->getDir() . '/config/components.php');
 
-				foreach ($project->getExtensionsComponents() as $component) {
-					$extension = Yii::$app->extensionsRepository->getExtension($component->getId());
-					if ($extension === null) {
-						Yii::warning("Unable to update {$component->getId()} extension.", __METHOD__);
-						continue;
-					}
-					$configGenerator->updateExtension($extension);
-					$url = $extension instanceof RegularExtension ? $extension->getTranslationTagsUrl() : $extension->getRepositoryUrl();
-					$this->commitRepository(
-						$translations->getRepository(),
-						"Update config for {$component->getId()}.\n\n{$url}"
-					);
-				}
+		foreach ($translations->getExtensionsComponents() as $component) {
+			$extension = Yii::$app->extensionsRepository->getExtension($component->getId());
+			if ($extension === null) {
+				Yii::warning("Unable to update {$component->getId()} extension.", __METHOD__);
+				continue;
 			}
+			$configGenerator->updateExtension($extension);
+			$url = $extension instanceof RegularExtension ? $extension->getTranslationTagsUrl() : $extension->getRepositoryUrl();
+			$this->commitRepository(
+				$translations->getRepository(),
+				"Update config for {$component->getId()}.\n\n{$url}"
+			);
 		}
 
 		$this->pushRepository($translations->getRepository());
