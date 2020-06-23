@@ -73,7 +73,7 @@ final class ReadmeController extends ConsoleController {
 				&& strpos($readme, "<!-- {$group}-extensions-list-stop -->") !== false
 			) {
 				$generator = new MainReadmeGenerator($translations->getVendors());
-				foreach ($group->getExtensionsComponents() as $component) {
+				foreach ($translations->getExtensionsComponents() as $component) {
 					$extension = Yii::$app->extensionsRepository->getExtension($component->getId());
 					if ($extension !== null && $this->isValidForGroup($extension, $group)) {
 						$generator->addExtension($extension);
@@ -113,7 +113,7 @@ final class ReadmeController extends ConsoleController {
 						&& strpos($readme, "<!-- {$group}-extensions-list-stop -->") !== false
 					) {
 						$generator = $subsplit->getReadmeGenerator($translations);
-						foreach ($group->getExtensionsComponents() as $component) {
+						foreach ($translations->getExtensionsComponents() as $component) {
 							if (
 								(!($subsplit instanceof LanguageSubsplit) || $component->isValidForLanguage($subsplit->getLanguage()))
 								&& $subsplit->isValidForComponent($component->getId())
