@@ -127,8 +127,8 @@ final class ReadmeController extends ConsoleController {
 						}
 
 						$readme = $this->replaceBetween(
-							"<!-- {$group->getId()}-extensions-list-start -->",
-							"<!-- {$group->getId()}-extensions-list-stop -->",
+							"<!-- {$group}-extensions-list-start -->",
+							"<!-- {$group}-extensions-list-stop -->",
 							$readme,
 							$generator->generate()
 						);
