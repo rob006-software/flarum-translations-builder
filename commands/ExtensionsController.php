@@ -137,6 +137,7 @@ final class ExtensionsController extends ConsoleController {
 			$result = ArrayHelper::merge($oldCache, $result);
 		}
 
+		ksort($result);
 		file_put_contents(
 			$cachePath,
 			json_encode($result, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n"
