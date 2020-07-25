@@ -25,6 +25,9 @@ use function strncmp;
  */
 final class PolishReleaseGenerator extends ReleaseGenerator {
 
+	protected $versionTemplate = 'v0.Major.Minor.Patch';
+	protected $skipPatch = true;
+
 	protected function generateChangelogEntryContent(): string {
 		$added = [];
 		$changed = [];

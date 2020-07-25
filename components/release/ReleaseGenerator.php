@@ -48,8 +48,8 @@ abstract class ReleaseGenerator {
 	use DontGet;
 	use DontSet;
 
-	protected $versionTemplate = 'v0.Major.Minor.Patch';
-	protected $skipPatch = true;
+	protected $versionTemplate = 'Major.Minor.Patch';
+	protected $skipPatch = false;
 
 	private $subsplit;
 	private $repository;
