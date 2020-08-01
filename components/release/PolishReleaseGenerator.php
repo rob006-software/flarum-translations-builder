@@ -28,6 +28,11 @@ final class PolishReleaseGenerator extends ReleaseGenerator {
 	protected $versionTemplate = 'v0.Major.Minor.Patch';
 	protected $skipPatch = true;
 
+	protected function isMinorUpdate(): bool {
+		// switch to strict semver
+		return true;
+	}
+
 	protected function generateChangelogEntryContent(): string {
 		$added = [];
 		$changed = [];
