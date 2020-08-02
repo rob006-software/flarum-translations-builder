@@ -101,11 +101,17 @@ final class ReadmeController extends ConsoleController {
 		if ($this->isLimited($token)) {
 			return;
 		}
-		foreach ($translations->getSubsplits() as $subsplit) {
-			if (
-				(empty($subsplits) || in_array($subsplit->getId(), $subsplits, true))
-				&& $subsplit->shouldUpdateReadme()
-			) {
+
+		if (empty($subsplits)) {
+			$subsplits = $translations->getSubsplits();
+		} else {
+			foreach ($subsplits as $key => $subsplitId) {
+				$subsplits[$key] = $translations->getSubsplit($subsplitId);
+			}
+		}
+
+		foreach ($subsplits as $subsplit) {
+			if ($subsplit->shouldUpdateReadme()) {
 				$readme = file_get_contents($subsplit->getDir() . '/README.md');
 				foreach (self::GROUPS as $group) {
 					if (

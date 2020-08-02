@@ -66,11 +66,18 @@ final class TranslationsController extends ConsoleController {
 		if ($this->isLimited($token)) {
 			return;
 		}
-		foreach ($translations->getSubsplits() as $subsplit) {
-			if (empty($subsplits) || in_array($subsplit->getId(), $subsplits, true)) {
-				$subsplit->split($translations);
-				$this->postProcessRepository($subsplit->getRepository(), 'Sync translations with main repository.');
+
+		if (empty($subsplits)) {
+			$subsplits = $translations->getSubsplits();
+		} else {
+			foreach ($subsplits as $key => $subsplitId) {
+				$subsplits[$key] = $translations->getSubsplit($subsplitId);
 			}
+		}
+
+		foreach ($subsplits as $subsplit) {
+			$subsplit->split($translations);
+			$this->postProcessRepository($subsplit->getRepository(), 'Sync translations with main repository.');
 		}
 		$this->updateLimit($token);
 	}
