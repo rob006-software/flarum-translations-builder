@@ -89,10 +89,12 @@ final class RegularExtension extends Extension {
 		if ($data === null || !isset($data['require']['flarum/core'])) {
 			return true;
 		}
-		$requiredFlarum = $data['require']['flarum/core'];
+
+		// normalize dashes - 0.1.0-beta-13 is equivalent to 0.1.0-beta.13
+		$requiredFlarum = strtr($data['require']['flarum/core'], ['-' => '.']);
 		foreach ($supportedReleases as $release) {
 			// @todo this check is quite naive - we may need to replace it by regular constraint resolving
-			if (strpos($requiredFlarum, $release) !== false) {
+			if (strpos($requiredFlarum, strtr($release, ['-' => '.'])) !== false) {
 				return false;
 			}
 		}
