@@ -137,10 +137,10 @@ final class ExtensionsRepository extends Component {
 	}
 
 	private function compareExtensions(Extension $a, Extension $b): int {
-		if ($b->isAbandoned()) {
+		if ($b->isAbandoned() && !$a->isAbandoned()) {
 			return 1;
 		}
-		if ($a->isAbandoned()) {
+		if ($a->isAbandoned() && !$b->isAbandoned()) {
 			return -1;
 		}
 
