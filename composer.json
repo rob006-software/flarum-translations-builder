@@ -53,7 +53,7 @@
 	"config": {
 		"process-timeout": 1800,
 		"platform": {
-			"php": "7.1.21"
+			"php": "7.2.34"
 		},
 		"sort-packages": true
 	},
