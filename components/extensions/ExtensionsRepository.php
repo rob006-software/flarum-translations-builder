@@ -25,6 +25,8 @@ use Composer\Semver\Semver;
 use Composer\Semver\VersionParser;
 use mindplay\readable;
 use Symfony\Component\HttpClient\HttpClient;
+use Symfony\Component\Yaml\Exception\ParseException;
+use Symfony\Component\Yaml\Yaml;
 use Symfony\Contracts\HttpClient\Exception\HttpExceptionInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use UnexpectedValueException;
@@ -33,6 +35,7 @@ use yii\base\Component;
 use yii\helpers\ArrayHelper;
 use function array_filter;
 use function count;
+use function is_array;
 use function json_decode;
 use function reset;
 use function strlen;
@@ -259,7 +262,21 @@ final class ExtensionsRepository extends Component {
 		while ($tries-- > 0) {
 			$response = $this->getClient()->request('GET', $url);
 			if ($response->getStatusCode() < 300) {
-				return $response->getContent() !== '';
+				if ($response->getContent() === '') {
+					return false;
+				}
+				try {
+					if (is_array(Yaml::parse($response->getContent()))) {
+						return true;
+					}
+				} catch (ParseException $exception) {
+					// ignore exception, we will log warning bellow
+				}
+				Yii::warning(
+					"Cannot load YAML from $url: " . readable::value($response->getContent()),
+					__METHOD__ . ':' . $response->getStatusCode()
+				);
+				return false;
 			}
 			if (in_array($response->getStatusCode(), [404, 403], true)) {
 				return false;
