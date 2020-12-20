@@ -16,6 +16,9 @@ namespace app\components\release;
 use app\models\Extension;
 use app\models\Repository;
 use Yii;
+use function file_get_contents;
+use function json_decode;
+use function ltrim;
 use function strncmp;
 
 /**
@@ -52,7 +55,7 @@ final class PolishReleaseGenerator extends ReleaseGenerator {
 		if (!empty($this->getCoreChanges())) {
 			$content .= "**Ogólne usprawnienia**:\n\n";
 			foreach ($this->getCoreChanges() as $file => $changeType) {
-				$label = self::getCoreChangesLabels()[$file] ?? "Aktualizacja `$file`";
+				$label = $this->getCoreChangesLabels()[$file] ?? "Aktualizacja `$file`";
 				$content .= "* $label.\n";
 			}
 			$content .= "\n\n";
@@ -67,7 +70,9 @@ final class PolishReleaseGenerator extends ReleaseGenerator {
 			$content .= "\n\n";
 		}
 		if (!empty($changed)) {
-			$content .= "**Zaktualizowano tłumaczenia dla rozszerzeń**:\n\n";
+			$content .= $this->isMajorUpdate()
+				? "**Usunięte przestarzałe frazy dla rozszerzeń**:\n\n"
+				: "**Zaktualizowano tłumaczenia dla rozszerzeń**:\n\n";
 			/* @var $extension Extension */
 			foreach ($changed as $id => $extension) {
 				$content .= "* [`{$extension->getPackageName()}`]({$extension->getRepositoryUrl()})\n";
@@ -75,7 +80,7 @@ final class PolishReleaseGenerator extends ReleaseGenerator {
 			$content .= "\n\n";
 		}
 		if (!empty($removed)) {
-			$content .= "**Usunięto wsparcie dla rozszerzeń**:\n\n";
+			$content .= "**Usunięto wsparcie dla przestarzałych rozszerzeń**:\n\n";
 			/* @var $extension Extension */
 			foreach ($removed as $extension) {
 				$content .= "* [`{$extension->getPackageName()}`]({$extension->getRepositoryUrl()})\n";
@@ -90,16 +95,35 @@ final class PolishReleaseGenerator extends ReleaseGenerator {
 		return $content;
 	}
 
-	private static function getCoreChangesLabels(): array {
+	private function getCoreChangesLabels(): array {
 		return [
-			'core.yml' => 'Aktualizacja tłumaczeń głównego silnika Flarum',
-			'validation.yml' => 'Aktualizacja tłumaczeń komunikatów walidacji',
-			'config.js' => 'Aktualizacja formatu dat',
+			'core.yml' => $this->isMajorUpdate()
+				? "Usunięto przestarzałe frazy dla głównego silnika Flarum (wspierana jest wersja `{$this->getSupportedFlarumVersion()}` lub wyższa)"
+				: 'Aktualizacja tłumaczeń głównego silnika Flarum',
+			'validation.yml' => $this->isMajorUpdate()
+				? "Usunięto przestarzałe komunikaty walidacji (wspierana jest wersja `{$this->getSupportedFlarumVersion()}` lub wyższa)"
+				: 'Aktualizacja tłumaczeń komunikatów walidacji',
+			'config.js' => 'Aktualizacja tłumaczeń dayjs',
 			'config.css' => 'Aktualizacja stylów',
 		];
 	}
 
+	private function getSupportedFlarumVersion(): string {
+		$composerInfo = json_decode(file_get_contents($this->getRepository()->getPath() . '/composer.json'), true);
+		return ltrim($composerInfo['require']['flarum/core'], '~^');
+	}
+
 	public function getAnnouncement(): string {
+		$command = $this->isMajorUpdate() ? 'require' : 'update';
+		$warning = !$this->isMajorUpdate()
+			? ''
+			: <<<MD
+
+*Ta wersja usuwa wsparcie dla starszych wersji Flarum oraz starszych wersji niektórych rozszerzeń. 
+Przed aktualizacją upewnij się, że twoje forum jest aktualne i korzysta z najnowszych wersji rozszerzeń.*
+
+MD;
+
 		return <<<MD
 https://discuss.flarum.org/d/18134-polish-language-pack
 -------------------------------------------------------
@@ -109,10 +133,10 @@ https://discuss.flarum.org/d/18134-polish-language-pack
 Aby zaktualizować:
 
 ```console
-composer update rob006/flarum-lang-polish
+composer $command rob006/flarum-lang-polish
 php flarum cache:clear
 ```
-
+$warning
 MD;
 	}
 
