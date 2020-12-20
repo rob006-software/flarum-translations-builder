@@ -71,7 +71,7 @@ final class PolishReleaseGenerator extends ReleaseGenerator {
 		}
 		if (!empty($changed)) {
 			$content .= $this->isMajorUpdate()
-				? "**Usunięte przestarzałe frazy dla rozszerzeń**:\n\n"
+				? "**Usunięto przestarzałe frazy dla rozszerzeń**:\n\n"
 				: "**Zaktualizowano tłumaczenia dla rozszerzeń**:\n\n";
 			/* @var $extension Extension */
 			foreach ($changed as $id => $extension) {
@@ -119,8 +119,8 @@ final class PolishReleaseGenerator extends ReleaseGenerator {
 			? ''
 			: <<<MD
 
-*Ta wersja usuwa wsparcie dla starszych wersji Flarum oraz starszych wersji niektórych rozszerzeń. 
-Przed aktualizacją upewnij się, że twoje forum jest aktualne i korzysta z najnowszych wersji rozszerzeń.*
+**Ta wersja usuwa wsparcie dla starszych wersji Flarum oraz starszych wersji niektórych rozszerzeń. 
+Przed aktualizacją upewnij się, że twoje forum jest aktualne i korzysta z najnowszych wersji rozszerzeń.**
 
 MD;
 
