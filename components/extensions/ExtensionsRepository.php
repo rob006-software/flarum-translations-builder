@@ -255,7 +255,7 @@ final class ExtensionsRepository extends Component {
 			}
 		}
 
-		return $this->generateRawUrl($repositoryUrl, static::NO_TRANSLATION_FILE);
+		return $this->generateRawUrl($repositoryUrl, self::NO_TRANSLATION_FILE);
 	}
 
 	private function testSourceUrl(string $url, int $tries = 5): bool {
