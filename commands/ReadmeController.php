@@ -112,6 +112,7 @@ final class ReadmeController extends ConsoleController {
 
 		foreach ($subsplits as $subsplit) {
 			if ($subsplit->shouldUpdateReadme()) {
+				$subsplit->getRepository()->update();
 				$readme = file_get_contents($subsplit->getDir() . '/README.md');
 				foreach (self::GROUPS as $group) {
 					if (
