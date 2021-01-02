@@ -55,12 +55,13 @@ final class JanitorController extends Controller {
 	public function actionBranches(string $configFile = '@app/translations/config.php') {
 		$translations = $this->getTranslations($configFile);
 
+		$components = $translations->getExtensionsComponents();
 		$extensions = Yii::$app->extensionsRepository->getValidExtensions(
 			$translations->getSupportedVersions(),
 			$this->useCache
 		);
-		$extensions = array_filter($extensions, static function (Extension $extension) {
-			return $extension->hasTranslationSource();
+		$extensions = array_filter($extensions, static function (Extension $extension) use ($components) {
+			return !isset($components[$extension->getId()]) && $extension->hasTranslationSource();
 		});
 
 		$repository = new ForkRepository(
