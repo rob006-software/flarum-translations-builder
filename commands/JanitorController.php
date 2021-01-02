@@ -104,7 +104,11 @@ final class JanitorController extends Controller {
 		foreach ($translations->getExtensionsComponents() as $component) {
 			if (!isset($extensions[$component->getId()])) {
 				$found = true;
-				echo $component->getId(), "\n";
+				$extension = Yii::$app->extensionsRepository->getExtension($component->getId(), $this->useCache);
+				assert($extension instanceof Extension);
+				echo " - [`{$component->getId()}`]({$extension->getRepositoryUrl()})"
+					. " - [`{$extension->getPackageName()}`](https://packagist.org/packages/{$extension->getPackageName()})"
+					. "\n";
 			}
 		}
 
