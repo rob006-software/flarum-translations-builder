@@ -15,7 +15,7 @@
 	"minimum-stability": "dev",
 	"prefer-stable": true,
 	"require": {
-		"php": "^7.1",
+		"php": "^7.3",
 		"cache/filesystem-adapter": "^1.0",
 		"composer/semver": "^1.5",
 		"cpliakas/git-wrapper": "^2.2",
@@ -53,7 +53,7 @@
 	"config": {
 		"process-timeout": 1800,
 		"platform": {
-			"php": "7.2.34"
+			"php": "7.3.25"
 		},
 		"sort-packages": true
 	},
