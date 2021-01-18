@@ -109,6 +109,7 @@ final class PolishReleaseGenerator extends ReleaseGenerator {
 	}
 
 	private function getSupportedFlarumVersion(): string {
+		/* @noinspection JsonEncodingApiUsageInspection */
 		$composerInfo = json_decode(file_get_contents($this->getRepository()->getPath() . '/composer.json'), true);
 		return ltrim($composerInfo['require']['flarum/core'], '~^');
 	}

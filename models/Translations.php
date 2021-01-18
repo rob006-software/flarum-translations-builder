@@ -55,6 +55,7 @@ use function sleep;
 use function strpos;
 use function unlink;
 use const JSON_PRETTY_PRINT;
+use const JSON_THROW_ON_ERROR;
 use const JSON_UNESCAPED_SLASHES;
 use const JSON_UNESCAPED_UNICODE;
 
@@ -83,7 +84,7 @@ final class Translations {
 	private $repository;
 
 	public function __construct(string $repository, ?string $branch, array $config) {
-		$this->hash = md5(json_encode($config));
+		$this->hash = md5(json_encode($config, JSON_THROW_ON_ERROR));
 		$this->repository = new Repository($repository, $branch, $config['dir']);
 		$this->dir = $config['dir'];
 		$this->sourcesDir = $config['sourcesDir'];
@@ -374,7 +375,7 @@ final class Translations {
 				continue;
 			}
 			$new = ArrayConverter::expandToTree($catalogue->all($component->getId()));
-			$old = json_decode(file_get_contents($this->getComponentSourcePath($component->getId())), true);
+			$old = json_decode(file_get_contents($this->getComponentSourcePath($component->getId())), true, 512, JSON_THROW_ON_ERROR);
 			if ($old !== $new) {
 				$extension = Yii::$app->extensionsRepository->getExtension($component->getId());
 				if ($extension === null) {

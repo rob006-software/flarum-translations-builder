@@ -214,6 +214,7 @@ final class ExtensionsRepository extends Component {
 			try {
 				// We cannot use toArray() here - raw.githubusercontent.com always returns content-type as
 				// "text/plain; charset=utf-8" while HttpClient expects JSON compatible content-type header.
+				/* @noinspection JsonEncodingApiUsageInspection */
 				$return = json_decode($response->getContent(), true);
 				if ($return === null) {
 					throw new UnableLoadComposerJsonException(

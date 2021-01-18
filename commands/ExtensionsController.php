@@ -28,6 +28,7 @@ use function json_encode;
 use function ksort;
 use const APP_ROOT;
 use const JSON_PRETTY_PRINT;
+use const JSON_THROW_ON_ERROR;
 use const JSON_UNESCAPED_SLASHES;
 use const JSON_UNESCAPED_UNICODE;
 
@@ -133,14 +134,14 @@ final class ExtensionsController extends ConsoleController {
 
 		$cachePath = $translations->getDir() . '/cache/extiverse.json';
 		if (file_exists($cachePath)) {
-			$oldCache = (array) json_decode(file_get_contents($cachePath), true);
+			$oldCache = (array) json_decode(file_get_contents($cachePath), true, 512, JSON_THROW_ON_ERROR);
 			$result = ArrayHelper::merge($oldCache, $result);
 		}
 
 		ksort($result);
 		file_put_contents(
 			$cachePath,
-			json_encode($result, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n"
+			json_encode($result, JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n"
 		);
 
 		$this->commitRepository($translations->getRepository(), 'Update cache for premium extensions.');

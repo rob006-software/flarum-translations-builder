@@ -16,6 +16,7 @@ namespace app\components\translations;
 use Symfony\Component\Translation\Dumper\JsonFileDumper as BaseJsonFileDumper;
 use Symfony\Component\Translation\MessageCatalogue;
 use Symfony\Component\Translation\Util\ArrayConverter;
+use const JSON_THROW_ON_ERROR;
 
 /**
  * Class JsonFileDumper.
@@ -32,6 +33,6 @@ final class JsonFileDumper extends BaseJsonFileDumper {
 			$data = ArrayConverter::expandToTree($data);
 		}
 
-		return json_encode($data, $flags) . "\n";
+		return json_encode($data, JSON_THROW_ON_ERROR | $flags) . "\n";
 	}
 }

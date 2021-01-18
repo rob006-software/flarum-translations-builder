@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace app\models\extiverse;
 
+use app\models\extiverse\exceptions\InvalidApiResponseException;
 use Dont\DontCall;
 use Dont\DontCallStatic;
 use Dont\DontGet;
@@ -50,7 +51,12 @@ final class ApiResult {
 	}
 
 	public static function createFromApiResponse(array $data): self {
-		return new static([
+		if ($data['attributes']['highest-version'] === null) {
+			throw new InvalidApiResponseException(
+				"Missing version for {$data['attributes']['name']} extension.",
+			);
+		}
+		return new self([
 			'name' => $data['attributes']['name'],
 			'title' => $data['attributes']['title'] ?? null,
 			'description' => $data['attributes']['description'] ?? null,
