@@ -111,37 +111,39 @@ final class ReadmeController extends ConsoleController {
 		}
 
 		foreach ($subsplits as $subsplit) {
-			if ($subsplit->shouldUpdateReadme()) {
-				$subsplit->getRepository()->update();
-				$readme = file_get_contents($subsplit->getDir() . '/README.md');
-				foreach (self::GROUPS as $group) {
-					if (
-						strpos($readme, "<!-- {$group}-extensions-list-start -->") !== false
-						&& strpos($readme, "<!-- {$group}-extensions-list-stop -->") !== false
-					) {
-						$generator = $subsplit->getReadmeGenerator($translations);
-						foreach ($translations->getExtensionsComponents() as $component) {
-							if (
-								(!($subsplit instanceof LanguageSubsplit) || $component->isValidForLanguage($subsplit->getLanguage()))
-								&& $subsplit->isValidForComponent($component->getId())
-								&& $subsplit->hasTranslationForComponent($component->getId())
-							) {
-								$extension = Yii::$app->extensionsRepository->getExtension($component->getId());
-								if ($extension !== null && $this->isValidForGroup($extension, $group)) {
-									$generator->addExtension($extension);
-								}
+			$subsplit->getRepository()->update();
+			$readme = file_get_contents($subsplit->getDir() . '/README.md');
+			$changed = false;
+			foreach (self::GROUPS as $group) {
+				if (
+					strpos($readme, "<!-- {$group}-extensions-list-start -->") !== false
+					&& strpos($readme, "<!-- {$group}-extensions-list-stop -->") !== false
+				) {
+					$generator = $subsplit->getReadmeGenerator($translations);
+					foreach ($translations->getExtensionsComponents() as $component) {
+						if (
+							(!($subsplit instanceof LanguageSubsplit) || $component->isValidForLanguage($subsplit->getLanguage()))
+							&& $subsplit->isValidForComponent($component->getId())
+							&& $subsplit->hasTranslationForComponent($component->getId())
+						) {
+							$extension = Yii::$app->extensionsRepository->getExtension($component->getId());
+							if ($extension !== null && $this->isValidForGroup($extension, $group)) {
+								$generator->addExtension($extension);
 							}
 						}
-
-						$readme = $this->replaceBetween(
-							"<!-- {$group}-extensions-list-start -->",
-							"<!-- {$group}-extensions-list-stop -->",
-							$readme,
-							$generator->generate()
-						);
 					}
-				}
 
+					$changed = true;
+					$readme = $this->replaceBetween(
+						"<!-- {$group}-extensions-list-start -->",
+						"<!-- {$group}-extensions-list-stop -->",
+						$readme,
+						$generator->generate()
+					);
+				}
+			}
+
+			if ($changed) {
 				file_put_contents($subsplit->getDir() . '/README.md', $readme);
 				$this->postProcessRepository($subsplit->getRepository(), 'Update translations status in README.');
 			}

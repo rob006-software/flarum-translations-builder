@@ -37,7 +37,6 @@ abstract class Subsplit {
 	private $repository;
 	private $path;
 	private $components;
-	private $updateReadme;
 	private $releaseGenerator;
 	private $repositoryUrl;
 
@@ -47,13 +46,11 @@ abstract class Subsplit {
 		string $branch,
 		string $path,
 		?array $components,
-		?bool $updateReadme = false,
 		?string $releaseGenerator = null
 	) {
 		$this->id = $id;
 		$this->path = $path;
 		$this->components = $components;
-		$this->updateReadme = $updateReadme;
 		$this->releaseGenerator = $releaseGenerator;
 		$this->repositoryUrl = $repository;
 		$this->repository = new Repository($repository, $branch, APP_ROOT . "/runtime/subsplits/$id");
@@ -69,10 +66,6 @@ abstract class Subsplit {
 
 	public function getId(): string {
 		return $this->id;
-	}
-
-	public function shouldUpdateReadme(): bool {
-		return $this->updateReadme;
 	}
 
 	public function getPath(): string {

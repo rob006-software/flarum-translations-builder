@@ -173,7 +173,6 @@ final class Translations {
 						$config['branch'],
 						$config['path'],
 						$config['components'] ?? null,
-						$config['updateReadme'] ?? false,
 						$config['releaseGenerator'] ?? null
 					);
 					break;

@@ -43,12 +43,11 @@ final class LanguageSubsplit extends Subsplit {
 		string $branch,
 		string $path,
 		?array $components,
-		?bool $updateReadme = false,
 		?string $releaseGenerator = null
 	) {
 		$this->language = $language;
 
-		parent::__construct($id, $repository, $branch, $path, $components, $updateReadme, $releaseGenerator);
+		parent::__construct($id, $repository, $branch, $path, $components, $releaseGenerator);
 	}
 
 	public function split(Translations $translations): void {
