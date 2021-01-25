@@ -62,7 +62,7 @@ final class TranslationsController extends ConsoleController {
 
 	public function actionSplit(array $subsplits = [], string $configFile = '@app/translations/config.php') {
 		$translations = $this->getTranslations($configFile);
-		$token = __METHOD__ . '#' . $translations->getTranslationsHash();
+		$token = __METHOD__ . '#' . $translations->getTranslationsHash() . $translations->getHash();
 		if ($this->isLimited($token)) {
 			return;
 		}
