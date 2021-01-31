@@ -50,8 +50,10 @@ final class LanguageStatsGenerator {
 	private $extensions = [];
 	/** @var PremiumExtension[] */
 	private $premiumExtensions = [];
-	/** @var bool */
+	/** @var bool[] */
 	private $disabledExtensions = [];
+	/** @var bool[]|null[] */
+	private $outdatedExtensions = [];
 	/** @var int[][] */
 	private $stats = [];
 	/** @var int[][] */
@@ -72,7 +74,7 @@ final class LanguageStatsGenerator {
 		$this->sortingCriteria = $sortingCriteria;
 	}
 
-	public function addExtension(Extension $extension, bool $isDisabled): void {
+	public function addExtension(Extension $extension, bool $isDisabled, ?bool $isOutdated): void {
 		if ($extension instanceof RegularExtension) {
 			$this->extensions[] = $extension;
 			$this->stats[$extension->getId()] = $this->getStatsFromPackagist($extension->getPackageName());
@@ -81,6 +83,7 @@ final class LanguageStatsGenerator {
 			$this->premiumStats[$extension->getId()] = $this->getStatsFromExtiverse($extension->getPackageName());
 		}
 		$this->disabledExtensions[$extension->getId()] = $isDisabled;
+		$this->outdatedExtensions[$extension->getId()] = $isOutdated;
 	}
 
 	public function generate(): string {
@@ -129,6 +132,17 @@ HTML;
 			$this->saveStats($extension->getPackageName(), 'daily', $this->stats[$extension->getId()]['daily']);
 			$this->saveStats($extension->getPackageName(), 'rank', $rank);
 
+			if ($this->outdatedExtensions[$extension->getId()] === null) {
+				// @see https://emojipedia.org/large-yellow-circle/
+				$compatibilityIcon = '<span title="Compatibility status with recent Flarum is unknown">🟡</span>';
+			} elseif ($this->outdatedExtensions[$extension->getId()]) {
+				// @see https://emojipedia.org/large-red-circle/
+				$compatibilityIcon = '<span title="Incompatible with recent Flarum">🔴</span>';
+			} else {
+				// @see https://emojipedia.org/large-green-circle/
+				$compatibilityIcon = '<span title="Compatible with recent Flarum">🟢</span>';
+			}
+
 			if ($this->disabledExtensions[$extension->getId()]) {
 				$statusIcon = $this->image('https://img.shields.io/badge/status-disabled-inactive.svg', 'Translation status');
 			} else {
@@ -138,7 +152,10 @@ HTML;
 
 			$output .= <<<HTML
 	<tr>
-		<td>{$this->link("<code>{$this->truncate($extension->getPackageName())}</code>", $extension->getRepositoryUrl(), $extension->getPackageName())}</td>
+		<td>
+			{$compatibilityIcon}
+			{$this->link("<code>{$this->truncate($extension->getPackageName())}</code>", $extension->getRepositoryUrl(), $extension->getPackageName())}
+		</td>
 		<td align="center">{$rank}{$this->statsChangeBadge($extension->getPackageName(), 'rank', $rank, true)}</td>
 		<td align="center">{$this->stats($extension, 'total')}</td>
 		<td align="center">{$this->stats($extension, 'monthly')}</td>

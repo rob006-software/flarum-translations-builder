@@ -80,6 +80,7 @@ final class Translations {
 	private $vendors;
 	private $languages;
 	private $supportedVersions;
+	private $unsupportedVersions;
 
 	private $repository;
 
@@ -93,6 +94,7 @@ final class Translations {
 		$this->vendors = $config['vendors'];
 		$this->subsplits = $config['subsplits'];
 		$this->supportedVersions = $config['supportedVersions'];
+		$this->unsupportedVersions = $config['unsupportedVersions'] ?? [];
 		foreach ($config['components'] as $componentId => $componentConfig) {
 			$languages = [];
 			foreach ($config['languages'] as $language => $languageComponents) {
@@ -247,6 +249,10 @@ final class Translations {
 
 	public function getSupportedVersions(): array {
 		return $this->supportedVersions;
+	}
+
+	public function getUnsupportedVersions(): array {
+		return $this->unsupportedVersions;
 	}
 
 	public function updateSources(): MessageCatalogue {

@@ -78,7 +78,7 @@ final class PremiumExtension extends Extension {
 		return false;
 	}
 
-	public function isOutdated(array $supportedReleases): bool {
+	public function isOutdated(array $supportedReleases, array $unsupportedReleases): ?bool {
 		return false;
 	}
 

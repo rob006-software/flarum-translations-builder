@@ -63,7 +63,14 @@ final class StatsController extends Controller {
 				foreach ($translations->getExtensionsComponents() as $component) {
 					$extension = Yii::$app->extensionsRepository->getExtension($component->getId());
 					if ($extension !== null) {
-						$generator->addExtension($extension, !$component->isValidForLanguage($language));
+						$generator->addExtension(
+							$extension,
+							!$component->isValidForLanguage($language),
+							$extension->isOutdated(
+								$translations->getSupportedVersions(),
+								$translations->getUnsupportedVersions()
+							)
+						);
 					}
 				}
 

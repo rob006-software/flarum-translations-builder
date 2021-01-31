@@ -16,6 +16,7 @@ namespace app\models;
 use app\components\extensions\ExtensionsRepository;
 use app\components\extensions\IssueGenerator;
 use app\models\packagist\SearchResult;
+use Composer\Semver\Semver;
 use Yii;
 use yii\helpers\ArrayHelper;
 use function strpos;
@@ -40,7 +41,7 @@ final class RegularExtension extends Extension {
 	}
 
 	public static function createFromPackagistSearchResult(SearchResult $result): self {
-		$extension = new static(static::nameToId($result->getName()), $result->getRepository());
+		$extension = new self(self::nameToId($result->getName()), $result->getRepository());
 		$extension->packagistBasicData = $result;
 
 		return $extension;
@@ -80,7 +81,7 @@ final class RegularExtension extends Extension {
 		return $this->getPackagistBasicData()->getAbandoned();
 	}
 
-	public function isOutdated(array $supportedReleases): bool {
+	public function isOutdated(array $supportedReleases, array $unsupportedReleases): ?bool {
 		$lastTag = Yii::$app->extensionsRepository->detectLastTag($this->repositoryUrl);
 		if ($lastTag === null) {
 			return true;
@@ -90,12 +91,16 @@ final class RegularExtension extends Extension {
 			return true;
 		}
 
-		// normalize dashes - 0.1.0-beta-13 is equivalent to 0.1.0-beta.13
-		$requiredFlarum = strtr($data['require']['flarum/core'], ['-' => '.']);
+		$requiredFlarum = $data['require']['flarum/core'];
+		$unclear = false;
+		foreach ($unsupportedReleases as $release) {
+			if (Semver::satisfies($release, $requiredFlarum)) {
+				$unclear = true;
+			}
+		}
 		foreach ($supportedReleases as $release) {
-			// @todo this check is quite naive - we may need to replace it by regular constraint resolving
-			if (strpos($requiredFlarum, strtr($release, ['-' => '.'])) !== false) {
-				return false;
+			if (Semver::satisfies($release, $requiredFlarum)) {
+				return $unclear ? null : false;
 			}
 		}
 
@@ -159,8 +164,8 @@ final class RegularExtension extends Extension {
 	}
 
 	public function verifyName(): bool {
-		$githubName = static::nameToId($this->getComposerData(true)['name']);
-		$packagistName = static::nameToId($this->getPackageName());
+		$githubName = self::nameToId($this->getComposerData(true)['name']);
+		$packagistName = self::nameToId($this->getPackageName());
 		if ($packagistName === $githubName) {
 			return true;
 		}

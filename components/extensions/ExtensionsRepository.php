@@ -76,10 +76,11 @@ final class ExtensionsRepository extends Component {
 
 	/**
 	 * @param string[] $supportedVersions
+	 * @param string[] $unsupportedVersions
 	 * @param bool $useCache
 	 * @return Extension[]
 	 */
-	public function getValidExtensions(array $supportedVersions, bool $useCache = true): array {
+	public function getValidExtensions(array $supportedVersions, array $unsupportedVersions, bool $useCache = true): array {
 		$extensions = $this->getAllExtensions($useCache);
 		foreach ($extensions as $index => $extension) {
 			try {
@@ -87,7 +88,9 @@ final class ExtensionsRepository extends Component {
 					unset($extensions[$index]);
 				} elseif ($extension->isLanguagePack()) {
 					unset($extensions[$index]);
-				} elseif ($extension->isOutdated($supportedVersions)) {
+				} elseif ($extension->isOutdated($supportedVersions, $unsupportedVersions) === true) {
+					// @todo check if isOutdated() returned `null` - we may need to exclude extensions with
+					//       ambiguous constraints
 					unset($extensions[$index]);
 				}
 			} /* @noinspection PhpRedundantCatchClauseInspection */ catch (UnprocessableExtensionInterface $exception) {

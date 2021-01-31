@@ -68,7 +68,7 @@ abstract class Extension {
 
 	abstract public function isLanguagePack(): bool;
 
-	abstract public function isOutdated(array $supportedReleases): bool;
+	abstract public function isOutdated(array $supportedReleases, array $unsupportedReleases): ?bool;
 
 	abstract public function hasTranslationSource(): bool;
 
