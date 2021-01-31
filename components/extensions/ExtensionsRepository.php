@@ -88,9 +88,7 @@ final class ExtensionsRepository extends Component {
 					unset($extensions[$index]);
 				} elseif ($extension->isLanguagePack()) {
 					unset($extensions[$index]);
-				} elseif ($extension->isOutdated($supportedVersions, $unsupportedVersions) === true) {
-					// @todo check if isOutdated() returned `null` - we may need to exclude extensions with
-					//       ambiguous constraints
+				} elseif ($extension->isOutdated($supportedVersions, $unsupportedVersions) !== false) {
 					unset($extensions[$index]);
 				}
 			} /* @noinspection PhpRedundantCatchClauseInspection */ catch (UnprocessableExtensionInterface $exception) {
