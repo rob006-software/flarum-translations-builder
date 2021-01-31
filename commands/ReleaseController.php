@@ -36,8 +36,8 @@ final class ReleaseController extends Controller {
 	/** @var string */
 	public $nextVersion = '';
 
-	public function options($actionId): array {
-		return array_merge(parent::options($actionId), [
+	public function options($actionID): array {
+		return array_merge(parent::options($actionID), [
 			'update',
 			'verbose',
 			'draft',

@@ -42,12 +42,12 @@ final class JanitorController extends Controller {
 
 	public $useCache = false;
 
-	public function options($actionId) {
-		if ($actionId === 'logs') {
-			return parent::options($actionId);
+	public function options($actionID) {
+		if ($actionID === 'logs') {
+			return parent::options($actionID);
 		}
 
-		return array_merge(parent::options($actionId), [
+		return array_merge(parent::options($actionID), [
 			'useCache',
 		]);
 	}

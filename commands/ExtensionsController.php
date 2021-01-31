@@ -47,9 +47,9 @@ final class ExtensionsController extends ConsoleController {
 	/** @var int */
 	public $frequency;
 
-	public function options($actionId) {
-		if ($actionId === 'update-cache') {
-			return array_merge(parent::options($actionId), [
+	public function options($actionID) {
+		if ($actionID === 'update-cache') {
+			return array_merge(parent::options($actionID), [
 				'frequency',
 				'verbose',
 				'update',
@@ -58,7 +58,7 @@ final class ExtensionsController extends ConsoleController {
 			]);
 		}
 
-		return array_merge(parent::options($actionId), [
+		return array_merge(parent::options($actionID), [
 			'frequency',
 			'verbose',
 			'useCache',

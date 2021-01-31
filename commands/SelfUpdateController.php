@@ -30,8 +30,8 @@ final class SelfUpdateController extends ConsoleController {
 
 	public $update = true;
 
-	public function options($actionId) {
-		return array_merge(parent::options($actionId), [
+	public function options($actionID) {
+		return array_merge(parent::options($actionID), [
 			'update',
 		]);
 	}

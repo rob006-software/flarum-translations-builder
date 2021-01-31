@@ -50,8 +50,8 @@ final class ReadmeController extends ConsoleController {
 	/** @var int */
 	public $frequency;
 
-	public function options($actionId) {
-		return array_merge(parent::options($actionId), [
+	public function options($actionID) {
+		return array_merge(parent::options($actionID), [
 			'commit',
 			'push',
 			'verbose',
