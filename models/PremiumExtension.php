@@ -31,16 +31,19 @@ final class PremiumExtension extends Extension {
 	private $name;
 	private $packageName;
 	private $repositoryUrl;
+	private $compatible;
 
 	public function __construct(
 		string $id,
 		string $packageName,
 		?string $name,
-		?string $repositoryUrl
+		?string $repositoryUrl,
+		bool $compatible
 	) {
 		$this->name = $name;
 		$this->packageName = $packageName;
 		$this->repositoryUrl = $repositoryUrl;
+		$this->compatible = $compatible;
 
 		parent::__construct($id);
 	}
@@ -50,7 +53,8 @@ final class PremiumExtension extends Extension {
 			self::nameToId($data['name']),
 			$data['name'],
 			$data['title'] ?? null,
-			$data['url'] ?? null
+			$data['url'] ?? null,
+			$data['compatible'] ?? false
 		);
 	}
 
@@ -79,7 +83,7 @@ final class PremiumExtension extends Extension {
 	}
 
 	public function isOutdated(array $supportedReleases, array $unsupportedReleases): ?bool {
-		return false;
+		return !$this->compatible;
 	}
 
 	public function hasTranslationSource(): bool {

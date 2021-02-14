@@ -43,6 +43,8 @@ final class ApiResult {
 	private $downloads;
 	/** @var int */
 	private $subscribers;
+	/** @var bool */
+	private $compatible;
 
 	private function __construct(array $data) {
 		foreach ($data as $field => $value) {
@@ -63,6 +65,7 @@ final class ApiResult {
 			'version' => $data['attributes']['highest-version'],
 			'downloads' => (int) $data['attributes']['downloads'],
 			'subscribers' => (int) $data['attributes']['subscribers-count'],
+			'compatible' => (bool) ($data['attributes']['compatible-with-latest-flarum'] ?? false),
 		]);
 	}
 
@@ -88,5 +91,9 @@ final class ApiResult {
 
 	public function getSubscribers(): int {
 		return $this->subscribers;
+	}
+
+	public function getCompatible(): bool {
+		return $this->compatible;
 	}
 }

@@ -130,12 +130,16 @@ final class ExtensionsController extends ConsoleController {
 				'title' => $extension->getTitle(),
 				'description' => $extension->getDescription(),
 				'version' => $extension->getVersion(),
+				'compatible' => $extension->getCompatible(),
 			];
 		}
 
 		$cachePath = $translations->getDir() . '/cache/extiverse.json';
 		if (file_exists($cachePath)) {
 			$oldCache = (array) json_decode(file_get_contents($cachePath), true, 512, JSON_THROW_ON_ERROR);
+			foreach ($oldCache as $index => $cachedExtension) {
+				$oldCache[$index]['compatible'] = false;
+			}
 			$result = ArrayHelper::merge($oldCache, $result);
 		}
 
