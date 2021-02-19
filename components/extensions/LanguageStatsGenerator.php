@@ -132,35 +132,17 @@ HTML;
 			$this->saveStats($extension->getPackageName(), 'daily', $this->stats[$extension->getId()]['daily']);
 			$this->saveStats($extension->getPackageName(), 'rank', $rank);
 
-			if ($this->outdatedExtensions[$extension->getId()] === null) {
-				// @see https://emojipedia.org/large-yellow-circle/
-				$compatibilityIcon = '<span title="Compatibility status with recent Flarum is unknown">🟡</span>';
-			} elseif ($this->outdatedExtensions[$extension->getId()]) {
-				// @see https://emojipedia.org/large-red-circle/
-				$compatibilityIcon = '<span title="Incompatible with recent Flarum">🔴</span>';
-			} else {
-				// @see https://emojipedia.org/large-green-circle/
-				$compatibilityIcon = '<span title="Compatible with recent Flarum">🟢</span>';
-			}
-
-			if ($this->disabledExtensions[$extension->getId()]) {
-				$statusIcon = $this->image('https://img.shields.io/badge/status-disabled-inactive.svg', 'Translation status');
-			} else {
-				$icon = $this->image("https://weblate.rob006.net/widgets/flarum/{$this->language}/{$extension->getId()}/svg-badge.svg", 'Translation status');
-				$statusIcon = $this->link($icon, "https://weblate.rob006.net/projects/flarum/{$extension->getId()}/{$this->language}/");
-			}
-
 			$output .= <<<HTML
 	<tr>
 		<td>
-			{$compatibilityIcon}
+			{$this->compatibilityIcon($extension)}
 			{$this->link("<code>{$this->truncate($extension->getPackageName())}</code>", $extension->getRepositoryUrl(), $extension->getPackageName())}
 		</td>
 		<td align="center">{$rank}{$this->statsChangeBadge($extension->getPackageName(), 'rank', $rank, true)}</td>
 		<td align="center">{$this->stats($extension, 'total')}</td>
 		<td align="center">{$this->stats($extension, 'monthly')}</td>
 		<td align="center">{$this->stats($extension, 'daily')}</td>
-		<td>$statusIcon</td>
+		<td>{$this->statusBadge($extension)}</td>
 	</tr>
 
 HTML;
@@ -212,20 +194,16 @@ HTML;
 			$this->saveStats($extension->getPackageName(), 'downloads', $this->premiumStats[$extension->getId()]['downloads']);
 			$this->saveStats($extension->getPackageName(), 'rank', $rank);
 
-			if ($this->disabledExtensions[$extension->getId()]) {
-				$statusIcon = $this->image('https://img.shields.io/badge/status-disabled-inactive.svg', 'Translation status');
-			} else {
-				$icon = $this->image("https://weblate.rob006.net/widgets/flarum/{$this->language}/{$extension->getId()}/svg-badge.svg", 'Translation status');
-				$statusIcon = $this->link($icon, "https://weblate.rob006.net/projects/flarum/{$extension->getId()}/{$this->language}/");
-			}
-
 			$output .= <<<HTML
 	<tr>
-		<td>{$this->link("<code>{$this->truncate($extension->getPackageName())}</code>", $extension->getRepositoryUrl(), $extension->getPackageName())}</td>
+		<td>
+			{$this->compatibilityIcon($extension)}
+			{$this->link("<code>{$this->truncate($extension->getPackageName())}</code>", $extension->getRepositoryUrl(), $extension->getPackageName())}
+		</td>
 		<td align="center">{$rank}{$this->statsChangeBadge($extension->getPackageName(), 'rank', $rank, true)}</td>
 		<td align="center">{$this->premiumStats($extension, 'subscribers')}</td>
 		<td align="center">{$this->premiumStats($extension, 'downloads')}</td>
-		<td>$statusIcon</td>
+		<td>{$this->statusBadge($extension)}</td>
 	</tr>
 
 HTML;
@@ -285,6 +263,30 @@ HTML;
 				'alt' => $label,
 				'title' => 'Change from last week',
 			]);
+	}
+
+	private function compatibilityIcon(Extension $extension): string {
+		if ($this->outdatedExtensions[$extension->getId()] === null) {
+			// @see https://emojipedia.org/large-yellow-circle/
+			return '<span title="Compatibility status with recent Flarum is unknown">🟡</span>';
+		}
+
+		if ($this->outdatedExtensions[$extension->getId()]) {
+			// @see https://emojipedia.org/large-red-circle/
+			return '<span title="Incompatible with recent Flarum">🔴</span>';
+		}
+
+		// @see https://emojipedia.org/large-green-circle/
+		return '<span title="Compatible with recent Flarum">🟢</span>';
+	}
+
+	private function statusBadge(Extension $extension): string {
+		if ($this->disabledExtensions[$extension->getId()]) {
+			return $this->image('https://img.shields.io/badge/status-disabled-inactive.svg', 'Translation status');
+		}
+
+		$icon = $this->image("https://weblate.rob006.net/widgets/flarum/{$this->language}/{$extension->getId()}/svg-badge.svg", 'Translation status');
+		return $this->link($icon, "https://weblate.rob006.net/projects/flarum/{$extension->getId()}/{$this->language}/");
 	}
 
 	private function truncate(string $string, int $limit = 40): string {
