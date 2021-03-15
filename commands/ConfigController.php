@@ -62,11 +62,6 @@ final class ConfigController extends ConsoleController {
 				Yii::warning("Unable to update {$component->getId()} extension.", __METHOD__);
 				continue;
 			}
-			if ($extension->getVendor() === 'flarum') {
-				// @todo temporarily disable updating core extensions and wait for first release after
-				//       https://github.com/flarum/lang-english/pull/175
-				continue;
-			}
 			$configGenerator->updateExtension($extension);
 			$url = $extension instanceof RegularExtension ? $extension->getTranslationTagsUrl() : $extension->getRepositoryUrl();
 			$this->commitRepository(

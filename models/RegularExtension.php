@@ -117,13 +117,6 @@ final class RegularExtension extends Extension {
 	}
 
 	public function getTranslationSourceUrl(?string $branchName = null): string {
-		if ($this->getVendor() === 'flarum') {
-			return Yii::$app->extensionsRepository
-				->detectTranslationSourceUrl('https://github.com/flarum/lang-english', $branchName, [
-					"locale/{$this->getId()}.yml",
-				]);
-		}
-
 		return Yii::$app->extensionsRepository->detectTranslationSourceUrl($this->repositoryUrl, $branchName);
 	}
 
@@ -136,10 +129,6 @@ final class RegularExtension extends Extension {
 	}
 
 	private function getTranslationsRepository(): string {
-		if ($this->getVendor() === 'flarum') {
-			return 'https://github.com/flarum/lang-english';
-		}
-
 		return $this->repositoryUrl;
 	}
 
