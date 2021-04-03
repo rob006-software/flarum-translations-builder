@@ -22,6 +22,7 @@ use Dont\DontCallStatic;
 use Dont\DontGet;
 use Dont\DontSet;
 use Yii;
+use yii\base\InvalidArgumentException;
 
 /**
  * Class PullRequestGenerator.
@@ -106,10 +107,24 @@ final class PullRequestGenerator {
 	}
 
 	private function updatePullRequestForNewExtension(string $branchName): void {
-		$this->githubApi->addPullRequestComment(
+		$pullRequest = $this->githubApi->getPullRequestForBranch(
 			Yii::$app->params['translationsRepository'],
 			Yii::$app->params['translationsForkRepository'],
-			$branchName,
+			$branchName
+		);
+		if ($pullRequest === null) {
+			throw new InvalidArgumentException("There is no PR for branch $branchName.");
+		}
+		if ($pullRequest['state'] === 'open') {
+			// Do not add comment if PR is open - new commit will trigger notification. We need comment only if PR is
+			// closed, since new commits are ignored in this case (they will not show in PR and will not trigger any
+			// notification).
+			return;
+		}
+
+		$this->githubApi->addPullRequestComment(
+			Yii::$app->params['translationsRepository'],
+			$pullRequest['number'],
 			[
 				'body' => 'Pull request updated.',
 			]

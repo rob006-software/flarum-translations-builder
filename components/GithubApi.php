@@ -34,7 +34,7 @@ final class GithubApi extends Component {
 
 	public $authToken;
 	public $authPassword;
-	public $authMethod = Client::AUTH_HTTP_TOKEN;
+	public $authMethod = Client::AUTH_ACCESS_TOKEN;
 
 	/** @var Client */
 	private $githubApiClient;
@@ -107,15 +107,10 @@ final class GithubApi extends Component {
 			->create($username, $repositoryName, ['tag_name' => $tagName] + $settings);
 	}
 
-	public function addPullRequestComment(string $targetRepository, string $sourceRepository, string $branch, array $settings): array {
-		$pullRequest = $this->getPullRequestForBranch($targetRepository, $sourceRepository, $branch);
-		if ($pullRequest === null) {
-			throw new InvalidArgumentException("There is no PR for branch $branch.");
-		}
-
+	public function addPullRequestComment(string $targetRepository, int $pullRequestId, array $settings): array {
 		[$targetUserName, $targetRepoName] = $this->explodeRepoUrl($targetRepository);
 		return $this->githubApiClient->issues()->comments()
-			->create($targetUserName, $targetRepoName, $pullRequest['number'], $settings);
+			->create($targetUserName, $targetRepoName, $pullRequestId, $settings);
 	}
 
 	public function getPullRequestForBranch(string $targetRepository, string $sourceRepository, string $branch): ?array {
