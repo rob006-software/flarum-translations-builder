@@ -125,7 +125,11 @@ final class RegularExtension extends Extension {
 		if ($defaultTag === null) {
 			return null;
 		}
-		return $this->getTranslationSourceUrl($defaultTag);
+
+		$key = __METHOD__ . '#' . $this->getTranslationsRepository() . '#' . $defaultTag;
+		return Yii::$app->cache->getOrSet($key, function () use ($defaultTag) {
+			return $this->getTranslationSourceUrl($defaultTag);
+		}, 31 * 24 * 3600);
 	}
 
 	private function getTranslationsRepository(): string {
