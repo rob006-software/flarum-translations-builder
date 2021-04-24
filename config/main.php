@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 use app\components\extensions\ExtensionsRepository;
 use app\components\ExtiverseApi;
+use app\components\FrequencyLimiter;
 use app\components\GithubApi;
 use app\components\GitlabApi;
 use yii\caching\ArrayCache;
@@ -102,6 +103,9 @@ return [
 		],
 		'mutex' => [
 			'class' => FileMutex::class,
+		],
+		'frequencyLimiter' => [
+			'class' => FrequencyLimiter::class,
 		],
 		'extensionsRepository' => [
 			'class' => ExtensionsRepository::class,

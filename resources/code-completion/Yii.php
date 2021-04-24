@@ -9,12 +9,15 @@
  * with this source code in the file LICENSE.
  */
 
+/* @noinspection PhpIllegalPsrClassPathInspection */
+/* @noinspection PhpMultipleClassesDeclarationsInOneFile */
 /* @noinspection PhpFullyQualifiedNameUsageInspection */
 
 declare(strict_types=1);
 
 use app\components\extensions\ExtensionsRepository;
 use app\components\ExtiverseApi;
+use app\components\FrequencyLimiter;
 use app\components\GithubApi;
 use app\components\GitlabApi;
 use yii\caching\ArrayCache;
@@ -47,6 +50,8 @@ abstract class BaseApplication extends \yii\base\Application {
 	public $extiverseApi;
 	/** @var FileMutex */
 	public $mutex;
+	/** @var FrequencyLimiter */
+	public $frequencyLimiter;
 	/** @var ArrayCache */
 	public $arrayCache;
 }

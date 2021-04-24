@@ -417,7 +417,13 @@ final class ExtensionsRepository extends Component {
 				if ($result->isFromGithub() || $result->isFromGitlab()) {
 					$results[$result->getName()] = $result;
 				} else {
-					Yii::warning('Unsupported repository: ' . readable::value($result->getRepository()));
+					Yii::$app->frequencyLimiter->run(
+						__METHOD__ . '#Unsupported repository: ' . readable::value($result->getRepository()),
+						31 * 24 * 3600,
+						static function () use ($result) {
+							Yii::warning('Unsupported repository: ' . readable::value($result->getRepository()));
+						}
+					);
 				}
 			}
 		} while (isset($response['next']));
