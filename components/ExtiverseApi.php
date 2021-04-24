@@ -28,7 +28,7 @@ use function json_decode;
  *
  * @author Robert Korulczyk <robert@korulczyk.pl>
  */
-class ExtiverseApi extends Component {
+final class ExtiverseApi extends Component {
 
 	public $authToken;
 	public $apiUrl = 'https://extiverse.com/api/v1';
