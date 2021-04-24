@@ -17,7 +17,7 @@ use Dont\DontCall;
 use Dont\DontCallStatic;
 use Dont\DontGet;
 use Dont\DontSet;
-use GitWrapper\Event\GitLoggerEventSubscriber;
+use GitWrapper\EventSubscriber\GitLoggerEventSubscriber;
 use GitWrapper\GitWorkingCopy;
 use GitWrapper\GitWrapper;
 use Monolog\Handler\StreamHandler;
