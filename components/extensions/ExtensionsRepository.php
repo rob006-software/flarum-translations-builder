@@ -77,18 +77,25 @@ final class ExtensionsRepository extends Component {
 	/**
 	 * @param string[] $supportedVersions
 	 * @param string[] $unsupportedVersions
+	 * @param string[] $ignoredExtensions
 	 * @param bool $useCache
 	 * @return Extension[]
 	 */
-	public function getValidExtensions(array $supportedVersions, array $unsupportedVersions, bool $useCache = true): array {
+	public function getValidExtensions(
+		array $supportedVersions,
+		array $unsupportedVersions,
+		array $ignoredExtensions,
+		bool $useCache = true
+	): array {
 		$extensions = $this->getAllExtensions($useCache);
 		foreach ($extensions as $index => $extension) {
 			try {
-				if ($extension->isAbandoned()) {
-					unset($extensions[$index]);
-				} elseif ($extension->isLanguagePack()) {
-					unset($extensions[$index]);
-				} elseif ($extension->isOutdated($supportedVersions, $unsupportedVersions) !== false) {
+				if (
+					in_array($extension->getPackageName(), $ignoredExtensions, true)
+					|| $extension->isAbandoned()
+					|| $extension->isLanguagePack()
+					|| $extension->isOutdated($supportedVersions, $unsupportedVersions) !== false
+				) {
 					unset($extensions[$index]);
 				}
 			} /* @noinspection PhpRedundantCatchClauseInspection */ catch (UnprocessableExtensionInterface $exception) {

@@ -59,6 +59,7 @@ final class JanitorController extends Controller {
 		$extensions = Yii::$app->extensionsRepository->getValidExtensions(
 			$translations->getSupportedVersions(),
 			$translations->getUnsupportedVersions(),
+			$translations->getIgnoredExtensions(),
 			$this->useCache
 		);
 		$extensions = array_filter($extensions, static function (Extension $extension) use ($components) {
@@ -97,6 +98,7 @@ final class JanitorController extends Controller {
 		$extensions = Yii::$app->extensionsRepository->getValidExtensions(
 			$translations->getSupportedVersions(),
 			$translations->getUnsupportedVersions(),
+			$translations->getIgnoredExtensions(),
 			$this->useCache
 		);
 		$extensions = array_filter($extensions, static function (Extension $extension) {

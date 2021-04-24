@@ -91,6 +91,7 @@ final class ExtensionsController extends ConsoleController {
 		$extensions = Yii::$app->extensionsRepository->getValidExtensions(
 			$translations->getSupportedVersions(),
 			$translations->getUnsupportedVersions(),
+			$translations->getIgnoredExtensions(),
 			$this->useCache
 		);
 		foreach ($translations->getExtensionsComponents() as $component) {
