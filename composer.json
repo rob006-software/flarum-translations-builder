@@ -17,6 +17,7 @@
 	"require": {
 		"php": "^7.3",
 		"cache/filesystem-adapter": "^1.0",
+		"composer/metadata-minifier": "^1.0",
 		"composer/semver": "^3.2",
 		"cpliakas/git-wrapper": "^3.1",
 		"knplabs/github-api": "^3.1",

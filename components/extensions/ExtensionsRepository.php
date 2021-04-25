@@ -15,12 +15,12 @@ namespace app\components\extensions;
 
 use app\components\extensions\exceptions\InvalidPackageNameException;
 use app\components\extensions\exceptions\InvalidRepositoryUrlException;
-use app\components\extensions\exceptions\UnableLoadComposerJsonException;
 use app\components\extensions\exceptions\UnprocessableExtensionInterface;
 use app\models\Extension;
 use app\models\packagist\SearchResult;
 use app\models\PremiumExtension;
 use app\models\RegularExtension;
+use Composer\MetadataMinifier\MetadataMinifier;
 use Composer\Semver\Semver;
 use Composer\Semver\VersionParser;
 use mindplay\readable;
@@ -35,11 +35,12 @@ use yii\base\Component;
 use yii\helpers\ArrayHelper;
 use function array_filter;
 use function count;
+use function in_array;
 use function is_array;
-use function json_decode;
 use function reset;
 use function strlen;
 use function strncmp;
+use function strtotime;
 
 /**
  * Class ExtensionsFinder.
@@ -93,10 +94,17 @@ final class ExtensionsRepository extends Component {
 				if (
 					in_array($extension->getPackageName(), $ignoredExtensions, true)
 					|| $this->isExtensionRateLimited($extension->getPackageName())
-					|| $extension->isAbandoned()
-					|| $extension->isLanguagePack()
-					|| $extension->isOutdated($supportedVersions, $unsupportedVersions) !== false
 				) {
+					unset($extensions[$index]);
+				} elseif ($extension->isAbandoned()) {
+					unset($extensions[$index]);
+				} elseif ($extension->isLanguagePack()) {
+					$this->registerLanguagePackDetection($extension->getPackageName());
+					unset($extensions[$index]);
+				} elseif ($extension->isOutdated($supportedVersions, $unsupportedVersions) !== false) {
+					if ($extension instanceof RegularExtension) {
+						$this->registerOutdatedExtensionDetection($extension);
+					}
 					unset($extensions[$index]);
 				}
 			} /* @noinspection PhpRedundantCatchClauseInspection */ catch (UnprocessableExtensionInterface $exception) {
@@ -110,7 +118,9 @@ final class ExtensionsRepository extends Component {
 	}
 
 	private function isExtensionRateLimited(string $name): bool {
-		return Yii::$app->cache->get(__CLASS__ . '#rateLimit#' . $name) !== false;
+		return Yii::$app->cache->get(__CLASS__ . '#rateLimit#' . $name) !== false
+			|| Yii::$app->cache->get(__CLASS__ . '#languagePackDetected#' . $name) !== false
+			|| Yii::$app->cache->get(__CLASS__ . '#abandonedExtensionDetected#' . $name) !== false;
 	}
 
 	private function registerExtensionUpdateFailure(string $name): void {
@@ -134,6 +144,26 @@ final class ExtensionsRepository extends Component {
 				}
 			} else {
 				Yii::warning('Cannot acquire lock "' . __METHOD__ . "#$name\"");
+			}
+		}
+	}
+
+	private function registerLanguagePackDetection(string $name): void {
+		Yii::$app->cache->set(__CLASS__ . '#languagePackDetected#' . $name, true, 31 * 24 * 3600);
+	}
+
+	private function registerOutdatedExtensionDetection(RegularExtension $extension): void {
+		$rateLimitKey = __METHOD__ . '#' . $extension->getPackageName();
+		if (Yii::$app->cache->get($rateLimitKey) === false) {
+			$versionData = $this->getPackagistLastReleaseData($extension->getPackageName());
+			$time = $versionData === null ? 0 : strtotime($versionData['time']);
+			$cacheKey = __CLASS__ . '#abandonedExtensionDetected#' . $extension->getPackageName();
+			if ($time < strtotime('-12 months')) {
+				Yii::$app->cache->set($cacheKey, true, 31 * 24 * 3600);
+			} elseif ($time < strtotime('-6 months')) {
+				Yii::$app->cache->set($cacheKey, true, 7 * 24 * 3600);
+			} else {
+				Yii::$app->cache->set($rateLimitKey, true, 7 * 24 * 3600);
 			}
 		}
 	}
@@ -230,55 +260,23 @@ final class ExtensionsRepository extends Component {
 		}, $this->packagistCacheDuration);
 	}
 
-	public function getPackagistReleaseData(string $name, string $version): ?array {
-		$data = Yii::$app->arrayCache->getOrSet(__METHOD__ . '#' . $name, function () use ($name) {
+	public function getPackagistLastReleaseData(string $name): ?array {
+		return $this->getPackagistReleasesData($name)[0] ?? null;
+	}
+
+	private function getPackagistReleasesData(string $name): array {
+		return Yii::$app->arrayCache->getOrSet(__METHOD__ . '#' . $name, function () use ($name) {
 			try {
-				return $this->getClient()->request('GET', "https://repo.packagist.org/p/{$name}.json")->toArray();
+				$result = $this->getClient()->request('GET', "https://repo.packagist.org/p2/{$name}.json")->toArray();
+				return MetadataMinifier::expand($result['packages'][$name]);
 			} catch (HttpExceptionInterface $exception) {
 				throw new InvalidPackageNameException(
-					"Unable to get Packagist data from: https://repo.packagist.org/p/{$name}.json.",
+					"Unable to get Packagist data from: https://repo.packagist.org/p2/{$name}.json.",
 					$exception->getCode(),
 					$exception
 				);
 			}
 		});
-
-		return $data['packages'][$name][$version] ?? null;
-	}
-
-	public function getComposerJsonData(string $repositoryUrl, bool $refresh = false): array {
-		$callback = function () use ($repositoryUrl): array {
-			$url = $this->generateRawUrl($repositoryUrl, 'composer.json');
-			$response = $this->getClient()->request('GET', $url);
-			try {
-				// We cannot use toArray() here - raw.githubusercontent.com always returns content-type as
-				// "text/plain; charset=utf-8" while HttpClient expects JSON compatible content-type header.
-				/* @noinspection JsonEncodingApiUsageInspection */
-				$return = json_decode($response->getContent(), true);
-				if ($return === null) {
-					throw new UnableLoadComposerJsonException(
-						'Invalid content of composer.json for ' . readable::value($repositoryUrl) . '.',
-						$response->getStatusCode()
-					);
-				}
-
-				return $return;
-			} catch (HttpExceptionInterface $exception) {
-				throw new UnableLoadComposerJsonException(
-					'Unable to get composer.json for ' . readable::value($repositoryUrl) . '.',
-					$response->getStatusCode(),
-					$exception
-				);
-			}
-		};
-
-		if ($refresh) {
-			$value = $callback();
-			Yii::$app->cache->set(__METHOD__ . '#' . $repositoryUrl, $value, $this->githubCacheDuration);
-			return $value;
-		}
-
-		return Yii::$app->cache->getOrSet(__METHOD__ . '#' . $repositoryUrl, $callback, $this->githubCacheDuration);
 	}
 
 	public function detectTranslationSourceUrl(string $repositoryUrl, ?string $branch = null, ?array $possiblePaths = null): string {

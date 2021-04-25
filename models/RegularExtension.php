@@ -13,10 +13,12 @@ declare(strict_types=1);
 
 namespace app\models;
 
+use app\components\extensions\exceptions\UnableLoadPackagistReleaseDataException;
 use app\components\extensions\ExtensionsRepository;
 use app\components\extensions\IssueGenerator;
 use app\models\packagist\SearchResult;
 use Composer\Semver\Semver;
+use mindplay\readable;
 use Yii;
 use yii\helpers\ArrayHelper;
 use function strpos;
@@ -82,11 +84,7 @@ final class RegularExtension extends Extension {
 	}
 
 	public function isOutdated(array $supportedReleases, array $unsupportedReleases): ?bool {
-		$lastTag = Yii::$app->extensionsRepository->detectLastTag($this->repositoryUrl);
-		if ($lastTag === null) {
-			return true;
-		}
-		$data = Yii::$app->extensionsRepository->getPackagistReleaseData($this->getComposerValue('name'), $lastTag);
+		$data = Yii::$app->extensionsRepository->getPackagistLastReleaseData($this->getComposerValue('name'));
 		if ($data === null || !isset($data['require']['flarum/core'])) {
 			return true;
 		}
@@ -142,7 +140,12 @@ final class RegularExtension extends Extension {
 
 	private function getComposerData(bool $refresh = false): array {
 		if ($this->composerData === null || $refresh) {
-			$this->composerData = Yii::$app->extensionsRepository->getComposerJsonData($this->repositoryUrl, $refresh);
+			$this->composerData = Yii::$app->extensionsRepository->getPackagistLastReleaseData($this->getPackageName());
+			if ($this->composerData === null) {
+				throw new UnableLoadPackagistReleaseDataException(
+					'No releases found for ' . readable::value($this->getPackageName()) . '.',
+				);
+			}
 		}
 
 		return $this->composerData;
