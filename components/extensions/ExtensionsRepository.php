@@ -92,6 +92,7 @@ final class ExtensionsRepository extends Component {
 			try {
 				if (
 					in_array($extension->getPackageName(), $ignoredExtensions, true)
+					|| $this->isExtensionRateLimited($extension->getPackageName())
 					|| $extension->isAbandoned()
 					|| $extension->isLanguagePack()
 					|| $extension->isOutdated($supportedVersions, $unsupportedVersions) !== false
@@ -101,10 +102,40 @@ final class ExtensionsRepository extends Component {
 			} /* @noinspection PhpRedundantCatchClauseInspection */ catch (UnprocessableExtensionInterface $exception) {
 				Yii::warning($exception->getMessage());
 				unset($extensions[$index]);
+				$this->registerExtensionUpdateFailure($extension->getPackageName());
 			}
 		}
 
 		return $extensions;
+	}
+
+	private function isExtensionRateLimited(string $name): bool {
+		return Yii::$app->cache->get(__CLASS__ . '#rateLimit#' . $name) !== false;
+	}
+
+	private function registerExtensionUpdateFailure(string $name): void {
+		if (!Yii::$app->frequencyLimiter->run(__METHOD__ . '#' . $name, 7 * 24 * 3600, null, 5)) {
+			if (Yii::$app->mutex->acquire(__METHOD__ . "#$name", 10)) {
+				try {
+					$monthsCount = Yii::$app->cache->get(__CLASS__ . '#rateLimitFailuresCounter#' . $name) ?: 0;
+					$monthsCount++;
+					Yii::$app->cache->set(
+						__CLASS__ . '#rateLimitFailuresCounter#' . $name,
+						$monthsCount,
+						($monthsCount + 1) * 31 * 24 * 3600
+					);
+					if ($monthsCount > 6) {
+						$monthsCount = 6;
+					}
+					Yii::warning("Ignore $name extension for next $monthsCount months due to exceeding failures threshold.");
+					Yii::$app->cache->set(__CLASS__ . '#rateLimit#' . $name, true, $monthsCount * 31 * 24 * 3600);
+				} finally {
+					Yii::$app->mutex->release(__METHOD__ . "#$name");
+				}
+			} else {
+				Yii::warning('Cannot acquire lock "' . __METHOD__ . "#$name\"");
+			}
+		}
 	}
 
 	private function getClient(): HttpClientInterface {
