@@ -18,6 +18,7 @@ use mindplay\readable;
 use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Contracts\HttpClient\Exception\HttpExceptionInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
+use Yii;
 use yii\base\Component;
 use yii\base\InvalidArgumentException;
 use function parse_url;
@@ -37,41 +38,45 @@ final class GitlabApi extends Component {
 	private $_client;
 
 	public function getDefaultBranch(string $repoUrl): ?string {
-		$repoName = urlencode($this->extractRepoName($repoUrl));
-		try {
-			$branches = $this->getClient()
-				->request('GET', "https://gitlab.com/api/v4/projects/$repoName/repository/branches/")
-				->toArray();
-		} catch (HttpExceptionInterface $exception) {
-			throw new GitlabApiException(
-				"Unable to get GitLab API data for https://gitlab.com/api/v4/projects/$repoName/repository/branches/.",
-				$exception->getCode(),
-				$exception
-			);
-		}
-
-		foreach ($branches as $branch) {
-			if (!empty($branch['default'])) {
-				return $branch['name'];
+		return Yii::$app->cache->getOrSet(__METHOD__ . '#' . $repoUrl, function () use ($repoUrl) {
+			$repoName = urlencode($this->extractRepoName($repoUrl));
+			try {
+				$branches = $this->getClient()
+					->request('GET', "https://gitlab.com/api/v4/projects/$repoName/repository/branches/")
+					->toArray();
+			} catch (HttpExceptionInterface $exception) {
+				throw new GitlabApiException(
+					"Unable to get GitLab API data for https://gitlab.com/api/v4/projects/$repoName/repository/branches/.",
+					$exception->getCode(),
+					$exception
+				);
 			}
-		}
 
-		return null;
+			foreach ($branches as $branch) {
+				if (!empty($branch['default'])) {
+					return $branch['name'];
+				}
+			}
+
+			return null;
+		}, 7 * 24 * 3600);
 	}
 
 	public function getTags(string $repoUrl): array {
-		$repoName = urlencode($this->extractRepoName($repoUrl));
-		try {
-			return $this->getClient()
-				->request('GET', "https://gitlab.com/api/v4/projects/$repoName/repository/tags/")
-				->toArray();
-		} catch (HttpExceptionInterface $exception) {
-			throw new GitlabApiException(
-				"Unable to get GitLab API data for https://gitlab.com/api/v4/projects/$repoName/repository/tags/.",
-				$exception->getCode(),
-				$exception
-			);
-		}
+		return Yii::$app->arrayCache->getOrSet(__METHOD__ . '#' . $repoUrl, function () use ($repoUrl) {
+			$repoName = urlencode($this->extractRepoName($repoUrl));
+			try {
+				return $this->getClient()
+					->request('GET', "https://gitlab.com/api/v4/projects/$repoName/repository/tags/")
+					->toArray();
+			} catch (HttpExceptionInterface $exception) {
+				throw new GitlabApiException(
+					"Unable to get GitLab API data for https://gitlab.com/api/v4/projects/$repoName/repository/tags/.",
+					$exception->getCode(),
+					$exception
+				);
+			}
+		});
 	}
 
 	public function getTagsUrl(string $repoUrl): string {

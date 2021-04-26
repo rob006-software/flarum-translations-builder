@@ -33,6 +33,7 @@ use Yii;
 use yii\base\Exception;
 use yii\base\InvalidArgumentException;
 use yii\base\InvalidConfigException;
+use yii\caching\TagDependency;
 use function array_filter;
 use function array_intersect_key;
 use function array_reverse;
@@ -280,7 +281,8 @@ final class Translations {
 			foreach (array_reverse($component->getSources()) as $source) {
 				// don't try to download URLs with placeholder for missing translation
 				if (strpos($source, ExtensionsRepository::NO_TRANSLATION_FILE) === false) {
-					$translator->addResource('yaml', $this->fetchUrl($client, $source), 'en', $component->getId());
+					$content = $this->fetchUrl($client, $source, $component->getId());
+					$translator->addResource('yaml', $content, 'en', $component->getId());
 				} else {
 					Yii::warning("Skipped downloading $source.", __METHOD__ . '.skip');
 				}
@@ -289,7 +291,7 @@ final class Translations {
 		return $translator;
 	}
 
-	private function fetchUrl(HttpClientInterface $client, string $url): string {
+	private function fetchUrl(HttpClientInterface $client, string $url, string $componentId): string {
 		$tries = 3;
 		while ($tries-- > 0) {
 			$response = $client->request('GET', $url);
@@ -299,6 +301,11 @@ final class Translations {
 			if (in_array($response->getStatusCode(), [404, 403], true)) {
 				// it should be done by queue, but there is no queue support at the moment, so this must be enough for now
 				ConfigController::resetFrequencyLimit();
+				$extension = Yii::$app->extensionsRepository->getExtension($componentId);
+				if ($extension !== null) {
+					TagDependency::invalidate(Yii::$app->cache, $extension->getRepositoryUrl());
+				}
+				Yii::warning("Unable to load URL $url ({$response->getStatusCode()} HTTP status code).");
 				return $response->getContent();
 			}
 			Yii::warning(

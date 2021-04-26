@@ -32,7 +32,6 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 use UnexpectedValueException;
 use Yii;
 use yii\base\Component;
-use yii\helpers\ArrayHelper;
 use function array_filter;
 use function count;
 use function in_array;
@@ -264,7 +263,7 @@ final class ExtensionsRepository extends Component {
 		return $this->getPackagistReleasesData($name)[0] ?? null;
 	}
 
-	private function getPackagistReleasesData(string $name): array {
+	public function getPackagistReleasesData(string $name): array {
 		return Yii::$app->arrayCache->getOrSet(__METHOD__ . '#' . $name, function () use ($name) {
 			try {
 				$result = $this->getClient()->request('GET', "https://repo.packagist.org/p2/{$name}.json")->toArray();
@@ -293,7 +292,7 @@ final class ExtensionsRepository extends Component {
 			}
 		}
 
-		return $this->generateRawUrl($repositoryUrl, self::NO_TRANSLATION_FILE);
+		return $this->generateRawUrl($repositoryUrl, self::NO_TRANSLATION_FILE, 'master');
 	}
 
 	private function testSourceUrl(string $url, int $tries = 5): bool {
@@ -329,44 +328,34 @@ final class ExtensionsRepository extends Component {
 		return false;
 	}
 
-	/**
-	 * @param string $repositoryUrl
-	 * @param string[]|null $prefixes
-	 * @return string|null
-	 */
-	public function detectLastTag(string $repositoryUrl, ?array $prefixes = null): ?string {
-		$tags = Yii::$app->arrayCache->getOrSet(__METHOD__ . '#' . $repositoryUrl, function () use ($repositoryUrl) {
-			if ($this->isGithubRepo($repositoryUrl)) {
-				$tags = ArrayHelper::getColumn(Yii::$app->githubApi->getTags($repositoryUrl), 'name');
-			} elseif ($this->isGitlabRepo($repositoryUrl)) {
-				$tags = ArrayHelper::getColumn(Yii::$app->gitlabApi->getTags($repositoryUrl), 'name');
-			} else {
-				throw new InvalidRepositoryUrlException('Invalid repository URL: ' . readable::value($repositoryUrl) . '.');
+	public function findTagForCommit(string $repositoryUrl, string $commitHash): ?string {
+		$tags = [];
+		if ($this->isGithubRepo($repositoryUrl)) {
+			foreach (Yii::$app->githubApi->getTags($repositoryUrl) as $tag) {
+				if ($tag['commit']['sha'] === $commitHash) {
+					$tags[] = $tag['name'];
+				}
 			}
-
-			// remove non-semver tags
-			$parser = new VersionParser();
-			return array_filter($tags, static function ($name) use ($parser) {
-				try {
-					$parser->normalize($name);
-					return true;
-				} catch (UnexpectedValueException $exception) {
-					return false;
+		} elseif ($this->isGitlabRepo($repositoryUrl)) {
+			foreach (Yii::$app->gitlabApi->getTags($repositoryUrl) as $tag) {
+				if ($tag['commit']['id'] === $commitHash) {
+					$tags[] = $tag['name'];
 				}
-			});
-		});
-
-		if ($prefixes !== null) {
-			$tags = array_filter($tags, static function (string $item) use ($prefixes) {
-				foreach ($prefixes as $prefix) {
-					if (strncmp($prefix, $item, strlen($prefix)) === 0) {
-						return true;
-					}
-				}
-
-				return false;
-			});
+			}
+		} else {
+			throw new InvalidRepositoryUrlException('Invalid repository URL: ' . readable::value($repositoryUrl) . '.');
 		}
+
+		// remove non-semver tags
+		$parser = new VersionParser();
+		$tags = array_filter($tags, static function ($name) use ($parser) {
+			try {
+				$parser->normalize($name);
+				return true;
+			} catch (UnexpectedValueException $exception) {
+				return false;
+			}
+		});
 
 		if (empty($tags)) {
 			return null;
@@ -408,7 +397,7 @@ final class ExtensionsRepository extends Component {
 			$path = substr($path, 0, -4);
 		}
 		if ($this->isGithubRepo($repositoryUrl)) {
-			$branch = $branch ?? Yii::$app->githubApi->getRepoInfo($repositoryUrl)['default_branch'] ?? 'master';
+			$branch = $branch ?? Yii::$app->githubApi->getDefaultBranch($repositoryUrl) ?? 'master';
 			return "https://raw.githubusercontent.com/{$path}/{$branch}/{$file}";
 		}
 		if ($this->isGitlabRepo($repositoryUrl)) {

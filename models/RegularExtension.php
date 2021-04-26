@@ -20,7 +20,10 @@ use app\models\packagist\SearchResult;
 use Composer\Semver\Semver;
 use mindplay\readable;
 use Yii;
+use yii\caching\TagDependency;
 use yii\helpers\ArrayHelper;
+use function strlen;
+use function strncmp;
 use function strpos;
 
 /**
@@ -63,15 +66,6 @@ final class RegularExtension extends Extension {
 
 	public function getRepositoryUrl(): string {
 		return $this->repositoryUrl;
-	}
-
-	public function getTranslationTagsUrl(): string {
-		return Yii::$app->extensionsRepository->getTagsUrl($this->getTranslationsRepository());
-	}
-
-	public function getTranslationTagUrl(?string $tagName = null): string {
-		$tagName = $tagName ?? Yii::$app->extensionsRepository->detectLastTag($this->getTranslationsRepository());
-		return Yii::$app->extensionsRepository->getTagUrl($this->getTranslationsRepository(), $tagName);
 	}
 
 	public function isAbandoned(): bool {
@@ -119,19 +113,36 @@ final class RegularExtension extends Extension {
 	}
 
 	public function getStableTranslationSourceUrl(?array $prefixes = null): ?string {
-		$defaultTag = Yii::$app->extensionsRepository->detectLastTag($this->getTranslationsRepository(), $prefixes);
-		if ($defaultTag === null) {
+		$releases = Yii::$app->extensionsRepository->getPackagistReleasesData($this->getPackageName());
+		$lastRelease = null;
+		foreach ($releases as $release) {
+			if ($prefixes !== null) {
+				foreach ($prefixes as $prefix) {
+					if (strncmp($prefix, $release['version_normalized'], strlen($prefix)) === 0) {
+						$lastRelease = $release;
+						break 2;
+					}
+				}
+			} else {
+				$lastRelease = $release;
+				break;
+			}
+		}
+		if ($lastRelease === null) {
 			return null;
 		}
 
-		$key = __METHOD__ . '#' . $this->getTranslationsRepository() . '#' . $defaultTag;
-		return Yii::$app->cache->getOrSet($key, function () use ($defaultTag) {
-			return $this->getTranslationSourceUrl($defaultTag);
-		}, 31 * 24 * 3600);
-	}
-
-	private function getTranslationsRepository(): string {
-		return $this->repositoryUrl;
+		$key = __METHOD__ . '#' . $this->getRepositoryUrl() . '#' . $lastRelease['version_normalized'];
+		return Yii::$app->cache->getOrSet($key, function () use ($lastRelease) {
+			$lastRelease = Yii::$app->extensionsRepository->findTagForCommit(
+				$this->getRepositoryUrl(),
+				$lastRelease['source']['reference']
+			);
+			if ($lastRelease === null) {
+				$lastRelease = $lastRelease['version'];
+			}
+			return $this->getTranslationSourceUrl($lastRelease);
+		}, 31 * 24 * 3600, new TagDependency(['tags' => $this->getRepositoryUrl()]));
 	}
 
 	private function getComposerValue(string $key, $default = null) {

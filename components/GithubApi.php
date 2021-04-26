@@ -20,6 +20,7 @@ use Github\Exception\RuntimeException as GithubRuntimeException;
 use League\Flysystem\Adapter\Local;
 use League\Flysystem\Filesystem;
 use mindplay\readable;
+use Yii;
 use yii\base\Component;
 use yii\base\InvalidArgumentException;
 use function strncmp;
@@ -52,10 +53,18 @@ final class GithubApi extends Component {
 		$this->githubApiClient->addCache($pool);
 	}
 
+	public function getDefaultBranch(string $repoUrl): ?string {
+		return Yii::$app->cache->getOrSet(__METHOD__ . '#' . $repoUrl, function () use ($repoUrl) {
+			return $this->getRepoInfo($repoUrl)['default_branch'];
+		}, 7 * 24 * 3600);
+	}
+
 	public function getRepoInfo(string $repoUrl): array {
 		[$userName, $repoName] = $this->explodeRepoUrl($repoUrl);
 		try {
-			return $this->githubApiClient->repo()->show($userName, $repoName);
+			return Yii::$app->arrayCache->getOrSet(__METHOD__ . '#' . $repoUrl, function () use ($userName, $repoName) {
+				return $this->githubApiClient->repo()->show($userName, $repoName);
+			});
 		} catch (GithubRuntimeException $exception) {
 			throw new GithubApiException(
 				'Unable to get GitHub API data for ' . readable::value($repoUrl) . '.',
@@ -68,7 +77,9 @@ final class GithubApi extends Component {
 	public function getTags(string $repoUrl): array {
 		[$userName, $repoName] = $this->explodeRepoUrl($repoUrl);
 		try {
-			return $this->githubApiClient->repo()->tags($userName, $repoName);
+			return Yii::$app->arrayCache->getOrSet(__METHOD__ . '#' . $repoUrl, function () use ($userName, $repoName) {
+				return $this->githubApiClient->repo()->tags($userName, $repoName);
+			});
 		} catch (GithubRuntimeException $exception) {
 			throw new GithubApiException(
 				'Unable to get GitHub API data for ' . readable::value($repoUrl) . '.',
@@ -143,7 +154,7 @@ final class GithubApi extends Component {
 		return $this->githubApiClient->issues()->create($userName, $repoName, $settings);
 	}
 
-	private function explodeRepoUrl(string $repoUrl): array {
+	public function explodeRepoUrl(string $repoUrl): array {
 		if (strncmp($repoUrl, 'https://github.com/', 19) === 0) {
 			$path = trim(parse_url($repoUrl, PHP_URL_PATH), '/');
 		} elseif (strncmp($repoUrl, 'git@github.com:', 15) === 0) {

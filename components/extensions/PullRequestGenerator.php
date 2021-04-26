@@ -154,16 +154,16 @@ final class PullRequestGenerator {
 MD;
 
 		if (Yii::$app->extensionsRepository->isGithubRepo($extension->getRepositoryUrl())) {
-			$name = Yii::$app->githubApi->getRepoInfo($extension->getRepositoryUrl())['full_name'];
+			[$userName, $repoName] = Yii::$app->githubApi->explodeRepoUrl($extension->getRepositoryUrl());
 			$output .= <<<MD
-## [$name at GitHub](https://github.com/$name)
+## [$userName/$repoName at GitHub](https://github.com/$userName/$repoName)
 
-![GitHub license](https://img.shields.io/github/license/$name)
+![GitHub license](https://img.shields.io/github/license/$userName/$repoName)
 
-[![GitHub last tag](https://img.shields.io/github/tag-date/$name)](https://github.com/$name/releases) [![GitHub contributors](https://img.shields.io/github/contributors/$name)](https://github.com/$name/graphs/contributors)
-[![GitHub stars](https://img.shields.io/github/stars/$name)](https://github.com/$name/stargazers) [![GitHub forks](https://img.shields.io/github/forks/$name)](https://github.com/$name/network) [![GitHub issues](https://img.shields.io/github/issues/$name)](https://github.com/$name/issues)
+[![GitHub last tag](https://img.shields.io/github/tag-date/$userName/$repoName)](https://github.com/$userName/$repoName/releases) [![GitHub contributors](https://img.shields.io/github/contributors/$userName/$repoName)](https://github.com/$userName/$repoName/graphs/contributors)
+[![GitHub stars](https://img.shields.io/github/stars/$userName/$repoName)](https://github.com/$userName/$repoName/stargazers) [![GitHub forks](https://img.shields.io/github/forks/$userName/$repoName)](https://github.com/$userName/$repoName/network) [![GitHub issues](https://img.shields.io/github/issues/$userName/$repoName)](https://github.com/$userName/$repoName/issues)
 
-[![GitHub last commit](https://img.shields.io/github/last-commit/$name)](https://github.com/$name/commits) [![GitHub commit activity](https://img.shields.io/github/commit-activity/m/$name)](https://github.com/$name/graphs/contributors) [![GitHub commit activity](https://img.shields.io/github/commit-activity/y/$name)](https://github.com/$name/graphs/contributors)
+[![GitHub last commit](https://img.shields.io/github/last-commit/$userName/$repoName)](https://github.com/$userName/$repoName/commits) [![GitHub commit activity](https://img.shields.io/github/commit-activity/m/$userName/$repoName)](https://github.com/$userName/$repoName/graphs/contributors) [![GitHub commit activity](https://img.shields.io/github/commit-activity/y/$userName/$repoName)](https://github.com/$userName/$repoName/graphs/contributors)
 
 
 MD;
