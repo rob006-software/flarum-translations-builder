@@ -13,15 +13,13 @@ declare(strict_types=1);
 
 namespace app\components\extensions\exceptions;
 
-use yii\base\InvalidArgumentException;
+use Throwable;
 
 /**
- * Class UnableLoadPackagistReleaseDataException.
+ * Interface SoftFailureInterface.
  *
  * @author Robert Korulczyk <robert@korulczyk.pl>
  */
-class UnableLoadPackagistReleaseDataException extends InvalidArgumentException implements
-	UnprocessableExtensionInterface,
-	SoftFailureInterface {
+interface SoftFailureInterface extends Throwable {
 
 }
