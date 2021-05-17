@@ -36,6 +36,8 @@ final class ExtiverseApi extends Component {
 
 	/** @var string|array|CacheInterface */
 	public $cache = 'arrayCache';
+	/** @var int */
+	public $cacheDuration = 3600;
 
 	private $_client;
 	private $_cachedExtensions;
@@ -52,14 +54,14 @@ final class ExtiverseApi extends Component {
 	 */
 	public function searchExtensions(bool $useCache = true): array {
 		$callback = function () {
-			$response['links']['next'] = $this->apiUrl . '/extensions?sort=-created_at&filter[is][]=premium';
+			$response['links']['next'] = $this->apiUrl . '/extensions?sort=-created_at&filter[is][]=premium&include=versions';
 
 			$results = [];
 			do {
 				$response = $this->getClient()->request('GET', $response['links']['next'])->toArray();
 				foreach ($response['data'] as $item) {
 					try {
-						$result = ApiResult::createFromApiResponse($item);
+						$result = ApiResult::createFromApiResponse($item, $response['included']);
 						$results[$result->getName()] = $result;
 					} catch (InvalidApiResponseException $exception) {
 						Yii::warning($exception->getMessage());
@@ -71,7 +73,7 @@ final class ExtiverseApi extends Component {
 		};
 
 		if ($useCache) {
-			return $this->cache->getOrSet(__METHOD__, $callback);
+			return $this->cache->getOrSet(__METHOD__, $callback, $this->cacheDuration);
 		}
 
 		$result = $callback();

@@ -51,8 +51,8 @@ final class ExtensionsRepository extends Component {
 
 	public const NO_TRANSLATION_FILE = 'no-translation-source.yml';
 
+	public $cacheDuration = 3600;
 	public $packagistCacheDuration = 3600;
-	public $githubCacheDuration = 3600;
 
 	private $_extensions;
 	private $_client;
@@ -66,7 +66,7 @@ final class ExtensionsRepository extends Component {
 			if ($useCache) {
 				$this->_extensions = Yii::$app->cache->getOrSet(__METHOD__, function () {
 					return $this->fetchExtensions();
-				}, $this->packagistCacheDuration);
+				}, $this->cacheDuration);
 			} else {
 				$this->_extensions = $this->fetchExtensions();
 			}
@@ -298,6 +298,7 @@ final class ExtensionsRepository extends Component {
 		return $this->generateRawUrl($repositoryUrl, self::NO_TRANSLATION_FILE, 'master');
 	}
 
+	/* @noinspection PhpSameParameterValueInspection */
 	private function testSourceUrl(string $url, int $tries = 5): bool {
 		while ($tries-- > 0) {
 			$response = $this->getClient()->request('GET', $url);

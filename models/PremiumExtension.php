@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace app\models;
 
 use app\components\extensions\ExtensionsRepository;
+use Composer\Semver\Semver;
 use Yii;
 use function strpos;
 
@@ -31,19 +32,19 @@ final class PremiumExtension extends Extension {
 	private $name;
 	private $packageName;
 	private $repositoryUrl;
-	private $compatible;
+	private $requiredFlarum;
 
 	public function __construct(
 		string $id,
 		string $packageName,
 		?string $name,
 		?string $repositoryUrl,
-		bool $compatible
+		?string $requiredFlarum
 	) {
 		$this->name = $name;
 		$this->packageName = $packageName;
 		$this->repositoryUrl = $repositoryUrl;
-		$this->compatible = $compatible;
+		$this->requiredFlarum = $requiredFlarum;
 
 		parent::__construct($id);
 	}
@@ -54,7 +55,7 @@ final class PremiumExtension extends Extension {
 			$data['name'],
 			$data['title'] ?? null,
 			$data['url'] ?? null,
-			$data['compatible'] ?? false
+			$data['requiredFlarum'] ?? null
 		);
 	}
 
@@ -83,7 +84,23 @@ final class PremiumExtension extends Extension {
 	}
 
 	public function isOutdated(array $supportedReleases, array $unsupportedReleases): ?bool {
-		return !$this->compatible;
+		if ($this->requiredFlarum === null) {
+			return true;
+		}
+
+		$unclear = false;
+		foreach ($unsupportedReleases as $release) {
+			if (Semver::satisfies($release, $this->requiredFlarum)) {
+				$unclear = true;
+			}
+		}
+		foreach ($supportedReleases as $release) {
+			if (Semver::satisfies($release, $this->requiredFlarum)) {
+				return $unclear ? null : false;
+			}
+		}
+
+		return true;
 	}
 
 	public function hasTranslationSource(): bool {

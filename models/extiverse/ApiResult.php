@@ -43,8 +43,8 @@ final class ApiResult {
 	private $downloads;
 	/** @var int */
 	private $subscribers;
-	/** @var bool */
-	private $compatible;
+	/** @var string|null */
+	private $requiredFlarum;
 
 	private function __construct(array $data) {
 		foreach ($data as $field => $value) {
@@ -52,12 +52,32 @@ final class ApiResult {
 		}
 	}
 
-	public static function createFromApiResponse(array $data): self {
+	public static function createFromApiResponse(array $data, array $included): self {
 		if ($data['attributes']['highest-version'] === null) {
 			throw new InvalidApiResponseException(
 				"Missing version for {$data['attributes']['name']} extension.",
 			);
 		}
+
+		$lastRelease = $data['attributes']['highest-version'];
+		$versions = [];
+		foreach ($data['relationships']['versions']['data'] as $version) {
+			if ($version['type'] === 'extension-versions') {
+				$versions[$version['id']] = $version['id'];
+			}
+		}
+
+		$requiredFlarum = null;
+		foreach ($included as $item) {
+			if (
+				$item['type'] === 'extension-versions' && isset($versions[$item['id']])
+				&& $item['attributes']['version'] === $lastRelease
+			) {
+				$requiredFlarum = $item['attributes']['flarum-version-required'];
+				break;
+			}
+		}
+
 		return new self([
 			'name' => $data['attributes']['name'],
 			'title' => $data['attributes']['title'] ?? null,
@@ -65,7 +85,7 @@ final class ApiResult {
 			'version' => $data['attributes']['highest-version'],
 			'downloads' => (int) $data['attributes']['downloads'],
 			'subscribers' => (int) $data['attributes']['subscribers-count'],
-			'compatible' => (bool) ($data['attributes']['compatible-with-latest-flarum'] ?? false),
+			'requiredFlarum' => $requiredFlarum,
 		]);
 	}
 
@@ -93,7 +113,7 @@ final class ApiResult {
 		return $this->subscribers;
 	}
 
-	public function getCompatible(): bool {
-		return $this->compatible;
+	public function getRequiredFlarum(): ?string {
+		return $this->requiredFlarum;
 	}
 }
