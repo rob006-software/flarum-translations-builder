@@ -42,11 +42,11 @@ final class PolishReleaseGenerator extends ReleaseGenerator {
 		$removed = [];
 		foreach ($this->getChangedExtensions() as $extensionId => $changeType) {
 			if ($changeType === Repository::CHANGE_ADDED) {
-				$added[$extensionId] = Yii::$app->extensionsRepository->getExtension($extensionId);
+				$added[$extensionId] = Yii::$app->extensionsRepository->getExtension($extensionId, false);
 			} elseif ($changeType === Repository::CHANGE_MODIFIED) {
-				$changed[$extensionId] = Yii::$app->extensionsRepository->getExtension($extensionId);
+				$changed[$extensionId] = Yii::$app->extensionsRepository->getExtension($extensionId, false);
 			} elseif ($changeType === Repository::CHANGE_DELETED) {
-				$removed[$extensionId] = Yii::$app->extensionsRepository->getExtension($extensionId);
+				$removed[$extensionId] = Yii::$app->extensionsRepository->getExtension($extensionId, false);
 			}
 		}
 
@@ -74,7 +74,7 @@ final class PolishReleaseGenerator extends ReleaseGenerator {
 				? "**Usunięto przestarzałe frazy dla rozszerzeń**:\n\n"
 				: "**Zaktualizowano tłumaczenia dla rozszerzeń**:\n\n";
 			/* @var $extension Extension */
-			foreach ($changed as $id => $extension) {
+			foreach ($changed as $extension) {
 				$content .= "* [`{$extension->getPackageName()}`]({$extension->getRepositoryUrl()})\n";
 			}
 			$content .= "\n\n";
@@ -82,8 +82,12 @@ final class PolishReleaseGenerator extends ReleaseGenerator {
 		if (!empty($removed)) {
 			$content .= "**Usunięto wsparcie dla przestarzałych rozszerzeń**:\n\n";
 			/* @var $extension Extension */
-			foreach ($removed as $extension) {
-				$content .= "* [`{$extension->getPackageName()}`]({$extension->getRepositoryUrl()})\n";
+			foreach ($removed as $id => $extension) {
+				if ($extension === null) {
+					$content .= "* `$id`\n";
+				} else {
+					$content .= "* [`{$extension->getPackageName()}`]({$extension->getRepositoryUrl()})\n";
+				}
 			}
 			$content .= "\n\n";
 		}
