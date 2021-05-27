@@ -107,7 +107,7 @@ final class PolishReleaseGenerator extends ReleaseGenerator {
 			'validation.yml' => $this->isMajorUpdate()
 				? "Usunięto przestarzałe komunikaty walidacji (wspierana jest wersja `{$this->getSupportedFlarumVersion()}` lub wyższa)"
 				: 'Aktualizacja tłumaczeń komunikatów walidacji',
-			'config.js' => 'Aktualizacja tłumaczeń dayjs',
+			'config.js' => 'Aktualizacja tłumaczeń Day.js',
 			'config.css' => 'Aktualizacja stylów',
 		];
 	}
