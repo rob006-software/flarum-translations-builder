@@ -40,6 +40,8 @@ use function unlink;
  */
 final class JanitorController extends Controller {
 
+	public $update = true;
+	public $verbose = false;
 	public $useCache = false;
 
 	public function options($actionID) {
@@ -48,7 +50,7 @@ final class JanitorController extends Controller {
 		}
 
 		return array_merge(parent::options($actionID), [
-			'useCache',
+			'useCache', 'update', 'verbose',
 		]);
 	}
 
@@ -253,7 +255,12 @@ final class JanitorController extends Controller {
 			null,
 			require Yii::getAlias($configFile)
 		);
-		$translations->getRepository()->update();
+		if ($this->update) {
+			$output = $translations->getRepository()->update();
+			if ($this->verbose) {
+				echo $output;
+			}
+		}
 
 		return $translations;
 	}
