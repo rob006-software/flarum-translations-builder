@@ -20,6 +20,7 @@ use Dont\DontCallStatic;
 use Dont\DontGet;
 use Dont\DontSet;
 use yii\base\InvalidConfigException;
+use yii\helpers\Inflector;
 
 /**
  * Class Subsplit.
@@ -53,7 +54,8 @@ abstract class Subsplit {
 		$this->components = $components;
 		$this->releaseGenerator = $releaseGenerator;
 		$this->repositoryUrl = $repository;
-		$this->repository = new Repository($repository, $branch, APP_ROOT . "/runtime/subsplits/$id");
+		$repoDirectory = $id . '__' . Inflector::slug($repository);
+		$this->repository = new Repository($repository, $branch, APP_ROOT . "/runtime/subsplits/$repoDirectory");
 	}
 
 	public function getRepository(): Repository {
