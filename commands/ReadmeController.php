@@ -15,8 +15,10 @@ namespace app\commands;
 
 use app\components\ConsoleController;
 use app\components\readme\MainReadmeGenerator;
+use app\components\readme\SummaryGenerator;
 use app\models\Extension;
 use app\models\LanguageSubsplit;
+use app\models\PremiumExtension;
 use app\models\Repository;
 use app\models\Translations;
 use mindplay\readable;
@@ -39,6 +41,7 @@ final class ReadmeController extends ConsoleController {
 		'flarum',
 		'fof',
 		'various',
+		'premium',
 	];
 
 	public $defaultAction = 'update';
@@ -67,16 +70,19 @@ final class ReadmeController extends ConsoleController {
 			return;
 		}
 		$readme = file_get_contents($translations->getDir() . '/README.md');
+		$summary = file_get_contents($translations->getDir() . '/status/summary.md');
 		foreach (self::GROUPS as $group) {
 			if (
 				strpos($readme, "<!-- {$group}-extensions-list-start -->") !== false
 				&& strpos($readme, "<!-- {$group}-extensions-list-stop -->") !== false
 			) {
-				$generator = new MainReadmeGenerator($translations->getVendors());
+				$readmeGenerator = new MainReadmeGenerator($translations->getVendors());
+				$summaryGenerator = new SummaryGenerator($translations->getVendors());
 				foreach ($translations->getExtensionsComponents() as $component) {
 					$extension = Yii::$app->extensionsRepository->getExtension($component->getId());
 					if ($extension !== null && $this->isValidForGroup($extension, $group)) {
-						$generator->addExtension($extension);
+						$readmeGenerator->addExtension($extension);
+						$summaryGenerator->addExtension($extension);
 					}
 				}
 
@@ -84,14 +90,21 @@ final class ReadmeController extends ConsoleController {
 					"<!-- {$group}-extensions-list-start -->",
 					"<!-- {$group}-extensions-list-stop -->",
 					$readme,
-					$generator->generate()
+					$readmeGenerator->generate()
+				);
+				$summary = $this->replaceBetween(
+					"<!-- {$group}-extensions-list-start -->",
+					"<!-- {$group}-extensions-list-stop -->",
+					$summary,
+					$summaryGenerator->generate()
 				);
 			}
 		}
 
 		file_put_contents($translations->getDir() . '/README.md', $readme);
+		file_put_contents($translations->getDir() . '/status/summary.md', $summary);
 
-		$this->postProcessRepository($translations->getRepository(), 'Update translations status in README.');
+		$this->postProcessRepository($translations->getRepository(), 'Update list of supported extensions.');
 		$this->updateLimit($token);
 	}
 
@@ -218,6 +231,9 @@ final class ReadmeController extends ConsoleController {
 		}
 		if (in_array($group, ['flarum', 'fof'], true)) {
 			return $group === $extension->getVendor();
+		}
+		if ($group === 'premium') {
+			return $extension instanceof PremiumExtension;
 		}
 
 		return !in_array($extension->getVendor(), ['flarum', 'fof'], true);
