@@ -229,11 +229,14 @@ final class ReadmeController extends ConsoleController {
 		if ($group === 'all') {
 			return true;
 		}
-		if (in_array($group, ['flarum', 'fof'], true)) {
-			return $group === $extension->getVendor();
+		if ($extension instanceof PremiumExtension) {
+			return $group === 'premium';
 		}
 		if ($group === 'premium') {
 			return $extension instanceof PremiumExtension;
+		}
+		if (in_array($group, ['flarum', 'fof'], true)) {
+			return $group === $extension->getVendor();
 		}
 
 		return !in_array($extension->getVendor(), ['flarum', 'fof'], true);
