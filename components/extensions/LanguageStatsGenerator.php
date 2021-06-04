@@ -87,7 +87,23 @@ final class LanguageStatsGenerator {
 	}
 
 	public function generate(): string {
-		return $this->generateRegularExtensions() . "\n" . $this->generatePremiumExtensions();
+		$languageName = Locale::getDisplayLanguage($this->language, 'en');
+		return "# $languageName translation status \n\n\n"
+			. $this->generateCore() . "\n\n"
+			. $this->generateRegularExtensions() . "\n\n"
+			. $this->generatePremiumExtensions();
+	}
+
+	public function generateCore(): string {
+		return <<<HTML
+			## Flarum core
+			
+			| Component | Status |
+			| --- | --- |
+			| [Core](https://github.com/flarum/core) | [![Translation status](https://weblate.rob006.net/widgets/flarum/{$this->language}/core/svg-badge.svg)](https://weblate.rob006.net/projects/flarum/core/{$this->language}/) |
+			| Validation | [![Translation status](https://weblate.rob006.net/widgets/flarum/{$this->language}/validation/svg-badge.svg)](https://weblate.rob006.net/projects/flarum/validation/{$this->language}/) |
+			
+			HTML;
 	}
 
 	public function generateRegularExtensions(): string {
@@ -101,28 +117,26 @@ final class LanguageStatsGenerator {
 			return $result;
 		});
 
-		$languageName = Locale::getDisplayLanguage($this->language, 'en');
 		$output = <<<HTML
-# $languageName translation status of extensions
-
-
-<table>
-<thead>
-	<tr>
-		<th rowspan="2">Extension</th>
-		<th rowspan="2">Rank</th>
-		<th align="center" colspan="3">Downloads</th>
-		<th rowspan="2">Status</th>
-	</tr>
-	<tr>
-		<th align="center">total</th>
-		<th align="center">monthly</th>
-		<th align="center">daily</th>
-	</tr>
-</thead>
-<tbody>
-
-HTML;
+			## Free extensions
+			
+			<table>
+			<thead>
+				<tr>
+					<th rowspan="2">Extension</th>
+					<th rowspan="2">Rank</th>
+					<th align="center" colspan="3">Downloads</th>
+					<th rowspan="2">Status</th>
+				</tr>
+				<tr>
+					<th align="center">total</th>
+					<th align="center">monthly</th>
+					<th align="center">daily</th>
+				</tr>
+			</thead>
+			<tbody>
+			
+			HTML;
 
 		$rank = 0;
 		foreach ($extensions as $extension) {
@@ -133,26 +147,26 @@ HTML;
 			$this->saveStats($extension->getPackageName(), 'rank', $rank);
 
 			$output .= <<<HTML
-	<tr>
-		<td>
-			{$this->compatibilityIcon($extension)}
-			{$this->link("<code>{$this->truncate($extension->getPackageName())}</code>", $extension->getRepositoryUrl(), $extension->getPackageName())}
-		</td>
-		<td align="center">{$rank}{$this->statsChangeBadge($extension->getPackageName(), 'rank', $rank, true)}</td>
-		<td align="center">{$this->stats($extension, 'total')}</td>
-		<td align="center">{$this->stats($extension, 'monthly')}</td>
-		<td align="center">{$this->stats($extension, 'daily')}</td>
-		<td>{$this->statusBadge($extension)}</td>
-	</tr>
-
-HTML;
+					<tr>
+						<td>
+							{$this->compatibilityIcon($extension)}
+							{$this->link("<code>{$this->truncate($extension->getPackageName())}</code>", $extension->getRepositoryUrl(), $extension->getPackageName())}
+						</td>
+						<td align="center">{$rank}{$this->statsChangeBadge($extension->getPackageName(), 'rank', $rank, true)}</td>
+						<td align="center">{$this->stats($extension, 'total')}</td>
+						<td align="center">{$this->stats($extension, 'monthly')}</td>
+						<td align="center">{$this->stats($extension, 'daily')}</td>
+						<td>{$this->statusBadge($extension)}</td>
+					</tr>
+				
+				HTML;
 		}
 
 		$output .= <<<HTML
-</tbody>
-</table>
-
-HTML;
+			</tbody>
+			</table>
+			
+			HTML;
 
 		return $output;
 	}
@@ -168,24 +182,22 @@ HTML;
 			return $result;
 		});
 
-		$languageName = Locale::getDisplayLanguage($this->language, 'en');
 		$output = <<<HTML
-# $languageName translation status of premium extensions
-
-
-<table>
-<thead>
-	<tr>
-		<th>Extension</th>
-		<th>Rank</th>
-		<th>Subscribers</th>
-		<th>Downloads</th>
-		<th>Status</th>
-	</tr>
-</thead>
-<tbody>
-
-HTML;
+			## Premium extensions
+			
+			<table>
+			<thead>
+				<tr>
+					<th>Extension</th>
+					<th>Rank</th>
+					<th>Subscribers</th>
+					<th>Downloads</th>
+					<th>Status</th>
+				</tr>
+			</thead>
+			<tbody>
+			
+			HTML;
 
 		$rank = 0;
 		foreach ($extensions as $extension) {
@@ -195,25 +207,25 @@ HTML;
 			$this->saveStats($extension->getPackageName(), 'rank', $rank);
 
 			$output .= <<<HTML
-	<tr>
-		<td>
-			{$this->compatibilityIcon($extension)}
-			{$this->link("<code>{$this->truncate($extension->getPackageName())}</code>", $extension->getRepositoryUrl(), $extension->getPackageName())}
-		</td>
-		<td align="center">{$rank}{$this->statsChangeBadge($extension->getPackageName(), 'rank', $rank, true)}</td>
-		<td align="center">{$this->premiumStats($extension, 'subscribers')}</td>
-		<td align="center">{$this->premiumStats($extension, 'downloads')}</td>
-		<td>{$this->statusBadge($extension)}</td>
-	</tr>
-
-HTML;
+				<tr>
+					<td>
+						{$this->compatibilityIcon($extension)}
+						{$this->link("<code>{$this->truncate($extension->getPackageName())}</code>", $extension->getRepositoryUrl(), $extension->getPackageName())}
+					</td>
+					<td align="center">{$rank}{$this->statsChangeBadge($extension->getPackageName(), 'rank', $rank, true)}</td>
+					<td align="center">{$this->premiumStats($extension, 'subscribers')}</td>
+					<td align="center">{$this->premiumStats($extension, 'downloads')}</td>
+					<td>{$this->statusBadge($extension)}</td>
+				</tr>
+			
+			HTML;
 		}
 
 		$output .= <<<HTML
-</tbody>
-</table>
-
-HTML;
+			</tbody>
+			</table>
+			
+			HTML;
 
 		return $output;
 	}
