@@ -115,11 +115,15 @@ final class JanitorController extends Controller {
 				$found = true;
 				$extension = Yii::$app->extensionsRepository->getExtension($component->getId(), $this->useCache);
 				assert($extension instanceof Extension);
-				$outdated = $extension->isOutdated(
-					$translations->getSupportedVersions(),
-					$translations->getUnsupportedVersions()
-				);
-				$outdatedIcon = $outdated === null ? '?' : '!';
+				if ($extension->isAbandoned()) {
+					$outdatedIcon = 'X';
+				} else {
+					$outdated = $extension->isOutdated(
+						$translations->getSupportedVersions(),
+						$translations->getUnsupportedVersions()
+					);
+					$outdatedIcon = $outdated === null ? '?' : '!';
+				}
 				echo " - $outdatedIcon [`{$component->getId()}`]({$extension->getRepositoryUrl()})"
 					. " - [`{$extension->getPackageName()}`](https://packagist.org/packages/{$extension->getPackageName()})"
 					. "\n";
