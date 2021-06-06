@@ -298,8 +298,7 @@ final class ExtensionsRepository extends Component {
 		return $this->generateRawUrl($repositoryUrl, self::NO_TRANSLATION_FILE, 'master');
 	}
 
-	/* @noinspection PhpSameParameterValueInspection */
-	private function testSourceUrl(string $url, int $tries = 5): bool {
+	public function testSourceUrl(string $url, int $tries = 5): bool {
 		while ($tries-- > 0) {
 			$response = $this->getClient()->request('GET', $url);
 			if ($response->getStatusCode() < 300) {

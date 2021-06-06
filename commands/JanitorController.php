@@ -16,6 +16,7 @@ namespace app\commands;
 use app\components\extensions\ConfigGenerator;
 use app\models\Extension;
 use app\models\ForkRepository;
+use app\models\PremiumExtension;
 use app\models\Translations;
 use Yii;
 use yii\base\InvalidConfigException;
@@ -29,6 +30,7 @@ use function array_flip;
 use function array_merge;
 use function file_exists;
 use function filemtime;
+use function in_array;
 use function rename;
 use function strtotime;
 use function unlink;
@@ -145,6 +147,32 @@ final class JanitorController extends Controller {
 			if (file_exists($translationPath)) {
 				unlink($translationPath);
 				echo "Removed $sourcePath translation.\n";
+			}
+		}
+	}
+
+	public function actionRedundantTranslations(array $languages = [], string $configFile = '@app/translations/config.php') {
+		$translations = $this->getTranslations($configFile);
+
+		foreach ($translations->getExtensionsComponents() as $component) {
+			$extension = Yii::$app->extensionsRepository->getExtension($component->getId());
+			foreach ($component->getSources() as $source) {
+				foreach ($translations->getLanguages() as $language) {
+					if (
+						(!empty($languages) && !in_array($language, $languages, true))
+						|| $extension instanceof PremiumExtension
+						|| $extension->isOutdated($translations->getSupportedVersions(), $translations->getUnsupportedVersions()) !== false
+					) {
+						continue;
+					}
+					$url = strtr($source, ['/en.' => "/$language."]);
+					$exists = Yii::$app->extensionsRepository->testSourceUrl($url);
+					if ($exists && $component->isValidForLanguage($language)) {
+						echo "{$component->getId()} - $language: $url\n";
+					} elseif (!$exists && !$component->isValidForLanguage($language)) {
+						echo "{$component->getId()} - missing translation for $language\n";
+					}
+				}
 			}
 		}
 	}
