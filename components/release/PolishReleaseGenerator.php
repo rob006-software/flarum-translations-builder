@@ -123,26 +123,26 @@ final class PolishReleaseGenerator extends ReleaseGenerator {
 		$warning = !$this->isMajorUpdate()
 			? ''
 			: <<<MD
-
-**Ta wersja usuwa wsparcie dla starszych wersji Flarum oraz starszych wersji niektórych rozszerzeń. 
-Przed aktualizacją upewnij się, że twoje forum jest aktualne i korzysta z najnowszych wersji rozszerzeń.**
-
-MD;
+				
+				**Ta wersja usuwa wsparcie dla starszych wersji Flarum oraz starszych wersji niektórych rozszerzeń. 
+				Przed aktualizacją upewnij się, że twoje forum jest aktualne i korzysta z najnowszych wersji rozszerzeń.**
+				
+				MD;
 
 		return <<<MD
-https://discuss.flarum.org/d/18134-polish-language-pack
--------------------------------------------------------
-## Wersja [`{$this->getNextVersion()}`](https://github.com/rob006-software/flarum-lang-polish/releases/tag/{$this->getNextVersion()})
-
-{$this->generateChangelogEntryContent()}
-Aby zaktualizować:
-
-```console
-composer $command rob006/flarum-lang-polish
-php flarum cache:clear
-```
-$warning
-MD;
+			https://discuss.flarum.org/d/18134-polish-language-pack
+			-------------------------------------------------------
+			## Wersja [`{$this->getNextVersion()}`](https://github.com/rob006-software/flarum-lang-polish/releases/tag/{$this->getNextVersion()})
+			
+			{$this->generateChangelogEntryContent()}
+			Aby zaktualizować:
+			
+			```console
+			composer $command rob006/flarum-lang-polish
+			php flarum cache:clear
+			```
+			$warning
+			MD;
 	}
 
 	protected function getCoreChanges(): array {

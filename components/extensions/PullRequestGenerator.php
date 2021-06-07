@@ -68,7 +68,7 @@ final class PullRequestGenerator {
 			$this->repository->createBranch($branchName);
 
 			$this->addExtensionToConfig($extension);
-			$this->repository->commit("Add {$extension->getPackageName()}.");
+			$this->repository->commit("Add `{$extension->getPackageName()}`.");
 			$this->repository->push();
 
 			$this->openPullRequestForNewExtension($branchName, $extension);
@@ -100,7 +100,7 @@ final class PullRequestGenerator {
 			Yii::$app->params['translationsForkRepository'],
 			$branchName,
 			[
-				'title' => "Add {$extension->getPackageName()}",
+				'title' => "Add `{$extension->getPackageName()}`",
 				'body' => $this->generatePullRequestBody($extension),
 			]
 		);
@@ -143,30 +143,30 @@ final class PullRequestGenerator {
 		$name = $extension->getPackageName();
 
 		$output = <<<MD
-## [$name at Packagist](https://packagist.org/packages/$name)
-
-![License](https://poser.pugx.org/$name/license)
-
-![Latest Stable Version](https://poser.pugx.org/$name/v/stable) ![Latest Unstable Version](https://poser.pugx.org/$name/v/unstable)
-[![Total Downloads](https://poser.pugx.org/$name/downloads) ![Monthly Downloads](https://poser.pugx.org/$name/d/monthly) ![Daily Downloads](https://poser.pugx.org/$name/d/daily)](https://packagist.org/packages/$name/stats)
-
-
-MD;
+			## [`$name` at Packagist](https://packagist.org/packages/$name)
+			
+			![License](https://img.shields.io/packagist/l/$name)
+			
+			![Latest Stable Version](https://img.shields.io/packagist/v/$name?color=success&label=stable) ![Latest Unstable Version](https://img.shields.io/packagist/v/$name?include_prereleases&label=unstable) ![Flarum compatibility status](https://flarum-badge-api.davwheat.dev/v1/compat-latest/$name)
+			[![Total Downloads](https://img.shields.io/packagist/dt/$name) ![Monthly Downloads](https://img.shields.io/packagist/dm/$name) ![Daily Downloads](https://img.shields.io/packagist/dd/$name)](https://packagist.org/packages/$name/stats)
+			
+			
+			MD;
 
 		if (Yii::$app->extensionsRepository->isGithubRepo($extension->getRepositoryUrl())) {
 			[$userName, $repoName] = Yii::$app->githubApi->explodeRepoUrl($extension->getRepositoryUrl());
 			$output .= <<<MD
-## [$userName/$repoName at GitHub](https://github.com/$userName/$repoName)
-
-![GitHub license](https://img.shields.io/github/license/$userName/$repoName)
-
-[![GitHub last tag](https://img.shields.io/github/tag-date/$userName/$repoName)](https://github.com/$userName/$repoName/releases) [![GitHub contributors](https://img.shields.io/github/contributors/$userName/$repoName)](https://github.com/$userName/$repoName/graphs/contributors)
-[![GitHub stars](https://img.shields.io/github/stars/$userName/$repoName)](https://github.com/$userName/$repoName/stargazers) [![GitHub forks](https://img.shields.io/github/forks/$userName/$repoName)](https://github.com/$userName/$repoName/network) [![GitHub issues](https://img.shields.io/github/issues/$userName/$repoName)](https://github.com/$userName/$repoName/issues)
-
-[![GitHub last commit](https://img.shields.io/github/last-commit/$userName/$repoName)](https://github.com/$userName/$repoName/commits) [![GitHub commit activity](https://img.shields.io/github/commit-activity/m/$userName/$repoName)](https://github.com/$userName/$repoName/graphs/contributors) [![GitHub commit activity](https://img.shields.io/github/commit-activity/y/$userName/$repoName)](https://github.com/$userName/$repoName/graphs/contributors)
-
-
-MD;
+				## [`$userName/$repoName` at GitHub](https://github.com/$userName/$repoName)
+				
+				![GitHub license](https://img.shields.io/github/license/$userName/$repoName)
+				
+				[![GitHub last tag](https://img.shields.io/github/tag-date/$userName/$repoName)](https://github.com/$userName/$repoName/releases) [![GitHub contributors](https://img.shields.io/github/contributors/$userName/$repoName)](https://github.com/$userName/$repoName/graphs/contributors)
+				[![GitHub stars](https://img.shields.io/github/stars/$userName/$repoName)](https://github.com/$userName/$repoName/stargazers) [![GitHub forks](https://img.shields.io/github/forks/$userName/$repoName)](https://github.com/$userName/$repoName/network) [![GitHub issues](https://img.shields.io/github/issues/$userName/$repoName)](https://github.com/$userName/$repoName/issues)
+				
+				[![GitHub last commit](https://img.shields.io/github/last-commit/$userName/$repoName)](https://github.com/$userName/$repoName/commits) [![GitHub commit activity](https://img.shields.io/github/commit-activity/m/$userName/$repoName)](https://github.com/$userName/$repoName/graphs/contributors) [![GitHub commit activity](https://img.shields.io/github/commit-activity/y/$userName/$repoName)](https://github.com/$userName/$repoName/graphs/contributors)
+				
+				
+				MD;
 		}
 
 		$output .= "## Other\n\n";
