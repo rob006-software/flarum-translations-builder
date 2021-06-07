@@ -82,7 +82,7 @@ final class PullRequestGenerator {
 	private function updateBranch(string $branchName, Extension $extension): bool {
 		$this->repository->checkoutBranch($branchName);
 		$this->addExtensionToConfig($extension);
-		$this->repository->commit("Update config for {$extension->getPackageName()}.", $commited);
+		$this->repository->commit("Update config for `{$extension->getPackageName()}`.", $commited);
 		$this->repository->push();
 
 		return $commited;
