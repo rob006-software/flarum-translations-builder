@@ -117,4 +117,8 @@ final class LanguageSubsplit extends Subsplit {
 	public function getReadmeGenerator(Translations $translations): ReadmeGenerator {
 		return new LanguageSubsplitReadmeGenerator($this->getLanguage(), $translations->getVendors());
 	}
+
+	protected function getSourcesPaths(Translations $translations): array {
+		return [dirname($translations->getComponentTranslationPath('', $this->getLanguage()))];
+	}
 }

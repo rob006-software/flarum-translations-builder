@@ -77,7 +77,11 @@ final class TranslationsController extends ConsoleController {
 
 		foreach ($subsplits as $subsplit) {
 			$subsplit->split($translations);
-			$this->postProcessRepository($subsplit->getRepository(), 'Sync translations with main repository.');
+			$this->postProcessRepository(
+				$subsplit->getRepository(),
+				$subsplit->processCommitMessage($translations, 'Sync translations with main repository.')
+			);
+			$subsplit->markAsProcessed($translations);
 		}
 		$this->updateLimit($token);
 	}

@@ -106,6 +106,21 @@ class Repository {
 		return $this->git->diff();
 	}
 
+	public function getShortlog(...$args): string {
+		return $this->git->run('shortlog', $args);
+	}
+
+	public function getCurrentRevisionHash(): string {
+		return trim($this->git->run('rev-parse', ['--verify', 'HEAD']));
+	}
+
+	public function getCurrentAuthor(): string {
+		$name = trim($this->git->run('config', ['user.name']));
+		$email = trim($this->git->run('config', ['user.email']));
+
+		return "$name <$email>";
+	}
+
 	/**
 	 * @param string $reference
 	 * @return string[] Change types (M, A or D) indexed by files paths.
