@@ -61,7 +61,7 @@ final class RegularExtension extends Extension {
 	}
 
 	public function getThreadUrl(): ?string {
-		return $this->getComposerValue('extra.flagrow.discuss');
+		return $this->getComposerValue('extra.extiverse.discuss') ?? $this->getComposerValue('extra.flagrow.discuss');
 	}
 
 	public function getRepositoryUrl(): string {
