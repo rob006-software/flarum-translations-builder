@@ -120,14 +120,16 @@ abstract class Subsplit {
 
 	private function getAuthorsSinceLastChange(Translations $translations): array {
 		$lastCommit = $this->getLastProcessedHash();
-		if ($lastCommit === null) {
-			return [];
-		}
 
 		$authors = [];
 		foreach ($this->getSourcesPaths($translations) as $path) {
-			$response = $translations->getRepository()
-				->getShortlog('-sne', '--no-merges', "$lastCommit..HEAD", '--', $path);
+			if ($lastCommit === null) {
+				$response = $translations->getRepository()
+					->getShortlog('-sne', '--no-merges', '--', $path);
+			} else {
+				$response = $translations->getRepository()
+					->getShortlog('-sne', '--no-merges', "$lastCommit..HEAD", '--', $path);
+			}
 			$authors = $this->processAuthors($response, $authors);
 		}
 
