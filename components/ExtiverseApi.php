@@ -61,7 +61,7 @@ final class ExtiverseApi extends Component {
 				$response = $this->getClient()->request('GET', $response['links']['next'])->toArray();
 				foreach ($response['data'] as $item) {
 					try {
-						$result = ApiResult::createFromApiResponse($item, $response['included']);
+						$result = ApiResult::createFromApiResponse($item, $response['included'] ?? []);
 						$results[$result->getName()] = $result;
 					} catch (InvalidApiResponseException $exception) {
 						Yii::warning($exception->getMessage());
