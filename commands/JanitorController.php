@@ -254,6 +254,15 @@ final class JanitorController extends Controller {
 		}
 	}
 
+	public function actionResetRateLimitForExtension(string $extensionsName) {
+		$count = Yii::$app->extensionsRepository->resetRateLimitCache($extensionsName);
+		if ($count > 0) {
+			echo "Extension rate limit has been reset.\n";
+		} else {
+			echo "Extension is not rate limited.\n";
+		}
+	}
+
 	public function actionCleanupTranslations(array $languages, string $configFile = '@app/translations/config.php') {
 		$translations = $this->getTranslations($configFile);
 		foreach ($languages as $language) {

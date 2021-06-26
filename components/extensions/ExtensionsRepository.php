@@ -125,6 +125,24 @@ final class ExtensionsRepository extends Component {
 			|| Yii::$app->cache->get(__CLASS__ . '#abandonedExtensionDetected#' . $name) !== false;
 	}
 
+	public function resetRateLimitCache(string $extensionName): int {
+		$count = 0;
+		if (Yii::$app->cache->get(__CLASS__ . '#rateLimit#' . $extensionName) !== false) {
+			Yii::$app->cache->delete(__CLASS__ . '#rateLimit#' . $extensionName);
+			$count++;
+		}
+		if (Yii::$app->cache->get(__CLASS__ . '#languagePackDetected#' . $extensionName) !== false) {
+			Yii::$app->cache->delete(__CLASS__ . '#languagePackDetected#' . $extensionName);
+			$count++;
+		}
+		if (Yii::$app->cache->get(__CLASS__ . '#abandonedExtensionDetected#' . $extensionName) !== false) {
+			Yii::$app->cache->delete(__CLASS__ . '#abandonedExtensionDetected#' . $extensionName);
+			$count++;
+		}
+
+		return $count;
+	}
+
 	private function registerExtensionUpdateFailure(string $name): void {
 		if (!Yii::$app->frequencyLimiter->run(__METHOD__ . '#' . $name, 7 * 24 * 3600, null, 5)) {
 			if (Yii::$app->mutex->acquire(__METHOD__ . "#$name", 10)) {
