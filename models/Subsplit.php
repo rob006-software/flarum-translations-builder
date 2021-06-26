@@ -124,8 +124,9 @@ abstract class Subsplit {
 		$authors = [];
 		foreach ($this->getSourcesPaths($translations) as $path) {
 			if ($lastCommit === null) {
+				$firstCommit = $translations->getRepository()->getFirstCommitHash();
 				$response = $translations->getRepository()
-					->getShortlog('-sne', '--no-merges', '--', $path);
+					->getShortlog('-sne', '--no-merges', "$firstCommit..HEAD", '--', $path);
 			} else {
 				$response = $translations->getRepository()
 					->getShortlog('-sne', '--no-merges', "$lastCommit..HEAD", '--', $path);

@@ -121,6 +121,10 @@ class Repository {
 		return "$name <$email>";
 	}
 
+	public function getFirstCommitHash(): string {
+		return trim($this->git->run('rev-list', ['--max-parents=0', 'HEAD']));
+	}
+
 	/**
 	 * @param string $reference
 	 * @return string[] Change types (M, A or D) indexed by files paths.
