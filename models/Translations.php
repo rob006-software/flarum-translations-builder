@@ -385,7 +385,7 @@ final class Translations {
 	}
 
 	private function validateSourcesChanges(MessageCatalogue $catalogue): void {
-		if (getenv('TRAVIS') || getenv('CI')) {
+		if (getenv('CI')) {
 			return;
 		}
 		foreach ($this->getExtensionsComponents() as $component) {
