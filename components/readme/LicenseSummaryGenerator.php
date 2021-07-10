@@ -22,7 +22,7 @@ use function usort;
  *
  * @author Robert Korulczyk <robert@korulczyk.pl>
  */
-class LicenseSummaryGenerator extends ReadmeGenerator {
+final class LicenseSummaryGenerator extends ReadmeGenerator {
 
 	public function generate(): string {
 		$extensions = $this->getExtensions();
@@ -38,9 +38,11 @@ class LicenseSummaryGenerator extends ReadmeGenerator {
 			if (Yii::$app->extensionsRepository->isGithubRepo($extension->getRepositoryUrl())) {
 				[$userName, $repoName] = Yii::$app->githubApi->explodeRepoUrl($extension->getRepositoryUrl());
 				$githubBadge = "![GitHub license](https://img.shields.io/github/license/$userName/$repoName)";
+				$githubBadge = "[$githubBadge]({$extension->getRepositoryUrl()})";
 			}
 			$output .= "| $githubBadge ";
-			$output .= "| ![Packagist License](https://img.shields.io/packagist/l/{$extension->getPackageName()}) ";
+			$packagistBadge = "![Packagist license](https://img.shields.io/packagist/l/{$extension->getPackageName()})";
+			$output .= "| [$packagistBadge](https://packagist.org/packages/{$extension->getPackageName()}) ";
 			$output .= "|\n";
 		}
 

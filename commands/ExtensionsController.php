@@ -14,18 +14,23 @@ declare(strict_types=1);
 namespace app\commands;
 
 use app\components\ConsoleController;
+use app\components\extensions\PendingSummaryGenerator;
 use app\components\extensions\PullRequestGenerator;
 use app\models\ForkRepository;
 use app\models\Repository;
 use app\models\Translations;
 use Yii;
 use yii\helpers\ArrayHelper;
+use function array_filter;
+use function array_keys;
+use function explode;
 use function file_exists;
 use function file_get_contents;
 use function file_put_contents;
 use function json_decode;
 use function json_encode;
 use function ksort;
+use function strncmp;
 use const APP_ROOT;
 use const JSON_PRETTY_PRINT;
 use const JSON_THROW_ON_ERROR;
@@ -112,7 +117,56 @@ final class ExtensionsController extends ConsoleController {
 		$generator = new PullRequestGenerator($repository);
 		$generator->generateForNewExtensions($extensions, $limit);
 
+		$this->updatePendingExtensionsList($translations, $repository);
+
 		$this->updateLimit($token);
+	}
+
+	public function actionPending(string $configFile = '@app/translations/config.php') {
+		$translations = $this->getTranslations($configFile);
+		$token = __METHOD__ . '#' . implode('#', array_keys($translations->getComponents()));
+		if ($this->isLimited($token)) {
+			return;
+		}
+
+		$repository = new ForkRepository(
+			Yii::$app->params['translationsForkRepository'],
+			Yii::$app->params['translationsRepository'],
+			null,
+			APP_ROOT . '/runtime/translations-fork'
+		);
+		$repository->rebase();
+		$repository->syncBranchesWithRemote();
+
+		$this->updatePendingExtensionsList($translations, $repository);
+
+		$this->updateLimit($token);
+	}
+
+	private function updatePendingExtensionsList(Translations $translations, ForkRepository $repository): void {
+		$branches = array_filter($repository->getBranches(false), static function ($name) {
+			return strncmp($name, 'new/', 4) === 0;
+		});
+
+		$generator = new PendingSummaryGenerator();
+		foreach ($branches as $branch) {
+			$extensionId = explode('/', $branch, 2)[1];
+			$generator->addExtension($extensionId);
+		}
+
+		$readme = <<<MD
+			# Pending extensions summary
+			
+			{$generator->generatePendingExtensions()}
+			
+			## Dead branches
+			
+			{$generator->generateDeadBranches()}
+			MD;
+
+		file_put_contents($translations->getDir() . '/status/pending.md', $readme);
+		$this->commitRepository($translations->getRepository(), 'Update list of pending extensions.');
+		$this->pushRepository($translations->getRepository());
 	}
 
 	// Save API response to cache, since API is not publicly available.

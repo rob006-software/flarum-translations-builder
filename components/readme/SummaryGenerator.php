@@ -21,7 +21,7 @@ use function usort;
  *
  * @author Robert Korulczyk <robert@korulczyk.pl>
  */
-class SummaryGenerator extends ReadmeGenerator {
+final class SummaryGenerator extends ReadmeGenerator {
 
 	public function generate(): string {
 		$extensions = $this->getExtensions();
