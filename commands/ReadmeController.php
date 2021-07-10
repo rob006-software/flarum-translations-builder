@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace app\commands;
 
 use app\components\ConsoleController;
+use app\components\readme\LicenseSummaryGenerator;
 use app\components\readme\MainReadmeGenerator;
 use app\components\readme\SummaryGenerator;
 use app\models\Extension;
@@ -71,6 +72,7 @@ final class ReadmeController extends ConsoleController {
 		}
 		$readme = file_get_contents($translations->getDir() . '/README.md');
 		$summary = file_get_contents($translations->getDir() . '/status/summary.md');
+		$licenses = file_get_contents($translations->getDir() . '/status/licenses.md');
 		foreach (self::GROUPS as $group) {
 			if (
 				strpos($readme, "<!-- {$group}-extensions-list-start -->") !== false
@@ -78,11 +80,13 @@ final class ReadmeController extends ConsoleController {
 			) {
 				$readmeGenerator = new MainReadmeGenerator();
 				$summaryGenerator = new SummaryGenerator();
+				$licensesGenerator = new LicenseSummaryGenerator();
 				foreach ($translations->getExtensionsComponents() as $component) {
 					$extension = Yii::$app->extensionsRepository->getExtension($component->getId());
 					if ($extension !== null && $this->isValidForGroup($extension, $group)) {
 						$readmeGenerator->addExtension($extension);
 						$summaryGenerator->addExtension($extension);
+						$licensesGenerator->addExtension($extension);
 					}
 				}
 
@@ -92,17 +96,34 @@ final class ReadmeController extends ConsoleController {
 					$readme,
 					$readmeGenerator->generate()
 				);
-				$summary = $this->replaceBetween(
-					"<!-- {$group}-extensions-list-start -->",
-					"<!-- {$group}-extensions-list-stop -->",
-					$summary,
-					$summaryGenerator->generate()
-				);
+				if (
+					strpos($summary, "<!-- {$group}-extensions-list-start -->") !== false
+					&& strpos($summary, "<!-- {$group}-extensions-list-stop -->") !== false
+				) {
+					$summary = $this->replaceBetween(
+						"<!-- {$group}-extensions-list-start -->",
+						"<!-- {$group}-extensions-list-stop -->",
+						$summary,
+						$summaryGenerator->generate()
+					);
+				}
+				if (
+					strpos($licenses, "<!-- {$group}-extensions-list-start -->") !== false
+					&& strpos($licenses, "<!-- {$group}-extensions-list-stop -->") !== false
+				) {
+					$licenses = $this->replaceBetween(
+						"<!-- {$group}-extensions-list-start -->",
+						"<!-- {$group}-extensions-list-stop -->",
+						$licenses,
+						$licensesGenerator->generate()
+					);
+				}
 			}
 		}
 
 		file_put_contents($translations->getDir() . '/README.md', $readme);
 		file_put_contents($translations->getDir() . '/status/summary.md', $summary);
+		file_put_contents($translations->getDir() . '/status/licenses.md', $licenses);
 
 		$this->postProcessRepository($translations->getRepository(), 'Update list of supported extensions.');
 		$this->updateLimit($token);
