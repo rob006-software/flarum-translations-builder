@@ -63,6 +63,17 @@ final class ExtensionsController extends ConsoleController {
 			]);
 		}
 
+		if (in_array($actionID, ['detect-new', 'pending'], true)) {
+			return array_merge(parent::options($actionID), [
+				'frequency',
+				'verbose',
+				'useCache',
+				'update',
+				'commit',
+				'push',
+			]);
+		}
+
 		return array_merge(parent::options($actionID), [
 			'frequency',
 			'verbose',
