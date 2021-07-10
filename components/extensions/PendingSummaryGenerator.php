@@ -126,7 +126,8 @@ final class PendingSummaryGenerator {
 			$output .= "[$githubBadge]({$extension->getRepositoryUrl()}) <br /> ";
 		}
 
-		$output .= "![Packagist license](https://img.shields.io/packagist/l/{$extension->getPackageName()})";
+		$packagistBadge = "![Packagist license](https://img.shields.io/packagist/l/{$extension->getPackageName()})";
+		$output .= "[$packagistBadge](https://packagist.org/packages/{$extension->getPackageName()})";
 
 		return $output;
 	}
