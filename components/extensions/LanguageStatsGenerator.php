@@ -149,7 +149,7 @@ final class LanguageStatsGenerator {
 			$output .= <<<HTML
 					<tr>
 						<td>
-							{$this->compatibilityIcon($extension)}
+							{$this->compatibilityIcon($extension)} {$this->abandonedIcon($extension)}
 							{$this->link("<code>{$this->truncate($extension->getPackageName())}</code>", $extension->getRepositoryUrl(), $extension->getPackageName())}
 						</td>
 						<td align="center">{$rank}{$this->statsChangeBadge($extension->getPackageName(), 'rank', $rank, true)}</td>
@@ -290,6 +290,15 @@ final class LanguageStatsGenerator {
 
 		// @see https://emojipedia.org/large-green-circle/
 		return '<span title="Compatible with recent Flarum">🟢</span>';
+	}
+
+	private function abandonedIcon(Extension $extension): string {
+		if ($extension->isAbandoned()) {
+			// @see https://emojipedia.org/exclamation-mark/
+			return '<span title="Extension is abandoned">❗</span>';
+		}
+
+		return '';
 	}
 
 	private function statusBadge(Extension $extension): string {
