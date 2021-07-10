@@ -149,7 +149,7 @@ final class LanguageStatsGenerator {
 			$output .= <<<HTML
 					<tr>
 						<td>
-							{$this->compatibilityIcon($extension)} {$this->abandonedIcon($extension)}
+							{$this->compatibilityIcon($extension)}{$this->abandonedIcon($extension)}
 							{$this->link("<code>{$this->truncate($extension->getPackageName())}</code>", $extension->getRepositoryUrl(), $extension->getPackageName())}
 						</td>
 						<td align="center">{$rank}{$this->statsChangeBadge($extension->getPackageName(), 'rank', $rank, true)}</td>
