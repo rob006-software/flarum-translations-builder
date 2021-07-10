@@ -45,8 +45,8 @@ abstract class Extension {
 		return $this->id;
 	}
 
-	public function getName(): string {
-		$title = explode('/', $this->getPackageName())[1];
+	public function getTitle(): string {
+		$title = $this->getName();
 		if (strncmp($title, 'flarum-ext-', 11) === 0) {
 			$title = substr($title, 11);
 		} elseif (strncmp($title, 'flarum-', 7) === 0) {
@@ -54,6 +54,10 @@ abstract class Extension {
 		}
 
 		return Inflector::titleize(strtr($title, ['-' => ' ']));
+	}
+
+	public function getName(): string {
+		return explode('/', $this->getPackageName())[1];
 	}
 
 	public function getVendor(): string {

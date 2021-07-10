@@ -18,8 +18,6 @@ use Dont\DontCall;
 use Dont\DontCallStatic;
 use Dont\DontGet;
 use Dont\DontSet;
-use yii\helpers\Inflector;
-use function in_array;
 
 /**
  * Class ReadmeGenerator.
@@ -35,12 +33,6 @@ abstract class ReadmeGenerator {
 
 	private $extensions = [];
 
-	private $vendors;
-
-	public function __construct(array $vendors) {
-		$this->vendors = $vendors;
-	}
-
 	public function addExtension(Extension $extension): void {
 		$this->extensions[] = $extension;
 	}
@@ -50,21 +42,6 @@ abstract class ReadmeGenerator {
 	 */
 	protected function getExtensions(): array {
 		return $this->extensions;
-	}
-
-	/**
-	 * @return string[]
-	 */
-	protected function getVendors(): array {
-		return $this->vendors;
-	}
-
-	protected function generateVendorName(Extension $extension): string {
-		if (in_array($extension->getVendor(), ['fof', 'flarum'], true)) {
-			return '';
-		}
-
-		return ' by ' . ($this->vendors[$extension->getId()] ?? Inflector::titleize(strtr($extension->getVendor(), ['-' => ' '])));
 	}
 
 	abstract public function generate(): string;

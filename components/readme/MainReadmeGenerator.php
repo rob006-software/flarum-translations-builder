@@ -29,10 +29,11 @@ final class MainReadmeGenerator extends ReadmeGenerator {
 			return $a->getPackageName() <=> $b->getPackageName();
 		});
 
-		$output = "\n\n| Extension name | Package name |\n| --- | --- |\n";
+		$output = "\n\n| Extension ID | Package name |\n| --- | --- |\n";
 		foreach ($extensions as $extension) {
-			$output .= "| [{$extension->getName()}{$this->generateVendorName($extension)}](https://weblate.rob006.net/projects/flarum/{$extension->getId()}) ";
-			$output .= "| [`{$extension->getPackageName()}`]({$extension->getRepositoryUrl()})|\n";
+			$output .= "| [`{$extension->getId()}`](https://weblate.rob006.net/projects/flarum/{$extension->getId()}) ";
+			$output .= "| [`{$extension->getPackageName()}`]({$extension->getRepositoryUrl()}) ";
+			$output .= "|\n";
 		}
 
 		return $output . "\n";

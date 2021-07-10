@@ -29,7 +29,7 @@ use function strpos;
  */
 final class PremiumExtension extends Extension {
 
-	private $name;
+	private $title;
 	private $packageName;
 	private $repositoryUrl;
 	private $requiredFlarum;
@@ -37,11 +37,11 @@ final class PremiumExtension extends Extension {
 	public function __construct(
 		string $id,
 		string $packageName,
-		?string $name,
+		?string $title,
 		?string $repositoryUrl,
 		?string $requiredFlarum
 	) {
-		$this->name = $name;
+		$this->title = $title;
 		$this->packageName = $packageName;
 		$this->repositoryUrl = $repositoryUrl;
 		$this->requiredFlarum = $requiredFlarum;
@@ -63,8 +63,8 @@ final class PremiumExtension extends Extension {
 		return $this->packageName;
 	}
 
-	public function getName(): string {
-		return $this->name ?? parent::getName();
+	public function getTitle(): string {
+		return $this->title ?? parent::getTitle();
 	}
 
 	public function getRepositoryUrl(): string {

@@ -76,8 +76,8 @@ final class ReadmeController extends ConsoleController {
 				strpos($readme, "<!-- {$group}-extensions-list-start -->") !== false
 				&& strpos($readme, "<!-- {$group}-extensions-list-stop -->") !== false
 			) {
-				$readmeGenerator = new MainReadmeGenerator($translations->getVendors());
-				$summaryGenerator = new SummaryGenerator($translations->getVendors());
+				$readmeGenerator = new MainReadmeGenerator();
+				$summaryGenerator = new SummaryGenerator();
 				foreach ($translations->getExtensionsComponents() as $component) {
 					$extension = Yii::$app->extensionsRepository->getExtension($component->getId());
 					if ($extension !== null && $this->isValidForGroup($extension, $group)) {

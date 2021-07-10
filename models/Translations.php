@@ -78,7 +78,6 @@ final class Translations {
 	private $translationsDir;
 	private $components = [];
 	private $subsplits;
-	private $vendors;
 	private $ignoredExtensions;
 	private $languages;
 	private $supportedVersions;
@@ -93,7 +92,6 @@ final class Translations {
 		$this->sourcesDir = $config['sourcesDir'];
 		$this->translationsDir = $config['translationsDir'];
 		$this->languages = array_keys($config['languages']);
-		$this->vendors = $config['vendors'];
 		$this->ignoredExtensions = $config['ignoredExtensions'] ?? [];
 		$this->subsplits = $config['subsplits'];
 		$this->supportedVersions = $config['supportedVersions'];
@@ -244,10 +242,6 @@ final class Translations {
 		$dir->close();
 
 		return md5(implode(':', $hashes));
-	}
-
-	public function getVendors(): array {
-		return $this->vendors;
 	}
 
 	public function getIgnoredExtensions(): array {

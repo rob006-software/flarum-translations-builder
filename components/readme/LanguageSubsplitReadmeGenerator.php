@@ -24,21 +24,19 @@ final class LanguageSubsplitReadmeGenerator extends ReadmeGenerator {
 
 	private $language;
 
-	public function __construct(string $language, array $vendors) {
+	public function __construct(string $language) {
 		$this->language = $language;
-
-		parent::__construct($vendors);
 	}
 
 	public function generate(): string {
 		$extensions = $this->getExtensions();
-		usort($extensions, function (Extension $a, Extension $b) {
-			return "{$a->getName()}{$this->generateVendorName($a)}" <=> "{$b->getName()}{$this->generateVendorName($b)}";
+		usort($extensions, static function (Extension $a, Extension $b) {
+			return $a->getPackageName() <=> $b->getPackageName();
 		});
 
 		$output = "\n\n| Extension | Status |\n| --- | --- |\n";
 		foreach ($extensions as $extension) {
-			$output .= "| [{$extension->getName()}{$this->generateVendorName($extension)}]({$extension->getRepositoryUrl()}) ";
+			$output .= "| [`{$extension->getPackageName()}`]({$extension->getRepositoryUrl()}) ";
 			$icon = "![Translation status](https://weblate.rob006.net/widgets/flarum/{$this->language}/{$extension->getId()}/svg-badge.svg)";
 			$output .= "| [$icon](https://weblate.rob006.net/projects/flarum/{$extension->getId()}/{$this->language}/) ";
 			$output .= "|\n";

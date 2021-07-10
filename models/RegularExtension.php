@@ -52,8 +52,8 @@ final class RegularExtension extends Extension {
 		return $extension;
 	}
 
-	public function getName(): string {
-		return $this->getComposerValue('extra.flarum-extension.title') ?? parent::getName();
+	public function getTitle(): string {
+		return $this->getComposerValue('extra.flarum-extension.title') ?? parent::getTitle();
 	}
 
 	public function getPackageName(): string {
