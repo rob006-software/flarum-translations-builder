@@ -32,6 +32,7 @@ use function file_exists;
 use function filemtime;
 use function in_array;
 use function rename;
+use function strtolower;
 use function strtotime;
 use function unlink;
 
@@ -157,6 +158,20 @@ final class JanitorController extends Controller {
 
 	public function actionRedundantTranslations(array $languages = [], string $configFile = '@app/translations/config.php') {
 		$translations = $this->getTranslations($configFile);
+		$alternativeLanguagesGenerator = static function (string $language) {
+			yield $language;
+
+			if (strpos($language, '_')) {
+				yield strtr($language, ['_' => '-']);
+
+				$parts = explode('_', $language, 2);
+				$newLanguage = $parts[0] . '_' . strtolower($parts[1]);
+				if ($language !== $newLanguage) {
+					yield $newLanguage;
+					yield strtr($newLanguage, ['_' => '-']);
+				}
+			}
+		};
 
 		foreach ($translations->getExtensionsComponents() as $component) {
 			$extension = Yii::$app->extensionsRepository->getExtension($component->getId());
@@ -169,12 +184,27 @@ final class JanitorController extends Controller {
 					) {
 						continue;
 					}
-					$url = strtr($source, ['/en.' => "/$language."]);
-					$exists = Yii::$app->extensionsRepository->testSourceUrl($url);
-					if ($exists && $component->isValidForLanguage($language)) {
-						echo "{$component->getId()} - $language: $url\n";
-					} elseif (!$exists && !$component->isValidForLanguage($language)) {
-						echo "{$component->getId()} - missing translation for $language\n";
+
+					if ($component->isValidForLanguage($language)) {
+						foreach ($alternativeLanguagesGenerator($language) as $alternativeLanguage) {
+							$url = strtr($source, ['/en.' => "/$alternativeLanguage."]);
+							if (Yii::$app->extensionsRepository->testSourceUrl($url)) {
+								echo "{$component->getId()} - $language: $url\n";
+							}
+						}
+					} else {
+						$exists = false;
+						foreach ($alternativeLanguagesGenerator($language) as $alternativeLanguage) {
+							$url = strtr($source, ['/en.' => "/$alternativeLanguage."]);
+							if (Yii::$app->extensionsRepository->testSourceUrl($url)) {
+								$exists = true;
+								break;
+							}
+						}
+
+						if (!$exists) {
+							echo "{$component->getId()} - missing translation for $language\n";
+						}
 					}
 				}
 			}
