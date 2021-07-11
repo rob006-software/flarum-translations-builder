@@ -159,7 +159,7 @@ final class ExtensionsController extends ConsoleController {
 			return strncmp($name, 'new/', 4) === 0;
 		});
 
-		$generator = new PendingSummaryGenerator();
+		$generator = new PendingSummaryGenerator($translations);
 		foreach ($branches as $branch) {
 			$extensionId = explode('/', $branch, 2)[1];
 			$generator->addExtension($extensionId);

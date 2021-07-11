@@ -17,7 +17,6 @@ use app\components\extensions\exceptions\UnableLoadPackagistReleaseDataException
 use app\components\extensions\ExtensionsRepository;
 use app\components\extensions\IssueGenerator;
 use app\models\packagist\SearchResult;
-use Composer\Semver\Semver;
 use mindplay\readable;
 use Yii;
 use yii\caching\TagDependency;
@@ -77,26 +76,9 @@ final class RegularExtension extends Extension {
 		return $this->getPackagistBasicData()->getAbandoned();
 	}
 
-	public function isOutdated(array $supportedReleases, array $unsupportedReleases): ?bool {
+	public function getRequiredFlarumVersion(): ?string {
 		$data = Yii::$app->extensionsRepository->getPackagistLastReleaseData($this->getComposerValue('name'));
-		if ($data === null || !isset($data['require']['flarum/core'])) {
-			return true;
-		}
-
-		$requiredFlarum = $data['require']['flarum/core'];
-		$unclear = false;
-		foreach ($unsupportedReleases as $release) {
-			if (Semver::satisfies($release, $requiredFlarum)) {
-				$unclear = true;
-			}
-		}
-		foreach ($supportedReleases as $release) {
-			if (Semver::satisfies($release, $requiredFlarum)) {
-				return $unclear ? null : false;
-			}
-		}
-
-		return true;
+		return $data['require']['flarum/core'] ?? null;
 	}
 
 	public function isLanguagePack(): bool {

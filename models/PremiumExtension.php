@@ -14,7 +14,6 @@ declare(strict_types=1);
 namespace app\models;
 
 use app\components\extensions\ExtensionsRepository;
-use Composer\Semver\Semver;
 use Yii;
 use function strpos;
 
@@ -83,24 +82,8 @@ final class PremiumExtension extends Extension {
 		return false;
 	}
 
-	public function isOutdated(array $supportedReleases, array $unsupportedReleases): ?bool {
-		if ($this->requiredFlarum === null) {
-			return true;
-		}
-
-		$unclear = false;
-		foreach ($unsupportedReleases as $release) {
-			if (Semver::satisfies($release, $this->requiredFlarum)) {
-				$unclear = true;
-			}
-		}
-		foreach ($supportedReleases as $release) {
-			if (Semver::satisfies($release, $this->requiredFlarum)) {
-				return $unclear ? null : false;
-			}
-		}
-
-		return true;
+	public function getRequiredFlarumVersion(): ?string {
+		return $this->requiredFlarum;
 	}
 
 	public function hasTranslationSource(): bool {

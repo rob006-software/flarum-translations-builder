@@ -15,11 +15,13 @@ namespace app\components\extensions;
 
 use app\models\Extension;
 use app\models\PremiumExtension;
+use app\models\Translations;
 use Dont\DontCall;
 use Dont\DontCallStatic;
 use Dont\DontGet;
 use Dont\DontSet;
 use Yii;
+use function urlencode;
 use function usort;
 
 /**
@@ -38,6 +40,12 @@ final class PendingSummaryGenerator {
 	private $extensions = [];
 	/** @var string[] */
 	private $missing = [];
+	/** @var Translations */
+	private $translations;
+
+	public function __construct(Translations $translations) {
+		$this->translations = $translations;
+	}
 
 	public function addExtension(string $extensionId): void {
 		$extension = Yii::$app->extensionsRepository->getExtension($extensionId);
@@ -60,7 +68,7 @@ final class PendingSummaryGenerator {
 			$name = $extension->getPackageName();
 			$output .= "| [`{$name}`]({$extension->getRepositoryUrl()}) ";
 			$output .= "| {$this->renderBranchBadge($extension->getId())} ";
-			$output .= "| ![Flarum compatibility status](https://flarum-badge-api.davwheat.dev/v1/compat-latest/{$name}) ";
+			$output .= "| {$this->renderCompatibilityBadge($extension)} ";
 			$output .= "| {$this->renderDownloadsBadge($extension)} ";
 			$output .= "| {$this->renderLicenseBadge($extension)} ";
 			$output .= "|\n";
@@ -129,5 +137,32 @@ final class PendingSummaryGenerator {
 		$output .= "[$packagistBadge](https://packagist.org/packages/{$extension->getPackageName()})";
 
 		return $output;
+	}
+
+	private function renderCompatibilityBadge(Extension $extension): string {
+		$outdated = $extension->isOutdated(
+			$this->translations->getSupportedVersions(),
+			$this->translations->getUnsupportedVersions()
+		);
+
+		// @todo extract helper for Shields.io?
+		$requiredFlarum = urlencode(strtr($extension->getRequiredFlarumVersion(), [
+			'-' => '--',
+			'_' => '__',
+			' ' => '_',
+		]));
+		if ($outdated === false) {
+			$badge = "![Compatible with recent Flarum](https://img.shields.io/badge/flarum-{$requiredFlarum}-brightgreen)";
+		} elseif ($outdated === true) {
+			$badge = "![Incompatible with recent Flarum](https://img.shields.io/badge/flarum-{$requiredFlarum}-red)";
+		} else {
+			$badge = "![Compatibility status with recent Flarum is unknown](https://img.shields.io/badge/flarum-{$requiredFlarum}-yellow)";
+		}
+
+		if ($extension->isAbandoned()) {
+			$badge .= " <br /> ![Extension is abandoned](https://img.shields.io/badge/status-abandoned-red)";
+		}
+
+		return $badge;
 	}
 }
