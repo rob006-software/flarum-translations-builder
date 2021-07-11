@@ -70,10 +70,9 @@ final class PendingSummaryGenerator {
 	}
 
 	public function generateDeadBranches(): string {
-		$extensions = $this->extensions;
-		usort($extensions, static function (Extension $a, Extension $b) {
-			return $a->getPackageName() <=> $b->getPackageName();
-		});
+		if (empty($this->missing)) {
+			return "There are no dead branches.\n";
+		}
 
 		$output = "| Extension | Pull request |\n";
 		$output .= "| --- | --- |\n";
