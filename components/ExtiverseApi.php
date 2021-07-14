@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace app\components;
 
+use app\components\extensions\exceptions\SoftFailureInterface;
 use app\models\extiverse\ApiResult;
 use app\models\extiverse\exceptions\InvalidApiResponseException;
 use Symfony\Component\HttpClient\HttpClient;
@@ -64,7 +65,9 @@ final class ExtiverseApi extends Component {
 						$result = ApiResult::createFromApiResponse($item, $response['included'] ?? []);
 						$results[$result->getName()] = $result;
 					} catch (InvalidApiResponseException $exception) {
-						Yii::warning($exception->getMessage());
+						if (!$exception instanceof SoftFailureInterface) {
+							Yii::warning($exception->getMessage());
+						}
 					}
 				}
 			} while (isset($response['links']['next']));
