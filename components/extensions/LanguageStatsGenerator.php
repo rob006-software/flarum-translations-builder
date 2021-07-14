@@ -87,7 +87,7 @@ final class LanguageStatsGenerator {
 	}
 
 	public function generate(): string {
-		$languageName = Locale::getDisplayLanguage($this->language, 'en');
+		$languageName = Locale::getDisplayName($this->language, 'en');
 		return "# $languageName translation status \n\n\n"
 			. $this->generateCore() . "\n\n"
 			. $this->generateRegularExtensions() . "\n\n"
