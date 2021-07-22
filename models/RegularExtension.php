@@ -70,7 +70,12 @@ final class RegularExtension extends Extension {
 
 	public function getReplacement(): ?string {
 		if ($this->abandoned === false) {
-			$this->abandoned = Yii::$app->extensionsRepository->getPackagistData($this->getPackageName())['abandoned'] ?? null;
+			// this endpoint returns `true` instead empty string for abandoned packages without replacement
+			$abandoned = Yii::$app->extensionsRepository->getPackagistData($this->getPackageName())['abandoned'] ?? null;
+			if ($abandoned === true) {
+				$abandoned = '';
+			}
+			$this->abandoned = $abandoned;
 		}
 
 		return $this->abandoned;
