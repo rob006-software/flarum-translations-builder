@@ -14,8 +14,8 @@ declare(strict_types=1);
 namespace app\components;
 
 use app\components\extensions\exceptions\GitlabApiException;
+use app\helpers\HttpClient;
 use mindplay\readable;
-use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Contracts\HttpClient\Exception\HttpExceptionInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Yii;

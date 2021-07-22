@@ -17,18 +17,17 @@ use app\commands\ConfigController;
 use app\components\extensions\ExtensionsRepository;
 use app\components\translations\JsonFileDumper;
 use app\components\translations\YamlLoader;
+use app\helpers\HttpClient;
 use Dont\DontCall;
 use Dont\DontCallStatic;
 use Dont\DontGet;
 use Dont\DontSet;
 use mindplay\readable;
-use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Component\Translation\Loader\ArrayLoader;
 use Symfony\Component\Translation\Loader\JsonFileLoader;
 use Symfony\Component\Translation\MessageCatalogue;
 use Symfony\Component\Translation\Translator;
 use Symfony\Component\Translation\Util\ArrayConverter;
-use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Yii;
 use yii\base\Exception;
 use yii\base\InvalidArgumentException;
@@ -267,7 +266,6 @@ final class Translations {
 	}
 
 	private function fetchSources(): Translator {
-		$client = HttpClient::create();
 		$translator = new Translator('en');
 		$translator->addLoader('yaml', new YamlLoader());
 		foreach ($this->getComponents() as $component) {
@@ -275,7 +273,7 @@ final class Translations {
 			foreach (array_reverse($component->getSources()) as $source) {
 				// don't try to download URLs with placeholder for missing translation
 				if (strpos($source, ExtensionsRepository::NO_TRANSLATION_FILE) === false) {
-					$content = $this->fetchUrl($client, $source, $component->getId());
+					$content = $this->fetchUrl($source, $component->getId());
 					$translator->addResource('yaml', $content, 'en', $component->getId());
 				} else {
 					Yii::warning("Skipped downloading $source.", __METHOD__ . '.skip');
@@ -285,10 +283,10 @@ final class Translations {
 		return $translator;
 	}
 
-	private function fetchUrl(HttpClientInterface $client, string $url, string $componentId): string {
+	private function fetchUrl(string $url, string $componentId): string {
 		$tries = 3;
 		while ($tries-- > 0) {
-			$response = $client->request('GET', $url);
+			$response = HttpClient::get($url);
 			if ($response->getStatusCode() < 300) {
 				return $response->getContent();
 			}

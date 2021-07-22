@@ -14,9 +14,9 @@ declare(strict_types=1);
 namespace app\components;
 
 use app\components\extensions\exceptions\SoftFailureInterface;
+use app\helpers\HttpClient;
 use app\models\extiverse\ApiResult;
 use app\models\extiverse\exceptions\InvalidApiResponseException;
-use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Yii;
 use yii\base\Component;
@@ -88,7 +88,7 @@ final class ExtiverseApi extends Component {
 		if ($this->_cachedExtensions === null) {
 			// We cannot use toArray() here - raw.githubusercontent.com always returns content-type as
 			// "text/plain; charset=utf-8" while HttpClient expects JSON compatible content-type header.
-			$response = HttpClient::create()->request('GET', $this->cacheUrl);
+			$response = HttpClient::get($this->cacheUrl);
 			/* @noinspection JsonEncodingApiUsageInspection */
 			$this->_cachedExtensions = json_decode($response->getContent(), true);
 		}
