@@ -98,6 +98,7 @@ final class ExtensionsRepository extends Component {
 					unset($extensions[$index]);
 				} elseif ($extension->isAbandoned()) {
 					unset($extensions[$index]);
+					$this->registerAbandonedExtensionDetection($extension->getPackageName());
 				} elseif ($extension->isLanguagePack()) {
 					$this->registerLanguagePackDetection($extension->getPackageName());
 					unset($extensions[$index]);
@@ -122,6 +123,7 @@ final class ExtensionsRepository extends Component {
 	private function isExtensionRateLimited(string $name): bool {
 		return Yii::$app->cache->get(__CLASS__ . '#rateLimit#' . $name) !== false
 			|| Yii::$app->cache->get(__CLASS__ . '#languagePackDetected#' . $name) !== false
+			|| Yii::$app->cache->get(__CLASS__ . '#outdatedExtensionDetected#' . $name) !== false
 			|| Yii::$app->cache->get(__CLASS__ . '#abandonedExtensionDetected#' . $name) !== false;
 	}
 
@@ -133,6 +135,10 @@ final class ExtensionsRepository extends Component {
 		}
 		if (Yii::$app->cache->get(__CLASS__ . '#languagePackDetected#' . $extensionName) !== false) {
 			Yii::$app->cache->delete(__CLASS__ . '#languagePackDetected#' . $extensionName);
+			$count++;
+		}
+		if (Yii::$app->cache->get(__CLASS__ . '#outdatedExtensionDetected#' . $extensionName) !== false) {
+			Yii::$app->cache->delete(__CLASS__ . '#outdatedExtensionDetected#' . $extensionName);
 			$count++;
 		}
 		if (Yii::$app->cache->get(__CLASS__ . '#abandonedExtensionDetected#' . $extensionName) !== false) {
@@ -172,12 +178,16 @@ final class ExtensionsRepository extends Component {
 		Yii::$app->cache->set(__CLASS__ . '#languagePackDetected#' . $name, true, 31 * 24 * 3600);
 	}
 
+	private function registerAbandonedExtensionDetection(string $name): void {
+		Yii::$app->cache->set(__CLASS__ . '#abandonedExtensionDetected#' . $name, true, 31 * 24 * 3600);
+	}
+
 	private function registerOutdatedExtensionDetection(RegularExtension $extension): void {
 		$rateLimitKey = __METHOD__ . '#' . $extension->getPackageName();
 		if (Yii::$app->cache->get($rateLimitKey) === false) {
 			$versionData = $this->getPackagistLastReleaseData($extension->getPackageName());
 			$time = $versionData === null ? 0 : strtotime($versionData['time']);
-			$cacheKey = __CLASS__ . '#abandonedExtensionDetected#' . $extension->getPackageName();
+			$cacheKey = __CLASS__ . '#outdatedExtensionDetected#' . $extension->getPackageName();
 			if ($time < strtotime('-12 months')) {
 				Yii::$app->cache->set($cacheKey, true, 31 * 24 * 3600);
 			} elseif ($time < strtotime('-6 months')) {
@@ -225,47 +235,51 @@ final class ExtensionsRepository extends Component {
 			}
 		}
 
+		foreach ($this->getPackagesList() as $packageName) {
+			$id = Extension::nameToId($packageName);
+			if (
+				isset($extensions[$id])
+				&& ($extensions[$id] instanceof PremiumExtension || $extensions[$id]->getPackageName() === $packageName)
+			) {
+				continue;
+			}
+			$extension = new RegularExtension($packageName);
+			if (
+				!isset($extensions[$id])
+				// handle ID conflicts
+				|| $this->compareExtensions($extension, $extensions[$id]) > 0
+			) {
+				$extensions[$id] = $extension;
+			}
+		}
+
 		return $extensions;
 	}
 
 	private function compareExtensions(Extension $a, Extension $b): int {
-		if ($b->isAbandoned() && !$a->isAbandoned()) {
-			return 1;
-		}
-		if ($a->isAbandoned() && !$b->isAbandoned()) {
-			return -1;
-		}
+		$cacheKey = implode('#', [__METHOD__, $a->getPackageName(), $b->getPackageName()]);
+		return Yii::$app->cache->getOrSet($cacheKey, static function () use ($a, $b) {
+			if ($b->isAbandoned() && !$a->isAbandoned()) {
+				return 1;
+			}
+			if ($a->isAbandoned() && !$b->isAbandoned()) {
+				return -1;
+			}
 
-		// `a-b-c` ID could be created by `a/b-c` package or `a-b/c` package. Prefer this one with shorter vendor - it
-		// will be harder to create malicious package with conflicting ID.
-		if ($a->getVendor() !== $b->getVendor()) {
-			return strlen($b->getVendor()) - strlen($a->getVendor());
-		}
+			// `a-b-c` ID could be created by `a/b-c` package or `a-b/c` package. Prefer this one with shorter vendor - it
+			// will be harder to create malicious package with conflicting ID.
+			if ($a->getVendor() !== $b->getVendor()) {
+				return strlen($b->getVendor()) - strlen($a->getVendor());
+			}
 
-		// If vendor is the same, prefer this one with shorter name - it is probably migration from
-		// `vendor/flarum-ext-name` to `vendor/name`.
-		return strlen($b->getPackageName()) - strlen($a->getPackageName());
+			// If vendor is the same, prefer this one with shorter name - it is probably migration from
+			// `vendor/flarum-ext-name` to `vendor/name`.
+			return strlen($b->getPackageName()) - strlen($a->getPackageName());
+		}, 31 * 24 * 3600);
 	}
 
 	public function getExtension(string $id, bool $useCache = true): ?Extension {
 		return $this->getAllExtensions($useCache)[$id] ?? null;
-	}
-
-	public function getPackagistBasicData(string $name): ?SearchResult {
-		return Yii::$app->cache->getOrSet(__METHOD__ . '#' . $name, function () use ($name) {
-			$results = $this->searchPackagist([
-				'q' => $name,
-				'type' => 'flarum-extension',
-				'per_page' => 100,
-			]);
-
-			foreach ($results as $result) {
-				assert($result instanceof SearchResult);
-				if ($result->getName() === $name) {
-					return $result;
-				}
-			}
-		}, $this->packagistCacheDuration);
 	}
 
 	public function getPackagistData(string $name): ?array {
@@ -468,5 +482,12 @@ final class ExtensionsRepository extends Component {
 		} while (isset($response['next']));
 
 		return $results;
+	}
+
+	private function getPackagesList(): array {
+		$response = $this->getClient()
+			->request('GET', 'https://packagist.org/packages/list.json?type=flarum-extension')
+			->toArray();
+		return $response['packageNames'];
 	}
 }

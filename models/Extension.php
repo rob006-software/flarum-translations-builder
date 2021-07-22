@@ -36,14 +36,18 @@ abstract class Extension {
 	use DontGet;
 	use DontSet;
 
-	private $id;
+	private $name;
 
-	public function __construct(string $id) {
-		$this->id = $id;
+	public function __construct(string $name) {
+		$this->name = $name;
 	}
 
 	public function getId(): string {
-		return $this->id;
+		return self::nameToId($this->name);
+	}
+
+	public function getPackageName(): string {
+		return $this->name;
 	}
 
 	public function getTitle(): string {
@@ -64,8 +68,6 @@ abstract class Extension {
 	public function getVendor(): string {
 		return explode('/', $this->getPackageName())[0];
 	}
-
-	abstract public function getPackageName(): string;
 
 	abstract public function getRepositoryUrl(): string;
 

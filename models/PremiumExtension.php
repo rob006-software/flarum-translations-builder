@@ -29,37 +29,16 @@ use function strpos;
 final class PremiumExtension extends Extension {
 
 	private $title;
-	private $packageName;
 	private $repositoryUrl;
 	private $requiredFlarum;
 
-	public function __construct(
-		string $id,
-		string $packageName,
-		?string $title,
-		?string $repositoryUrl,
-		?string $requiredFlarum
-	) {
-		$this->title = $title;
-		$this->packageName = $packageName;
-		$this->repositoryUrl = $repositoryUrl;
-		$this->requiredFlarum = $requiredFlarum;
-
-		parent::__construct($id);
-	}
-
 	public static function createFromExtiverseCache(array $data): self {
-		return new self(
-			self::nameToId($data['name']),
-			$data['name'],
-			$data['title'] ?? null,
-			$data['url'] ?? null,
-			$data['requiredFlarum'] ?? null
-		);
-	}
+		$extension = new self($data['name']);
+		$extension->title = $data['title'] ?? null;
+		$extension->repositoryUrl = $data['url'] ?? null;
+		$extension->requiredFlarum = $data['requiredFlarum'] ?? null;
 
-	public function getPackageName(): string {
-		return $this->packageName;
+		return $extension;
 	}
 
 	public function getTitle(): string {

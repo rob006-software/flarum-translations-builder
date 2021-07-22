@@ -35,54 +35,54 @@ use function strpos;
 final class RegularExtension extends Extension {
 
 	private $repositoryUrl;
-	private $composerData;
-	private $packagistBasicData;
+	private $abandoned = false;
 
-	public function __construct(string $id, string $repositoryUrl) {
-		$this->repositoryUrl = $repositoryUrl;
-
-		parent::__construct($id);
-	}
+	private $_lastReleaseData;
 
 	public static function createFromPackagistSearchResult(SearchResult $result): self {
-		$extension = new self(self::nameToId($result->getName()), $result->getRepository());
-		$extension->packagistBasicData = $result;
+		$extension = new self($result->getName());
+		$extension->repositoryUrl = $result->getRepository();
+		$extension->abandoned = $result->getAbandoned();
 
 		return $extension;
 	}
 
 	public function getTitle(): string {
-		return $this->getComposerValue('extra.flarum-extension.title') ?? parent::getTitle();
-	}
-
-	public function getPackageName(): string {
-		return $this->getPackagistBasicData()->getName();
+		return $this->getLastReleaseValue('extra.flarum-extension.title') ?? parent::getTitle();
 	}
 
 	public function getThreadUrl(): ?string {
-		return $this->getComposerValue('extra.extiverse.discuss') ?? $this->getComposerValue('extra.flagrow.discuss');
+		return $this->getLastReleaseValue('extra.extiverse.discuss') ?? $this->getLastReleaseValue('extra.flagrow.discuss');
 	}
 
 	public function getRepositoryUrl(): string {
+		if ($this->repositoryUrl === null) {
+			$this->repositoryUrl = Yii::$app->extensionsRepository->getPackagistData($this->getPackageName())['repository'];
+		}
+
 		return $this->repositoryUrl;
 	}
 
 	public function isAbandoned(): bool {
 		// abandoned packages without replacement have empty string in `abandoned` field
-		return $this->getPackagistBasicData()->getAbandoned() !== null;
+		return $this->getReplacement() !== null;
 	}
 
 	public function getReplacement(): ?string {
-		return $this->getPackagistBasicData()->getAbandoned();
+		if ($this->abandoned === false) {
+			$this->abandoned = Yii::$app->extensionsRepository->getPackagistData($this->getPackageName())['abandoned'] ?? null;
+		}
+
+		return $this->abandoned;
 	}
 
 	public function getRequiredFlarumVersion(): ?string {
-		$data = Yii::$app->extensionsRepository->getPackagistLastReleaseData($this->getComposerValue('name'));
+		$data = Yii::$app->extensionsRepository->getPackagistLastReleaseData($this->getPackageName());
 		return $data['require']['flarum/core'] ?? null;
 	}
 
 	public function isLanguagePack(): bool {
-		return $this->getComposerValue('extra.flarum-locale') !== null;
+		return $this->getLastReleaseValue('extra.flarum-locale') !== null;
 	}
 
 	public function hasTranslationSource(): bool {
@@ -127,33 +127,27 @@ final class RegularExtension extends Extension {
 		}, 31 * 24 * 3600, new TagDependency(['tags' => $this->getRepositoryUrl()]));
 	}
 
-	private function getComposerValue(string $key, $default = null) {
-		return ArrayHelper::getValue($this->getComposerData(), $key, $default);
+	private function getLastReleaseValue(string $key, $default = null) {
+		return ArrayHelper::getValue($this->getLastReleaseData(), $key, $default);
 	}
 
-	private function getComposerData(bool $refresh = false): array {
-		if ($this->composerData === null || $refresh) {
-			$this->composerData = Yii::$app->extensionsRepository->getPackagistLastReleaseData($this->getPackageName());
-			if ($this->composerData === null) {
+	private function getLastReleaseData(bool $refresh = false): array {
+		if ($this->_lastReleaseData === null || $refresh) {
+			$this->_lastReleaseData = Yii::$app->extensionsRepository->getPackagistLastReleaseData($this->getPackageName());
+			if ($this->_lastReleaseData === null) {
 				throw new UnableLoadPackagistReleaseDataException(
 					'No releases found for ' . readable::value($this->getPackageName()) . '.',
 				);
 			}
 		}
 
-		return $this->composerData;
-	}
-
-	private function getPackagistBasicData(): SearchResult {
-		if ($this->packagistBasicData === null) {
-			$this->packagistBasicData = Yii::$app->extensionsRepository->getPackagistBasicData($this->getComposerValue('name'));
-		}
-
-		return $this->packagistBasicData;
+		return $this->_lastReleaseData;
 	}
 
 	public function verifyName(): bool {
-		$githubName = self::nameToId($this->getComposerData(true)['name']);
+		// @todo This no longer works, since `getLastReleaseData()` no longer fetches data directly from repository and
+		//       uses data from Packagist instead.
+		$githubName = self::nameToId($this->getLastReleaseData(true)['name']);
 		$packagistName = self::nameToId($this->getPackageName());
 		if ($packagistName === $githubName) {
 			return true;
