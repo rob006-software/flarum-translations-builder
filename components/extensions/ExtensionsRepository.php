@@ -239,7 +239,12 @@ final class ExtensionsRepository extends Component {
 			$id = Extension::nameToId($packageName);
 			if (
 				isset($extensions[$id])
-				&& ($extensions[$id] instanceof PremiumExtension || $extensions[$id]->getPackageName() === $packageName)
+				&& $extensions[$id]->getPackageName() === $packageName
+				// Prefer free extensions over premium - some of them may be registered both as premium on Extiverse
+				// and free on Packagist. In that case always compare these extensions even if they have the same
+				// package name.
+				// @see https://discuss.flarum.org/d/23473-websockets-locally-hosted-alternative-for-pusher-now-free/175
+				&& $extensions[$id] instanceof RegularExtension
 			) {
 				continue;
 			}
@@ -257,8 +262,8 @@ final class ExtensionsRepository extends Component {
 	}
 
 	private function compareExtensions(Extension $a, Extension $b): int {
-		$cacheKey = implode('#', [__METHOD__, $a->getPackageName(), $b->getPackageName()]);
-		return Yii::$app->cache->getOrSet($cacheKey, static function () use ($a, $b) {
+		$cacheKey = implode('#', [__METHOD__, 'abandoned',  $a->getPackageName(), $b->getPackageName()]);
+		$result = Yii::$app->cache->getOrSet($cacheKey, static function () use ($a, $b) {
 			if ($b->isAbandoned() && !$a->isAbandoned()) {
 				return 1;
 			}
@@ -266,16 +271,29 @@ final class ExtensionsRepository extends Component {
 				return -1;
 			}
 
-			// `a-b-c` ID could be created by `a/b-c` package or `a-b/c` package. Prefer this one with shorter vendor - it
-			// will be harder to create malicious package with conflicting ID.
-			if ($a->getVendor() !== $b->getVendor()) {
-				return strlen($b->getVendor()) - strlen($a->getVendor());
-			}
-
-			// If vendor is the same, prefer this one with shorter name - it is probably migration from
-			// `vendor/flarum-ext-name` to `vendor/name`.
-			return strlen($b->getPackageName()) - strlen($a->getPackageName());
+			return 0;
 		}, 31 * 24 * 3600);
+
+		if ($result !== 0) {
+			return $result;
+		}
+
+		if ($b instanceof PremiumExtension && !$a instanceof PremiumExtension) {
+			return 1;
+		}
+		if ($a instanceof PremiumExtension && !$b instanceof PremiumExtension) {
+			return -1;
+		}
+
+		// `a-b-c` ID could be created by `a/b-c` package or `a-b/c` package. Prefer this one with shorter vendor - it
+		// will be harder to create malicious package with conflicting ID.
+		if ($a->getVendor() !== $b->getVendor()) {
+			return strlen($b->getVendor()) - strlen($a->getVendor());
+		}
+
+		// If vendor is the same, prefer this one with shorter name - it is probably migration from
+		// `vendor/flarum-ext-name` to `vendor/name`.
+		return strlen($b->getPackageName()) - strlen($a->getPackageName());
 	}
 
 	public function getExtension(string $id, bool $useCache = true): ?Extension {
