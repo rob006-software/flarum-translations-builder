@@ -328,29 +328,28 @@ final class LanguageStatsGenerator {
 	}
 
 	private function getStatsFromPackagist(string $name): array {
-		return Yii::$app->cache->getOrSet($this->buildStatsKey($name, 'all'), static function () use ($name) {
+		$stats = Yii::$app->cache->getOrSet($this->buildStatsKey($name, 'all'), static function () use ($name) {
 			$stats = Yii::$app->extensionsRepository->getPackagistData($name);
-			$defaultStats = [
-				'total' => 0,
-				'monthly' => 0,
-				'daily' => 0,
-			];
 			if ($stats === null || empty($stats['downloads'])) {
-				return $defaultStats;
+				return [];
 			}
 
-			return $stats['downloads'] + $defaultStats;
+			return $stats['downloads'];
 		}, 31 * 24 * 3600);
+
+		$defaultStats = [
+			'total' => 0,
+			'monthly' => 0,
+			'daily' => 0,
+		];
+		return $stats + $defaultStats;
 	}
 
 	private function getStatsFromExtiverse(string $name): array {
-		return Yii::$app->cache->getOrSet($this->buildStatsKey($name, 'all'), static function () use ($name) {
+		$stats = Yii::$app->cache->getOrSet($this->buildStatsKey($name, 'all'), static function () use ($name) {
 			$stats = Yii::$app->extiverseApi->searchExtensions()[$name] ?? null;
 			if ($stats === null) {
-				return [
-					'downloads' => 0,
-					'subscribers' => 0,
-				];
+				return [];
 			}
 
 			return [
@@ -358,6 +357,12 @@ final class LanguageStatsGenerator {
 				'subscribers' => $stats->getSubscribers(),
 			];
 		}, 31 * 24 * 3600);
+
+		$defaultStats = [
+			'downloads' => 0,
+			'subscribers' => 0,
+		];
+		return $stats + $defaultStats;
 	}
 
 	private function getPreviousStats(string $packageName, string $statsType): ?int {
