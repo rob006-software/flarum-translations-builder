@@ -50,7 +50,10 @@ final class StatsController extends Controller {
 
 	public function actionUpdate(array $languages = [], string $configFile = '@app/translations/config.php') {
 		$translations = $this->getTranslations($configFile);
-		$token = __METHOD__ . '#' . LanguageStatsGenerator::getWeek() . '#' . $this->getComponentsListHash($translations);
+		$token = __METHOD__
+			. '#' . LanguageStatsGenerator::getWeek()
+			. '#' . $this->getComponentsListHash($translations)
+			. '#' . $this->getLanguagesListHash($translations);
 		if ($this->isLimited($token)) {
 			return;
 		}
@@ -85,6 +88,10 @@ final class StatsController extends Controller {
 
 	private function getComponentsListHash(Translations $translations): string {
 		return md5(implode(';', array_keys($translations->getComponents())));
+	}
+
+	private function getLanguagesListHash(Translations $translations): string {
+		return md5(implode(';', $translations->getLanguages()));
 	}
 
 	private function getTranslations(string $configFile): Translations {
