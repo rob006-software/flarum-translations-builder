@@ -121,9 +121,15 @@ final class ExtensionsController extends ConsoleController {
 					unset($extensions[$index]);
 				}
 			} catch (UnprocessableExtensionExceptionInterface $exception) {
-				if (!$exception instanceof SoftFailureInterface) {
-					Yii::warning($exception->getMessage());
-				}
+				Yii::$app->frequencyLimiter->run(
+					__METHOD__ . '#' . $exception->getMessage(),
+					31 * 24 * 3600,
+					static function () use ($exception) {
+						if (!$exception instanceof SoftFailureInterface) {
+							Yii::warning($exception->getMessage());
+						}
+					}
+				);
 				unset($extensions[$index]);
 			}
 		}
