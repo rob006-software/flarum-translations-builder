@@ -14,6 +14,8 @@ declare(strict_types=1);
 namespace app\commands;
 
 use app\components\extensions\ConfigGenerator;
+use app\components\extensions\exceptions\SoftFailureInterface;
+use app\components\extensions\exceptions\UnprocessableExtensionInterface;
 use app\models\Extension;
 use app\models\ForkRepository;
 use app\models\PremiumExtension;
@@ -68,7 +70,14 @@ final class JanitorController extends Controller {
 			$this->useCache
 		);
 		$extensions = array_filter($extensions, static function (Extension $extension) use ($components) {
-			return !isset($components[$extension->getId()]) && $extension->hasTranslationSource();
+			try {
+				return !isset($components[$extension->getId()]) && $extension->hasTranslationSource();
+			} catch (UnprocessableExtensionInterface $exception) {
+				if (!$exception instanceof SoftFailureInterface) {
+					Yii::warning($exception->getMessage());
+				}
+				return false;
+			}
 		});
 
 		$repository = new ForkRepository(
@@ -107,7 +116,14 @@ final class JanitorController extends Controller {
 			$this->useCache
 		);
 		$extensions = array_filter($extensions, static function (Extension $extension) {
-			return $extension->hasTranslationSource();
+			try {
+				return $extension->hasTranslationSource();
+			} catch (UnprocessableExtensionInterface $exception) {
+				if (!$exception instanceof SoftFailureInterface) {
+					Yii::warning($exception->getMessage());
+				}
+				return false;
+			}
 		});
 
 		$found = false;
