@@ -20,6 +20,6 @@ use yii\base\InvalidArgumentException;
  *
  * @author Robert Korulczyk <robert@korulczyk.pl>
  */
-class InvalidRepositoryUrlException extends InvalidArgumentException implements UnprocessableExtensionInterface {
+class InvalidRepositoryUrlException extends InvalidArgumentException implements UnprocessableExtensionExceptionInterface {
 
 }

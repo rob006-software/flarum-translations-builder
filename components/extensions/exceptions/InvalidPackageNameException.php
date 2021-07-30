@@ -20,6 +20,6 @@ use yii\base\InvalidArgumentException;
  *
  * @author Robert Korulczyk <robert@korulczyk.pl>
  */
-class InvalidPackageNameException extends InvalidArgumentException implements UnprocessableExtensionInterface {
+class InvalidPackageNameException extends InvalidArgumentException implements UnprocessableExtensionExceptionInterface {
 
 }

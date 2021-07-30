@@ -16,10 +16,10 @@ namespace app\components\extensions\exceptions;
 use Throwable;
 
 /**
- * Interface UnprocessableExtensionInterface.
+ * Interface UnprocessableExtensionExceptionInterface.
  *
  * @author Robert Korulczyk <robert@korulczyk.pl>
  */
-interface UnprocessableExtensionInterface extends Throwable {
+interface UnprocessableExtensionExceptionInterface extends Throwable {
 
 }

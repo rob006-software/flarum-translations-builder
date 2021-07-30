@@ -15,7 +15,7 @@ namespace app\commands;
 
 use app\components\ConsoleController;
 use app\components\extensions\exceptions\SoftFailureInterface;
-use app\components\extensions\exceptions\UnprocessableExtensionInterface;
+use app\components\extensions\exceptions\UnprocessableExtensionExceptionInterface;
 use app\components\extensions\PendingSummaryGenerator;
 use app\components\extensions\PullRequestGenerator;
 use app\models\ForkRepository;
@@ -120,7 +120,7 @@ final class ExtensionsController extends ConsoleController {
 				if (!$extension->hasTranslationSource()) {
 					unset($extensions[$index]);
 				}
-			} catch (UnprocessableExtensionInterface $exception) {
+			} catch (UnprocessableExtensionExceptionInterface $exception) {
 				if (!$exception instanceof SoftFailureInterface) {
 					Yii::warning($exception->getMessage());
 				}

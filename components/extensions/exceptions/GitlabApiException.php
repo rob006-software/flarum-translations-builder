@@ -20,6 +20,6 @@ use yii\base\InvalidArgumentException;
  *
  * @author Robert Korulczyk <robert@korulczyk.pl>
  */
-class GitlabApiException extends InvalidArgumentException implements UnprocessableExtensionInterface {
+class GitlabApiException extends InvalidArgumentException implements UnprocessableExtensionExceptionInterface {
 
 }

@@ -16,7 +16,7 @@ namespace app\components\extensions;
 use app\components\extensions\exceptions\InvalidPackageNameException;
 use app\components\extensions\exceptions\InvalidRepositoryUrlException;
 use app\components\extensions\exceptions\SoftFailureInterface;
-use app\components\extensions\exceptions\UnprocessableExtensionInterface;
+use app\components\extensions\exceptions\UnprocessableExtensionExceptionInterface;
 use app\helpers\HttpClient;
 use app\models\Extension;
 use app\models\packagist\SearchResult;
@@ -108,7 +108,7 @@ final class ExtensionsRepository extends Component {
 					}
 					unset($extensions[$index]);
 				}
-			} /* @noinspection PhpRedundantCatchClauseInspection */ catch (UnprocessableExtensionInterface $exception) {
+			} catch (UnprocessableExtensionExceptionInterface $exception) {
 				if (!$exception instanceof SoftFailureInterface) {
 					Yii::warning($exception->getMessage());
 					$this->registerExtensionUpdateFailure($extension->getPackageName());

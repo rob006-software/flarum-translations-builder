@@ -13,7 +13,7 @@ declare(strict_types=1);
 
 namespace app\models\extiverse\exceptions;
 
-use app\components\extensions\exceptions\UnprocessableExtensionInterface;
+use app\components\extensions\exceptions\UnprocessableExtensionExceptionInterface;
 use yii\base\InvalidArgumentException;
 
 /**
@@ -21,6 +21,6 @@ use yii\base\InvalidArgumentException;
  *
  * @author Robert Korulczyk <robert@korulczyk.pl>
  */
-class InvalidApiResponseException extends InvalidArgumentException implements UnprocessableExtensionInterface {
+class InvalidApiResponseException extends InvalidArgumentException implements UnprocessableExtensionExceptionInterface {
 
 }

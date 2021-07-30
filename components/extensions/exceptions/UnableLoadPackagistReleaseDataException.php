@@ -21,7 +21,7 @@ use yii\base\InvalidArgumentException;
  * @author Robert Korulczyk <robert@korulczyk.pl>
  */
 class UnableLoadPackagistReleaseDataException extends InvalidArgumentException implements
-	UnprocessableExtensionInterface,
+	UnprocessableExtensionExceptionInterface,
 	SoftFailureInterface {
 
 }
