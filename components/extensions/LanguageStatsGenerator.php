@@ -113,6 +113,9 @@ final class LanguageStatsGenerator {
 			if ($result === 0) {
 				$result = $this->stats[$b->getId()]['total'] <=> $this->stats[$a->getId()]['total'];
 			}
+			if ($result === 0) {
+				$result = $a->getPackageName() <=> $b->getPackageName();
+			}
 
 			return $result;
 		});
@@ -177,6 +180,9 @@ final class LanguageStatsGenerator {
 			$result = $this->premiumStats[$b->getId()]['subscribers'] <=> $this->premiumStats[$a->getId()]['subscribers'];
 			if ($result === 0) {
 				$result = $this->premiumStats[$b->getId()]['downloads'] <=> $this->premiumStats[$a->getId()]['downloads'];
+			}
+			if ($result === 0) {
+				$result = $a->getPackageName() <=> $b->getPackageName();
 			}
 
 			return $result;
