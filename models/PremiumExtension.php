@@ -31,12 +31,14 @@ final class PremiumExtension extends Extension {
 	private $title;
 	private $repositoryUrl;
 	private $requiredFlarum;
+	private $subscriptionPlans;
 
 	public static function createFromExtiverseCache(array $data): self {
 		$extension = new self($data['name']);
 		$extension->title = $data['title'] ?? null;
 		$extension->repositoryUrl = $data['url'] ?? null;
 		$extension->requiredFlarum = $data['requiredFlarum'] ?? null;
+		$extension->subscriptionPlans = $data['subscriptionPlans'] ?? [];
 
 		return $extension;
 	}
@@ -63,6 +65,10 @@ final class PremiumExtension extends Extension {
 
 	public function getRequiredFlarumVersion(): ?string {
 		return $this->requiredFlarum;
+	}
+
+	public function getSubscriptionPlans(): array {
+		return $this->subscriptionPlans;
 	}
 
 	public function hasTranslationSource(): bool {
