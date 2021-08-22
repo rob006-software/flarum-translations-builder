@@ -111,7 +111,10 @@ final class PendingSummaryGenerator {
 
 	private function renderDownloadsBadge(Extension $extension): string {
 		if ($extension instanceof PremiumExtension) {
-			return '';
+			$stats = $this->getPremiumExtensionsStats($extension);
+			return "![Total Downloads](https://img.shields.io/badge/downloads-{$stats['downloads']}-yellow) <br /> "
+				. "![Total Subscribers](https://img.shields.io/badge/subscribers-{$stats['subscribers']}-yellow) <br /> "
+				. "![Number of subscription plans](https://img.shields.io/badge/plans-{$stats['plans']}-blue)";
 		}
 
 		$name = $extension->getPackageName();
@@ -164,5 +167,26 @@ final class PendingSummaryGenerator {
 		}
 
 		return $badge;
+	}
+
+	private function getPremiumExtensionsStats(PremiumExtension $extension): array {
+		$stats = Yii::$app->cache->getOrSet(__METHOD__ . '#' . $extension->getPackageName(), static function () use ($extension) {
+			$stats = Yii::$app->extiverseApi->searchExtensions()[$extension->getPackageName()] ?? null;
+			if ($stats === null) {
+				return [];
+			}
+
+			return [
+				'downloads' => $stats->getDownloads(),
+				'subscribers' => $stats->getSubscribers(),
+			];
+		}, 24 * 3600);
+
+		$defaultStats = [
+			'downloads' => 0,
+			'subscribers' => 0,
+			'plans' => count($extension->getSubscriptionPlans()),
+		];
+		return $stats + $defaultStats;
 	}
 }
