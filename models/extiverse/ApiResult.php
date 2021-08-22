@@ -18,6 +18,9 @@ use Dont\DontCall;
 use Dont\DontCallStatic;
 use Dont\DontGet;
 use Dont\DontSet;
+use function array_values;
+use function preg_replace;
+use function usort;
 
 /**
  * Class ApiResult.
@@ -45,6 +48,8 @@ final class ApiResult {
 	private $subscribers;
 	/** @var string|null */
 	private $requiredFlarum;
+	/** @var string[] */
+	private $subscriptionPlans;
 
 	private function __construct(array $data) {
 		foreach ($data as $field => $value) {
@@ -66,6 +71,12 @@ final class ApiResult {
 				$versions[$version['id']] = $version['id'];
 			}
 		}
+		$subscriptionPlans = [];
+		foreach ($data['relationships']['plans']['data'] as $plan) {
+			if ($plan['type'] === 'plans') {
+				$subscriptionPlans[$plan['id']] = $plan['id'];
+			}
+		}
 
 		$requiredFlarum = null;
 		foreach ($included as $item) {
@@ -74,9 +85,17 @@ final class ApiResult {
 				&& $item['attributes']['version'] === $lastRelease
 			) {
 				$requiredFlarum = $item['attributes']['flarum-version-required'];
-				break;
+			}
+			if ($item['type'] === 'plans' && isset($subscriptionPlans[$item['id']])) {
+				$subscriptionPlans[$item['id']] = "{$item['attributes']['price']} {$item['attributes']['per']}";
 			}
 		}
+
+		usort($subscriptionPlans, static function (string $a, string $b) {
+			$a = (float) preg_replace('/[^0-9.]/', '', $a);
+			$b = (float) preg_replace('/[^0-9.]/', '', $b);
+			return $a <=> $b;
+		});
 
 		return new self([
 			'name' => $data['attributes']['name'],
@@ -86,6 +105,7 @@ final class ApiResult {
 			'downloads' => (int) $data['attributes']['downloads'],
 			'subscribers' => (int) $data['attributes']['subscribers-count'],
 			'requiredFlarum' => $requiredFlarum,
+			'subscriptionPlans' => array_values($subscriptionPlans),
 		]);
 	}
 
@@ -115,5 +135,9 @@ final class ApiResult {
 
 	public function getRequiredFlarum(): ?string {
 		return $this->requiredFlarum;
+	}
+
+	public function getSubscriptionPlans(): array {
+		return $this->subscriptionPlans;
 	}
 }

@@ -22,9 +22,9 @@ use app\models\ForkRepository;
 use app\models\Repository;
 use app\models\Translations;
 use Yii;
-use yii\helpers\ArrayHelper;
 use function array_filter;
 use function array_keys;
+use function array_merge;
 use function explode;
 use function file_exists;
 use function file_get_contents;
@@ -212,13 +212,14 @@ final class ExtensionsController extends ConsoleController {
 				'description' => $extension->getDescription(),
 				'version' => $extension->getVersion(),
 				'requiredFlarum' => $extension->getRequiredFlarum(),
+				'subscriptionPlans' => $extension->getSubscriptionPlans(),
 			];
 		}
 
 		$cachePath = $translations->getDir() . '/cache/extiverse.json';
 		if (file_exists($cachePath)) {
 			$oldCache = (array) json_decode(file_get_contents($cachePath), true, 512, JSON_THROW_ON_ERROR);
-			$result = ArrayHelper::merge($oldCache, $result);
+			$result = array_merge($oldCache, $result);
 		}
 
 		ksort($result);

@@ -55,7 +55,7 @@ final class ExtiverseApi extends Component {
 	 */
 	public function searchExtensions(bool $useCache = true): array {
 		$callback = function () {
-			$response['links']['next'] = $this->apiUrl . '/extensions?sort=-created_at&filter[is][]=premium&include=versions&page[size]=100';
+			$response['links']['next'] = $this->apiUrl . '/extensions?sort=-created_at&filter[is][]=premium&include=versions,plans&page[size]=100';
 
 			$results = [];
 			do {
