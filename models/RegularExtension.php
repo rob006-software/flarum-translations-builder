@@ -16,7 +16,7 @@ namespace app\models;
 use app\components\extensions\exceptions\UnableLoadPackagistReleaseDataException;
 use app\components\extensions\ExtensionsRepository;
 use app\components\extensions\IssueGenerator;
-use app\models\packagist\SearchResult;
+use app\models\packagist\ListResult;
 use mindplay\readable;
 use Yii;
 use yii\caching\TagDependency;
@@ -39,7 +39,7 @@ final class RegularExtension extends Extension {
 
 	private $_lastReleaseData;
 
-	public static function createFromPackagistSearchResult(SearchResult $result): self {
+	public static function createFromPackagistListResult(ListResult $result): self {
 		$extension = new self($result->getName());
 		$extension->repositoryUrl = $result->getRepository();
 		$extension->abandoned = $result->getAbandoned();

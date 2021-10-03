@@ -17,14 +17,13 @@ use Dont\DontCall;
 use Dont\DontCallStatic;
 use Dont\DontGet;
 use Dont\DontSet;
-use Yii;
 
 /**
- * Class SearchResult.
+ * Class ListResult.
  *
  * @author Robert Korulczyk <robert@korulczyk.pl>
  */
-final class SearchResult {
+final class ListResult {
 
 	use DontCall;
 	use DontCallStatic;
@@ -34,28 +33,17 @@ final class SearchResult {
 	/** @var string */
 	private $name;
 	/** @var string */
-	private $description;
-	/** @var string */
-	private $url;
-	/** @var int */
-	private $downloads;
-	/** @var string */
 	private $repository;
-	/** @var int */
-	private $favers;
-	/** @var string|null */
+	/** @var bool|string */
 	private $abandoned;
 
-	private function __construct(array $data) {
-		foreach ($data as $field => $value) {
-			$this->$field = $value;
-		}
-	}
-
-	public static function createFromApiResponse(array $data): self {
-		$data['repository'] = self::normalizeRepository($data['repository']);
-
-		return new static($data);
+	/**
+	 * @param bool|string $abandoned
+	 */
+	public function __construct(string $name, string $repository, $abandoned) {
+		$this->name = $name;
+		$this->repository = self::normalizeRepository($repository);
+		$this->abandoned = $abandoned;
 	}
 
 	public static function normalizeRepository(string $repository): string {
@@ -80,35 +68,19 @@ final class SearchResult {
 		return $this->name;
 	}
 
-	public function getDescription(): string {
-		return $this->description;
-	}
-
-	public function getUrl(): string {
-		return $this->url;
-	}
-
 	public function getRepository(): string {
 		return $this->repository;
 	}
 
-	public function getDownloads(): int {
-		return $this->downloads;
-	}
-
-	public function getFavers(): int {
-		return $this->favers;
-	}
-
 	public function getAbandoned(): ?string {
+		if ($this->abandoned === false) {
+			return null;
+		}
+
+		if ($this->abandoned === true) {
+			return '';
+		}
+
 		return $this->abandoned;
-	}
-
-	public function isFromGithub(): bool {
-		return Yii::$app->extensionsRepository->isGithubRepo($this->repository);
-	}
-
-	public function isFromGitlab(): bool {
-		return Yii::$app->extensionsRepository->isGitlabRepo($this->repository);
 	}
 }

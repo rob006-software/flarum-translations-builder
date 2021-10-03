@@ -19,7 +19,7 @@ use app\components\extensions\exceptions\SoftFailureInterface;
 use app\components\extensions\exceptions\UnprocessableExtensionExceptionInterface;
 use app\helpers\HttpClient;
 use app\models\Extension;
-use app\models\packagist\SearchResult;
+use app\models\packagist\ListResult;
 use app\models\PremiumExtension;
 use app\models\RegularExtension;
 use Composer\MetadataMinifier\MetadataMinifier;
@@ -39,7 +39,7 @@ use function in_array;
 use function is_array;
 use function reset;
 use function strlen;
-use function strncmp;
+use function strncasecmp;
 use function strtotime;
 
 /**
@@ -100,7 +100,6 @@ final class ExtensionsRepository extends Component {
 					unset($extensions[$index]);
 				} elseif ($extension->isAbandoned()) {
 					unset($extensions[$index]);
-					$this->registerAbandonedExtensionDetection($extension->getPackageName());
 				} elseif ($extension->isLanguagePack()) {
 					$this->registerLanguagePackDetection($extension->getPackageName());
 					unset($extensions[$index]);
@@ -125,8 +124,7 @@ final class ExtensionsRepository extends Component {
 	private function isExtensionRateLimited(string $name): bool {
 		return Yii::$app->cache->get(__CLASS__ . '#rateLimit#' . $name) !== false
 			|| Yii::$app->cache->get(__CLASS__ . '#languagePackDetected#' . $name) !== false
-			|| Yii::$app->cache->get(__CLASS__ . '#outdatedExtensionDetected#' . $name) !== false
-			|| Yii::$app->cache->get(__CLASS__ . '#abandonedExtensionDetected#' . $name) !== false;
+			|| Yii::$app->cache->get(__CLASS__ . '#outdatedExtensionDetected#' . $name) !== false;
 	}
 
 	public function resetRateLimitCache(string $extensionName): int {
@@ -141,10 +139,6 @@ final class ExtensionsRepository extends Component {
 		}
 		if (Yii::$app->cache->get(__CLASS__ . '#outdatedExtensionDetected#' . $extensionName) !== false) {
 			Yii::$app->cache->delete(__CLASS__ . '#outdatedExtensionDetected#' . $extensionName);
-			$count++;
-		}
-		if (Yii::$app->cache->get(__CLASS__ . '#abandonedExtensionDetected#' . $extensionName) !== false) {
-			Yii::$app->cache->delete(__CLASS__ . '#abandonedExtensionDetected#' . $extensionName);
 			$count++;
 		}
 
@@ -178,10 +172,6 @@ final class ExtensionsRepository extends Component {
 
 	private function registerLanguagePackDetection(string $name): void {
 		Yii::$app->cache->set(__CLASS__ . '#languagePackDetected#' . $name, true, 31 * 24 * 3600);
-	}
-
-	private function registerAbandonedExtensionDetection(string $name): void {
-		Yii::$app->cache->set(__CLASS__ . '#abandonedExtensionDetected#' . $name, true, 31 * 24 * 3600);
 	}
 
 	private function registerOutdatedExtensionDetection(RegularExtension $extension): void {
@@ -221,13 +211,9 @@ final class ExtensionsRepository extends Component {
 			}
 		}
 
-		$results = $this->searchPackagist([
-			'type' => 'flarum-extension',
-			'per_page' => 100,
-		]);
-		foreach ($results as $result) {
-			assert($result instanceof SearchResult);
-			$extension = RegularExtension::createFromPackagistSearchResult($result);
+		foreach ($this->getPackagesList() as $result) {
+			assert($result instanceof ListResult);
+			$extension = RegularExtension::createFromPackagistListResult($result);
 			if (
 				!isset($extensions[$extension->getId()])
 				// handle ID conflicts
@@ -237,47 +223,15 @@ final class ExtensionsRepository extends Component {
 			}
 		}
 
-		foreach ($this->getPackagesList() as $packageName) {
-			$id = Extension::nameToId($packageName);
-			if (
-				isset($extensions[$id])
-				&& $extensions[$id]->getPackageName() === $packageName
-				// Prefer free extensions over premium - some of them may be registered both as premium on Extiverse
-				// and free on Packagist. In that case always compare these extensions even if they have the same
-				// package name.
-				// @see https://discuss.flarum.org/d/23473-websockets-locally-hosted-alternative-for-pusher-now-free/175
-				&& $extensions[$id] instanceof RegularExtension
-			) {
-				continue;
-			}
-			$extension = new RegularExtension($packageName);
-			if (
-				!isset($extensions[$id])
-				// handle ID conflicts
-				|| $this->compareExtensions($extension, $extensions[$id]) > 0
-			) {
-				$extensions[$id] = $extension;
-			}
-		}
-
 		return $extensions;
 	}
 
 	private function compareExtensions(Extension $a, Extension $b): int {
-		$cacheKey = implode('#', [__METHOD__, 'abandoned',  $a->getPackageName(), $b->getPackageName()]);
-		$result = Yii::$app->cache->getOrSet($cacheKey, static function () use ($a, $b) {
-			if ($b->isAbandoned() && !$a->isAbandoned()) {
-				return 1;
-			}
-			if ($a->isAbandoned() && !$b->isAbandoned()) {
-				return -1;
-			}
-
-			return 0;
-		}, 31 * 24 * 3600);
-
-		if ($result !== 0) {
-			return $result;
+		if ($b->isAbandoned() && !$a->isAbandoned()) {
+			return 1;
+		}
+		if ($a->isAbandoned() && !$b->isAbandoned()) {
+			return -1;
 		}
 
 		if ($b instanceof PremiumExtension && !$a instanceof PremiumExtension) {
@@ -464,50 +418,32 @@ final class ExtensionsRepository extends Component {
 	}
 
 	public function isGithubRepo(string $url): bool {
-		return strncmp('https://github.com/', $url, 19) === 0 || strncmp('git@github.com:', $url, 15) === 0;
+		return strncasecmp('https://github.com/', $url, 19) === 0 || strncasecmp('git@github.com:', $url, 15) === 0;
 	}
 
 	public function isGitlabRepo(string $url): bool {
-		return strncmp('https://gitlab.com/', $url, 19) === 0 || strncmp('git@gitlab.com:', $url, 15) === 0;
-	}
-
-	/**
-	 * @todo Move this to separate component.
-	 *
-	 * @param array $filters
-	 * @return SearchResult[]
-	 */
-	private function searchPackagist(array $filters = []): array {
-		$response = [
-			'next' => 'https://packagist.org/search.json?' . http_build_query($filters),
-		];
-
-		$results = [];
-		do {
-			$response = $this->getClient()->request('GET', $response['next'])->toArray();
-			foreach ($response['results'] as $item) {
-				$result = SearchResult::createFromApiResponse($item);
-				if ($result->isFromGithub() || $result->isFromGitlab()) {
-					$results[$result->getName()] = $result;
-				} else {
-					Yii::$app->frequencyLimiter->run(
-						__METHOD__ . '#Unsupported repository: ' . readable::value($result->getRepository()),
-						31 * 24 * 3600,
-						static function () use ($result) {
-							Yii::warning('Unsupported repository: ' . readable::value($result->getRepository()));
-						}
-					);
-				}
-			}
-		} while (isset($response['next']));
-
-		return $results;
+		return strncasecmp('https://gitlab.com/', $url, 19) === 0 || strncasecmp('git@gitlab.com:', $url, 15) === 0;
 	}
 
 	private function getPackagesList(): array {
 		$response = $this->getClient()
-			->request('GET', 'https://packagist.org/packages/list.json?type=flarum-extension')
+			->request('GET', 'https://packagist.org/packages/list.json?type=flarum-extension&fields[]=repository&fields[]=abandoned')
 			->toArray();
-		return $response['packageNames'];
+		$results = [];
+		foreach ($response['packages'] as $name => ['repository' => $repository, 'abandoned' => $abandoned]) {
+			if ($this->isGithubRepo($repository) || $this->isGitlabRepo($repository)) {
+				$results[$name] = new ListResult($name, $repository, $abandoned);
+			} else {
+				Yii::$app->frequencyLimiter->run(
+					__METHOD__ . '#Unsupported repository: ' . readable::value($repository),
+					31 * 24 * 3600,
+					static function () use ($repository) {
+						Yii::warning('Unsupported repository: ' . readable::value($repository));
+					}
+				);
+			}
+		}
+
+		return $results;
 	}
 }
