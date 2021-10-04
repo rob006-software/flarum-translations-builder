@@ -111,7 +111,9 @@ final class ConfigGenerator {
 		}
 
 		if ($extension instanceof RegularExtension) {
-			$extensionConfig['tag'] = $extension->getStableTranslationSourceUrl();
+			if (isset($extensionConfig['tag']) || $extension->hasTranslationSource()) {
+				$extensionConfig['tag'] = $extension->getStableTranslationSourceUrl();
+			}
 			foreach ($extensionConfig as $key => $url) {
 				if (strncmp($key, 'tag:', 4) === 0) {
 					$extensionConfig[$key] = $extension->getStableTranslationSourceUrl([substr($key, 4)]);
