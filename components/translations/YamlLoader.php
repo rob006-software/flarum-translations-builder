@@ -26,15 +26,15 @@ final class YamlLoader extends ArrayLoader {
 
 	public function load($resource, $locale, $domain = 'messages') {
 		$messages = Yaml::parse($resource);
-		$messages =  $this->filter($messages);
+		$messages = self::filter($messages);
 		return parent::load($messages, $locale, $domain);
 	}
 
-	private function filter($item) {
+	public static function filter($item) {
 		if (is_array($item)) {
 			foreach ($item as $key => $value) {
-				$filtered = $this->filter($value);
-				if ($filtered === null) {
+				$filtered = self::filter($value);
+				if ($filtered === null || $filtered === []) {
 					unset($item[$key]);
 				} else {
 					$item[$key] = $filtered;

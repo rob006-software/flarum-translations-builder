@@ -17,6 +17,7 @@ use app\components\extensions\exceptions\InvalidPackageNameException;
 use app\components\extensions\exceptions\InvalidRepositoryUrlException;
 use app\components\extensions\exceptions\SoftFailureInterface;
 use app\components\extensions\exceptions\UnprocessableExtensionExceptionInterface;
+use app\components\translations\YamlLoader;
 use app\helpers\HttpClient;
 use app\models\Extension;
 use app\models\packagist\ListResult;
@@ -312,8 +313,9 @@ final class ExtensionsRepository extends Component {
 					return false;
 				}
 				try {
-					if (is_array(Yaml::parse($response->getContent()))) {
-						return true;
+					$parsed = Yaml::parse($response->getContent());
+					if (is_array($parsed)) {
+						return !empty(YamlLoader::filter($parsed));
 					}
 				} catch (ParseException $exception) {
 					// ignore exception, we will log warning bellow
