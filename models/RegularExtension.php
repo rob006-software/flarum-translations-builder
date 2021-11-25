@@ -17,6 +17,7 @@ use app\components\extensions\exceptions\UnableLoadPackagistReleaseDataException
 use app\components\extensions\ExtensionsRepository;
 use app\components\extensions\IssueGenerator;
 use app\models\packagist\ListResult;
+use Composer\Semver\VersionParser;
 use mindplay\readable;
 use Yii;
 use yii\caching\TagDependency;
@@ -105,12 +106,15 @@ final class RegularExtension extends Extension {
 		foreach ($releases as $release) {
 			if ($prefixes !== null) {
 				foreach ($prefixes as $prefix) {
-					if (strncmp($prefix, $release['version_normalized'], strlen($prefix)) === 0) {
+					if (
+						strncmp($prefix, $release['version_normalized'], strlen($prefix)) === 0
+						&& VersionParser::parseStability($release['version_normalized']) === 'stable'
+					) {
 						$lastRelease = $release;
 						break 2;
 					}
 				}
-			} else {
+			} elseif (VersionParser::parseStability($release['version_normalized']) === 'stable') {
 				$lastRelease = $release;
 				break;
 			}
