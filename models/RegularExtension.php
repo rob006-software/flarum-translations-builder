@@ -22,6 +22,7 @@ use mindplay\readable;
 use Yii;
 use yii\caching\TagDependency;
 use yii\helpers\ArrayHelper;
+use function in_array;
 use function strlen;
 use function strncmp;
 use function strpos;
@@ -96,11 +97,28 @@ final class RegularExtension extends Extension {
 		return $url !== null && strpos($url, ExtensionsRepository::NO_TRANSLATION_FILE) === false;
 	}
 
+	public function hasBetaTranslationSource(): bool {
+		$betaUrl = $this->getBetaTranslationSourceUrl();
+		if ($betaUrl === null || strpos($betaUrl, ExtensionsRepository::NO_TRANSLATION_FILE) !== false) {
+			return false;
+		}
+		$stableUrl = $this->getStableTranslationSourceUrl();
+		return $stableUrl !== $betaUrl;
+	}
+
 	public function getTranslationSourceUrl(?string $branchName = null): string {
 		return Yii::$app->extensionsRepository->detectTranslationSourceUrl($this->repositoryUrl, $branchName);
 	}
 
 	public function getStableTranslationSourceUrl(?array $prefixes = null): ?string {
+		return $this->getTranslationSourceUrlForStability($prefixes, ['stable']);
+	}
+
+	public function getBetaTranslationSourceUrl(?array $prefixes = null): ?string {
+		return $this->getTranslationSourceUrlForStability($prefixes, ['stable', 'beta']);
+	}
+
+	private function getTranslationSourceUrlForStability(?array $prefixes, array $stabilities): ?string {
 		$releases = Yii::$app->extensionsRepository->getPackagistReleasesData($this->getPackageName());
 		$lastRelease = null;
 		foreach ($releases as $release) {
@@ -108,13 +126,13 @@ final class RegularExtension extends Extension {
 				foreach ($prefixes as $prefix) {
 					if (
 						strncmp($prefix, $release['version_normalized'], strlen($prefix)) === 0
-						&& VersionParser::parseStability($release['version_normalized']) === 'stable'
+						&& in_array(VersionParser::parseStability($release['version_normalized']), $stabilities, true)
 					) {
 						$lastRelease = $release;
 						break 2;
 					}
 				}
-			} elseif (VersionParser::parseStability($release['version_normalized']) === 'stable') {
+			} elseif (in_array(VersionParser::parseStability($release['version_normalized']), $stabilities, true)) {
 				$lastRelease = $release;
 				break;
 			}
