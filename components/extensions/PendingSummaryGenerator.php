@@ -166,6 +166,10 @@ final class PendingSummaryGenerator {
 			$badge .= " <br /> ![Extension is abandoned](https://img.shields.io/badge/status-abandoned-red)";
 		}
 
+		if (!$extension->hasTranslationSource()) {
+			$badge .= " <br /> ![Extension does not have translations](https://img.shields.io/badge/status-no_translation-orange)";
+		}
+
 		return $badge;
 	}
 
