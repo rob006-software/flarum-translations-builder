@@ -137,6 +137,10 @@ final class Translations {
 		return $this->components[$id];
 	}
 
+	public function hasComponent(string $id): bool {
+		return isset($this->components[$id]);
+	}
+
 	public function getComponentSourcePath(string $componentId): string {
 		return "$this->sourcesDir/{$componentId}.json";
 	}

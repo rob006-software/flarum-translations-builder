@@ -94,6 +94,11 @@ final class PendingSummaryGenerator {
 	}
 
 	private function renderBranchBadge(string $extensionId): string {
+		$output = '';
+		if ($this->translations->hasComponent($extensionId)) {
+			$output .= "![Branch was merged](https://img.shields.io/badge/-!-red)";
+		}
+
 		$pullRequest = Yii::$app->githubApi->getPullRequestForBranch(
 			Yii::$app->params['translationsRepository'],
 			Yii::$app->params['translationsForkRepository'],
@@ -106,7 +111,7 @@ final class PendingSummaryGenerator {
 
 		$imgUrl = "https://img.shields.io/badge/PR-%23{$pullRequest['number']}-{$color}";
 		$prUrl = Yii::$app->githubApi->getPullRequestUrl(Yii::$app->params['translationsRepository'], $pullRequest['number']);
-		return "[![#{$pullRequest['number']} ({$pullRequest['state']})]($imgUrl)]($prUrl)";
+		return "{$output}[![#{$pullRequest['number']} ({$pullRequest['state']})]($imgUrl)]($prUrl)";
 	}
 
 	private function renderDownloadsBadge(Extension $extension): string {
