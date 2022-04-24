@@ -147,7 +147,7 @@ final class PullRequestGenerator {
 			
 			![License](https://img.shields.io/packagist/l/$name)
 			
-			![Latest Stable Version](https://img.shields.io/packagist/v/$name?color=success&label=stable) ![Latest Unstable Version](https://img.shields.io/packagist/v/$name?include_prereleases&label=unstable) ![Flarum compatibility status](https://flarum-badge-api.davwheat.dev/v1/compat-latest/$name)
+			![Latest Stable Version](https://img.shields.io/packagist/v/$name?color=success&label=stable) ![Latest Unstable Version](https://img.shields.io/packagist/v/$name?include_prereleases&label=unstable)
 			[![Total Downloads](https://img.shields.io/packagist/dt/$name) ![Monthly Downloads](https://img.shields.io/packagist/dm/$name) ![Daily Downloads](https://img.shields.io/packagist/dd/$name)](https://packagist.org/packages/$name/stats)
 			
 			
