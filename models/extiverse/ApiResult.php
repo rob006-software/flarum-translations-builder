@@ -87,7 +87,11 @@ final class ApiResult {
 				$requiredFlarum = $item['attributes']['flarum-version-required'];
 			}
 			if ($item['type'] === 'plans' && isset($subscriptionPlans[$item['id']])) {
-				$subscriptionPlans[$item['id']] = "{$item['attributes']['price']} {$item['attributes']['per']}";
+				if ($item['attributes']['is-active']) {
+					$subscriptionPlans[$item['id']] = "{$item['attributes']['price']} {$item['attributes']['per']}";
+				} else {
+					unset($subscriptionPlans[$item['id']]);
+				}
 			}
 		}
 
