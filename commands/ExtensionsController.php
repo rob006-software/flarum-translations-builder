@@ -46,6 +46,7 @@ use const JSON_UNESCAPED_UNICODE;
  */
 final class ExtensionsController extends ConsoleController {
 
+	public $removeOutdated = false;
 	public $update = true;
 	public $commit = false;
 	public $push = false;
@@ -57,6 +58,7 @@ final class ExtensionsController extends ConsoleController {
 	public function options($actionID) {
 		if ($actionID === 'update-cache') {
 			return array_merge(parent::options($actionID), [
+				'removeOutdated',
 				'frequency',
 				'verbose',
 				'update',
@@ -217,7 +219,7 @@ final class ExtensionsController extends ConsoleController {
 		}
 
 		$cachePath = $translations->getDir() . '/cache/extiverse.json';
-		if (file_exists($cachePath)) {
+		if (!$this->removeOutdated && file_exists($cachePath)) {
 			$oldCache = (array) json_decode(file_get_contents($cachePath), true, 512, JSON_THROW_ON_ERROR);
 			$result = array_merge($oldCache, $result);
 		}
