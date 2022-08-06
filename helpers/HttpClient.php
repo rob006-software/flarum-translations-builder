@@ -27,11 +27,7 @@ class HttpClient {
 	static private $client;
 
 	public static function create(array $defaultOptions = []): HttpClientInterface {
-		$defaultOptions = [
-			'headers' => [
-				'User-Agent' => 'flarum-translations-builder (+https://github.com/rob006-software/flarum-translations-builder)'
-			],
-		] + $defaultOptions;
+		$defaultOptions['headers']['User-Agent'] = $defaultOptions['headers']['User-Agent'] ?? 'flarum-translations-builder (+https://github.com/rob006-software/flarum-translations-builder)';
 		return SymfonyHttpClient::create($defaultOptions);
 	}
 

@@ -17,6 +17,7 @@ use app\components\ExtiverseApi;
 use app\components\FrequencyLimiter;
 use app\components\GithubApi;
 use app\components\GitlabApi;
+use app\components\weblate\WeblateApi;
 use yii\caching\ArrayCache;
 use yii\caching\FileCache;
 use yii\db\Connection;
@@ -119,6 +120,9 @@ return [
 		],
 		'extiverseApi' => [
 			'class' => ExtiverseApi::class,
+		],
+		'weblateApi' => [
+			'class' => WeblateApi::class,
 		],
 		'stats' => [
 			'class' => StatsRepository::class,

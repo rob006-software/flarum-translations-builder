@@ -13,12 +13,12 @@ declare(strict_types=1);
 
 namespace app\commands;
 
+use app\components\ConsoleController;
 use app\components\extensions\LanguageStatsGenerator;
 use app\components\extensions\StatsRepository;
 use app\models\Repository;
 use app\models\Translations;
 use Yii;
-use yii\console\Controller;
 use function array_merge;
 use function in_array;
 use function time;
@@ -28,7 +28,7 @@ use function time;
  *
  * @author Robert Korulczyk <robert@korulczyk.pl>
  */
-final class StatsController extends Controller {
+final class StatsController extends ConsoleController {
 
 	public $defaultAction = 'update';
 

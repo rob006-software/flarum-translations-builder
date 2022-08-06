@@ -28,6 +28,9 @@ use function time;
  */
 class StatsRepository extends Component {
 
+	/**
+	 * @return ExtiverseStats|PackagistStats
+	 */
 	public function getStats(Extension $extension) {
 		if ($extension instanceof PremiumExtension) {
 			return $this->getStatsFromExtiverse($extension->getPackageName());

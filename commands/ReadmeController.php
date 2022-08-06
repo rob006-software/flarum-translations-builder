@@ -250,12 +250,14 @@ final class ReadmeController extends ConsoleController {
 		if ($group === 'all') {
 			return true;
 		}
-		if ($extension instanceof PremiumExtension) {
-			return $group === 'premium';
-		}
+
 		if ($group === 'premium') {
 			return $extension instanceof PremiumExtension;
 		}
+		if ($extension instanceof PremiumExtension) {
+			return false;
+		}
+
 		if (in_array($group, ['flarum', 'fof'], true)) {
 			return $group === $extension->getVendor();
 		}

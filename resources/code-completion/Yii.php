@@ -21,6 +21,7 @@ use app\components\ExtiverseApi;
 use app\components\FrequencyLimiter;
 use app\components\GithubApi;
 use app\components\GitlabApi;
+use app\components\weblate\WeblateApi;
 use yii\caching\ArrayCache;
 use yii\mutex\FileMutex;
 
@@ -49,6 +50,8 @@ abstract class BaseApplication extends \yii\base\Application {
 	public $gitlabApi;
 	/** @var ExtiverseApi */
 	public $extiverseApi;
+	/** @var WeblateApi */
+	public $weblateApi;
 	/** @var FileMutex */
 	public $mutex;
 	/** @var FrequencyLimiter */

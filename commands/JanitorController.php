@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace app\commands;
 
+use app\components\ConsoleController;
 use app\components\extensions\ConfigGenerator;
 use app\components\extensions\exceptions\SoftFailureInterface;
 use app\components\extensions\exceptions\UnprocessableExtensionExceptionInterface;
@@ -43,7 +44,7 @@ use function unlink;
  *
  * @author Robert Korulczyk <robert@korulczyk.pl>
  */
-final class JanitorController extends Controller {
+final class JanitorController extends ConsoleController {
 
 	public $update = true;
 	public $verbose = false;

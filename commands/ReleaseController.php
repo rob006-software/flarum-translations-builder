@@ -13,9 +13,9 @@ declare(strict_types=1);
 
 namespace app\commands;
 
+use app\components\ConsoleController;
 use app\models\Translations;
 use Yii;
-use yii\console\Controller;
 use yii\console\ExitCode;
 use function array_merge;
 
@@ -24,7 +24,7 @@ use function array_merge;
  *
  * @author Robert Korulczyk <robert@korulczyk.pl>
  */
-final class ReleaseController extends Controller {
+final class ReleaseController extends ConsoleController {
 
 	public $defaultAction = 'release';
 

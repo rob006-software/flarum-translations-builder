@@ -26,6 +26,9 @@ $localConfig = ArrayHelper::merge($localConfig, [
 		'extiverseApi' => [
 			'authToken' => null, // @todo fill me
 		],
+		'weblateApi' => [
+			'authToken' => null, // @todo fill me
+		],
 	],
 ]);
 
