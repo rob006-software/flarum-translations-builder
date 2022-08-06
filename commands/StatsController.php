@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace app\commands;
 
 use app\components\extensions\LanguageStatsGenerator;
+use app\components\extensions\StatsRepository;
 use app\models\Repository;
 use app\models\Translations;
 use Yii;
@@ -51,7 +52,7 @@ final class StatsController extends Controller {
 	public function actionUpdate(array $languages = [], string $configFile = '@app/translations/config.php') {
 		$translations = $this->getTranslations($configFile);
 		$token = __METHOD__
-			. '#' . LanguageStatsGenerator::getWeek()
+			. '#' . StatsRepository::getWeek()
 			. '#' . $this->getComponentsListHash($translations)
 			. '#' . $this->getLanguagesListHash($translations);
 		if ($this->isLimited($token)) {

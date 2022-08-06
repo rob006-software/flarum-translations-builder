@@ -16,6 +16,7 @@
 declare(strict_types=1);
 
 use app\components\extensions\ExtensionsRepository;
+use app\components\extensions\StatsRepository;
 use app\components\ExtiverseApi;
 use app\components\FrequencyLimiter;
 use app\components\GithubApi;
@@ -54,6 +55,8 @@ abstract class BaseApplication extends \yii\base\Application {
 	public $frequencyLimiter;
 	/** @var ArrayCache */
 	public $arrayCache;
+	/** @var StatsRepository */
+	public $stats;
 }
 
 class WebApplication extends \yii\web\Application {

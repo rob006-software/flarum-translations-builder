@@ -25,12 +25,11 @@ use Dont\DontGet;
 use Dont\DontSet;
 use Locale;
 use Yii;
+use yii\base\InvalidArgumentException;
 use yii\helpers\Html;
 use yii\helpers\StringHelper;
-use function date;
 use function mb_strlen;
 use function strtotime;
-use function time;
 use function urlencode;
 use function usort;
 
@@ -54,10 +53,6 @@ final class LanguageStatsGenerator {
 	private $disabledExtensions = [];
 	/** @var bool[]|null[] */
 	private $outdatedExtensions = [];
-	/** @var int[][] */
-	private $stats = [];
-	/** @var int[][] */
-	private $premiumStats = [];
 
 	/** @var string */
 	private $language;
@@ -77,10 +72,8 @@ final class LanguageStatsGenerator {
 	public function addExtension(Extension $extension, bool $isDisabled, ?bool $isOutdated): void {
 		if ($extension instanceof RegularExtension) {
 			$this->extensions[] = $extension;
-			$this->stats[$extension->getId()] = $this->getStatsFromPackagist($extension->getPackageName());
 		} elseif ($extension instanceof PremiumExtension) {
 			$this->premiumExtensions[] = $extension;
-			$this->premiumStats[$extension->getId()] = $this->getStatsFromExtiverse($extension->getPackageName());
 		}
 		$this->disabledExtensions[$extension->getId()] = $isDisabled;
 		$this->outdatedExtensions[$extension->getId()] = $isOutdated;
@@ -109,9 +102,9 @@ final class LanguageStatsGenerator {
 	public function generateRegularExtensions(): string {
 		$extensions = $this->extensions;
 		usort($extensions, function (RegularExtension $a, RegularExtension $b) {
-			$result = $this->stats[$b->getId()][$this->sortingCriteria] <=> $this->stats[$a->getId()][$this->sortingCriteria];
+			$result = $this->getCurrentStats($b, $this->sortingCriteria) <=> $this->getCurrentStats($a, $this->sortingCriteria);
 			if ($result === 0) {
-				$result = $this->stats[$b->getId()]['total'] <=> $this->stats[$a->getId()]['total'];
+				$result = $this->getCurrentStats($b, 'total') <=> $this->getCurrentStats($a, 'total');
 			}
 			if ($result === 0) {
 				$result = $a->getPackageName() <=> $b->getPackageName();
@@ -144,9 +137,6 @@ final class LanguageStatsGenerator {
 		$rank = 0;
 		foreach ($extensions as $extension) {
 			$rank++;
-			$this->saveStats($extension->getPackageName(), 'total', $this->stats[$extension->getId()]['total']);
-			$this->saveStats($extension->getPackageName(), 'monthly', $this->stats[$extension->getId()]['monthly']);
-			$this->saveStats($extension->getPackageName(), 'daily', $this->stats[$extension->getId()]['daily']);
 			$this->saveStats($extension->getPackageName(), 'rank', $rank);
 
 			$output .= <<<HTML
@@ -155,7 +145,7 @@ final class LanguageStatsGenerator {
 							{$this->compatibilityIcon($extension)}{$this->abandonedIcon($extension)}
 							{$this->link("<code>{$this->truncate($extension->getPackageName())}</code>", $extension->getRepositoryUrl(), $extension->getPackageName())}
 						</td>
-						<td align="center">{$rank}{$this->statsChangeBadge($extension->getPackageName(), 'rank', $rank, true)}</td>
+						<td align="center">{$rank}{$this->statsChangeBadge($extension, 'rank', $rank, true)}</td>
 						<td align="center">{$this->stats($extension, 'total')}</td>
 						<td align="center">{$this->stats($extension, 'monthly')}</td>
 						<td align="center">{$this->stats($extension, 'daily')}</td>
@@ -177,9 +167,9 @@ final class LanguageStatsGenerator {
 	public function generatePremiumExtensions(): string {
 		$extensions = $this->premiumExtensions;
 		usort($extensions, function (PremiumExtension $a, PremiumExtension $b) {
-			$result = $this->premiumStats[$b->getId()]['subscribers'] <=> $this->premiumStats[$a->getId()]['subscribers'];
+			$result = $this->getCurrentStats($b, 'subscribers') <=> $this->getCurrentStats($a, 'subscribers');
 			if ($result === 0) {
-				$result = $this->premiumStats[$b->getId()]['downloads'] <=> $this->premiumStats[$a->getId()]['downloads'];
+				$result = $this->getCurrentStats($b, 'downloads') <=> $this->getCurrentStats($a, 'downloads');
 			}
 			if ($result === 0) {
 				$result = $a->getPackageName() <=> $b->getPackageName();
@@ -208,8 +198,6 @@ final class LanguageStatsGenerator {
 		$rank = 0;
 		foreach ($extensions as $extension) {
 			$rank++;
-			$this->saveStats($extension->getPackageName(), 'subscribers', $this->premiumStats[$extension->getId()]['subscribers']);
-			$this->saveStats($extension->getPackageName(), 'downloads', $this->premiumStats[$extension->getId()]['downloads']);
 			$this->saveStats($extension->getPackageName(), 'rank', $rank);
 
 			$output .= <<<HTML
@@ -218,7 +206,7 @@ final class LanguageStatsGenerator {
 						{$this->compatibilityIcon($extension)}
 						{$this->link("<code>{$this->truncate($extension->getPackageName())}</code>", $extension->getRepositoryUrl(), $extension->getPackageName())}
 					</td>
-					<td align="center">{$rank}{$this->statsChangeBadge($extension->getPackageName(), 'rank', $rank, true)}</td>
+					<td align="center">{$rank}{$this->statsChangeBadge($extension, 'rank', $rank, true)}</td>
 					<td align="center">{$this->premiumStats($extension, 'subscribers')}</td>
 					<td align="center">{$this->premiumStats($extension, 'downloads')}</td>
 					<td>{$this->statusBadge($extension)}</td>
@@ -249,19 +237,19 @@ final class LanguageStatsGenerator {
 	}
 
 	private function stats(RegularExtension $extension, string $statsType): string {
-		$badge = $this->statsChangeBadge($extension->getPackageName(), $statsType, $this->stats[$extension->getId()][$statsType]);
+		$badge = $this->statsChangeBadge($extension, $statsType, $this->getCurrentStats($extension, $statsType));
 		$statsUrl = "https://packagist.org/packages/{$extension->getPackageName()}/stats";
 
-		return $this->link($this->stats[$extension->getId()][$statsType] . $badge, $statsUrl);
+		return $this->link($this->getCurrentStats($extension, $statsType) . $badge, $statsUrl);
 	}
 
 	private function premiumStats(PremiumExtension $extension, string $statsType): string {
-		return $this->premiumStats[$extension->getId()][$statsType]
-			. $this->statsChangeBadge($extension->getPackageName(), $statsType, $this->premiumStats[$extension->getId()][$statsType]);
+		return $this->getCurrentStats($extension, $statsType)
+			. $this->statsChangeBadge($extension, $statsType, $this->getCurrentStats($extension, $statsType));
 	}
 
-	private function statsChangeBadge(string $packageName, string $statsType, int $currentValue, bool $reverseColor = false): string {
-		$old = $this->getPreviousStats($packageName, $statsType);
+	private function statsChangeBadge(Extension $extension, string $statsType, int $currentValue, bool $reverseColor = false): string {
+		$old = $this->getPreviousStats($extension, $statsType);
 		if ($old === null) {
 			return '';
 		}
@@ -333,48 +321,28 @@ final class LanguageStatsGenerator {
 		return StringHelper::truncate($string, $limit, '…');
 	}
 
-	private function getStatsFromPackagist(string $name): array {
-		$stats = Yii::$app->cache->getOrSet($this->buildStatsKey($name, 'all'), static function () use ($name) {
-			$stats = Yii::$app->extensionsRepository->getPackagistData($name);
-			if ($stats === null || empty($stats['downloads'])) {
-				return [];
+	private function getCurrentStats(Extension $extension, string $statsType): int {
+		return Yii::$app->cache->getOrSet($this->buildStatsKey($extension->getPackageName(), $statsType), static function () use ($extension, $statsType) {
+			switch ($statsType) {
+				case 'subscribers':
+					return Yii::$app->stats->getStats($extension)->getSubscribersCount();
+				case 'downloads':
+				case 'total':
+					return Yii::$app->stats->getStats($extension)->getTotalDownloads();
+				case 'monthly':
+					return Yii::$app->stats->getStats($extension)->getMonthlyDownloads();
+				case 'daily':
+					return Yii::$app->stats->getStats($extension)->getDailyDownloads();
+				default:
+					throw new InvalidArgumentException("Invalid stats type: '$statsType'.");
 			}
-
-			return $stats['downloads'];
-		}, 31 * 24 * 3600);
-
-		$defaultStats = [
-			'total' => 0,
-			'monthly' => 0,
-			'daily' => 0,
-		];
-		return $stats + $defaultStats;
+		});
 	}
 
-	private function getStatsFromExtiverse(string $name): array {
-		$stats = Yii::$app->cache->getOrSet($this->buildStatsKey($name, 'all'), static function () use ($name) {
-			$stats = Yii::$app->extiverseApi->searchExtensions()[$name] ?? null;
-			if ($stats === null) {
-				return [];
-			}
-
-			return [
-				'downloads' => $stats->getDownloads(),
-				'subscribers' => $stats->getSubscribers(),
-			];
-		}, 31 * 24 * 3600);
-
-		$defaultStats = [
-			'downloads' => 0,
-			'subscribers' => 0,
-		];
-		return $stats + $defaultStats;
-	}
-
-	private function getPreviousStats(string $packageName, string $statsType): ?int {
-		$value = Yii::$app->cache->get($this->buildStatsKey($packageName, $statsType, strtotime('-7 days')));
+	private function getPreviousStats(Extension $extension, string $statsType): ?int {
+		$value = Yii::$app->cache->get($this->buildStatsKey($extension->getPackageName(), $statsType, strtotime('-7 days')));
 		if ($value === false) {
-			$value = Yii::$app->cache->get($this->buildStatsKey($packageName, $statsType, strtotime('-14 days')));
+			$value = Yii::$app->cache->get($this->buildStatsKey($extension->getPackageName(), $statsType, strtotime('-14 days')));
 		}
 
 		return $value === false ? null : $value;
@@ -385,12 +353,6 @@ final class LanguageStatsGenerator {
 	}
 
 	private function buildStatsKey(string $packageName, string $statsType, ?int $timestamp = null): string {
-		return __CLASS__ . "#stats:$packageName:$statsType:" . self::getWeek($timestamp);
-	}
-
-	public static function getWeek(?int $timestamp = null): string {
-		// We're delaying beginning of the week to Tuesday. In Monday stats from last 24h will include Sunday, so
-		// they're not measurable.
-		return date('W', strtotime('-1 day', $timestamp ?? time()));
+		return __CLASS__ . "#stats:$packageName:$statsType:" . StatsRepository::getWeek($timestamp);
 	}
 }

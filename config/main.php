@@ -12,6 +12,7 @@
 declare(strict_types=1);
 
 use app\components\extensions\ExtensionsRepository;
+use app\components\extensions\StatsRepository;
 use app\components\ExtiverseApi;
 use app\components\FrequencyLimiter;
 use app\components\GithubApi;
@@ -118,6 +119,9 @@ return [
 		],
 		'extiverseApi' => [
 			'class' => ExtiverseApi::class,
+		],
+		'stats' => [
+			'class' => StatsRepository::class,
 		],
 	],
 	'params' => [
