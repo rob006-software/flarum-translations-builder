@@ -55,4 +55,22 @@ class WeblateApi extends Component {
 		// call this to trigger errors if response is invalid
 		$response->toArray();
 	}
+
+	public function getUnits(string $componentId, string $language = 'en'): iterable {
+		$url = "$this->weblateUrl/api/translations/flarum/$componentId/$language/units/";
+		do {
+			$response = $this->getClient()->request('GET', $url);
+			$jsonResponse = $response->toArray();
+			$url = $jsonResponse['next'];
+			yield from $jsonResponse['results'];
+		} while ($url !== null);
+	}
+
+	public function updateUnit(int $unitId, array $data): void {
+		$response = $this->getClient()->request('PATCH', "$this->weblateUrl/api/units/$unitId/", [
+			'json' => $data,
+		]);
+		// call this to trigger errors if response is invalid
+		$response->toArray();
+	}
 }

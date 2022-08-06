@@ -19,7 +19,9 @@ use app\models\Extension;
 use app\models\PremiumExtension;
 use app\models\Translations;
 use Yii;
+use yii\base\Exception;
 use function array_merge;
+use function time;
 
 /**
  * Class WeblateController.
@@ -37,11 +39,24 @@ class WeblateController extends ConsoleController {
 
 	public $update = true;
 	public $verbose = false;
+	/** @var int */
+	public $frequency;
+
+	public function beforeAction($action) {
+		// we release standard repository lock at the end of `getTranslations()`, so we need additional lock in order to
+		// avoid concurrent executions of the same command
+		if (!Yii::$app->mutex->acquire(__CLASS__ . '#' . $action->id, 900)) {
+			throw new Exception('Cannot acquire action lock.');
+		}
+
+		return parent::beforeAction($action);
+	}
 
 	public function options($actionID) {
 		return array_merge(parent::options($actionID), [
 			'verbose',
 			'update',
+			'frequency',
 		]);
 	}
 
@@ -53,6 +68,24 @@ class WeblateController extends ConsoleController {
 				Yii::$app->weblateApi->updateComponentPriority($extension->getId(), $this->calculatePriority($extension));
 			}
 		}
+	}
+
+	public function actionUpdateUnitsFlags(string $configFile = '@app/translations/config.php') {
+		$translations = $this->getTranslations($configFile);
+		$token = __METHOD__ . '#' . $translations->getSourcesHash();
+		if ($this->isLimited($token)) {
+			return;
+		}
+		foreach ($translations->getComponents() as $component) {
+			foreach (Yii::$app->weblateApi->getUnits($component->getId()) as $unit) {
+				if (strpos($unit['source'][0], '=> ') === 0 && strpos($unit['extra_flags'], 'ignore-same') === false) {
+					Yii::$app->weblateApi->updateUnit($unit['id'], [
+						'extra_flags' => trim("{$unit['extra_flags']},ignore-same", ','),
+					]);
+				}
+			}
+		}
+		$this->updateLimit($token);
 	}
 
 	private function calculatePriority(Extension $extension): int {
@@ -87,7 +120,25 @@ class WeblateController extends ConsoleController {
 				echo $output;
 			}
 		}
+		$this->releaseLock();
 
 		return $translations;
+	}
+
+	private function isLimited(string $hash): bool {
+		if ($this->frequency <= 0) {
+			return false;
+		}
+
+		$lastRun = Yii::$app->cache->get($hash);
+		if ($lastRun > 0) {
+			return time() - $lastRun < $this->frequency;
+		}
+
+		return false;
+	}
+
+	private function updateLimit(string $hash): void {
+		Yii::$app->cache->set($hash, time(), 31 * 24 * 60 * 60);
 	}
 }

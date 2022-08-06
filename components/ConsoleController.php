@@ -31,4 +31,8 @@ abstract class ConsoleController extends Controller {
 
 		return parent::beforeAction($action);
 	}
+
+	protected function releaseLock(): void {
+		Yii::$app->mutex->release(__CLASS__);
+	}
 }
