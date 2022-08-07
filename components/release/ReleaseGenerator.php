@@ -49,7 +49,6 @@ abstract class ReleaseGenerator {
 	use DontSet;
 
 	protected $versionTemplate = 'Major.Minor.Patch';
-	protected $skipPatch = false;
 
 	private $subsplit;
 	private $repository;
@@ -136,11 +135,7 @@ abstract class ReleaseGenerator {
 				$parts['Patch']++;
 			}
 
-			$version = strtr($this->versionTemplate, $parts);
-			if ($this->skipPatch && $parts['Patch'] === 0) {
-				$version = substr($version, 0, -2);
-			}
-			$this->nextVersion = $version;
+			$this->nextVersion = strtr($this->versionTemplate, $parts);
 		}
 
 		return $this->nextVersion;
@@ -153,7 +148,8 @@ abstract class ReleaseGenerator {
 			}
 		}
 
-		return false;
+		// If template does not have patch fragment treat all changes as minor releases. This is useful for pre-1.0.0 versions.
+		return strpos($this->versionTemplate, '.Patch') === false;
 	}
 
 	protected function isMajorUpdate(): bool {

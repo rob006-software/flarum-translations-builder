@@ -28,13 +28,7 @@ use function strncmp;
  */
 final class PolishReleaseGenerator extends ReleaseGenerator {
 
-	protected $versionTemplate = 'v0.Major.Minor.Patch';
-	protected $skipPatch = true;
-
-	protected function isMinorUpdate(): bool {
-		// switch to strict semver
-		return true;
-	}
+	protected $versionTemplate = 'v0.Major.Minor';
 
 	protected function generateChangelogEntryContent(): string {
 		$added = [];
@@ -148,7 +142,7 @@ final class PolishReleaseGenerator extends ReleaseGenerator {
 	protected function getCoreChanges(): array {
 		$coreChanges = parent::getCoreChanges();
 		$changes = $this->getRepository()->getChangesFrom($this->getPreviousVersion());
-		// treat changes inside of `less/` dir as styles changes
+		// treat changes inside `less/` dir as styles changes
 		foreach ($changes as $file => $changeType) {
 			if (strncmp('less/', $file, 5) === 0) {
 				$coreChanges['config.css'] = Repository::CHANGE_MODIFIED;
