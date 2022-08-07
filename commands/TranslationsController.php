@@ -15,8 +15,6 @@ namespace app\commands;
 
 use app\components\ConsoleController;
 use app\components\translations\TranslationsImporter;
-use app\models\Repository;
-use app\models\Translations;
 use Yii;
 
 /**
@@ -27,13 +25,6 @@ use Yii;
 final class TranslationsController extends ConsoleController {
 
 	public $defaultAction = 'update';
-
-	public $update = true;
-	public $commit = false;
-	public $push = false;
-	public $verbose = false;
-	/** @var int */
-	public $frequency;
 
 	public function options($actionID) {
 		return array_merge(parent::options($actionID), [
@@ -98,53 +89,5 @@ final class TranslationsController extends ConsoleController {
 				'{source}' => $source,
 			])
 		);
-	}
-
-	private function getTranslations(string $configFile): Translations {
-		$translations = new Translations(
-			Yii::$app->params['translationsRepository'],
-			null,
-			require Yii::getAlias($configFile)
-		);
-		if ($this->update) {
-			$output = $translations->getRepository()->update();
-			if ($this->verbose) {
-				echo $output;
-			}
-		}
-
-		return $translations;
-	}
-
-	private function postProcessRepository(Repository $repository, string $commitMessage): void {
-		if ($this->commit || $this->push) {
-			$output = $repository->commit($commitMessage);
-			if ($this->verbose) {
-				echo $output;
-			}
-		}
-		if ($this->push) {
-			$output = $repository->push();
-			if ($this->verbose) {
-				echo $output;
-			}
-		}
-	}
-
-	private function isLimited(string $hash): bool {
-		if ($this->frequency <= 0) {
-			return false;
-		}
-
-		$lastRun = Yii::$app->cache->get($hash);
-		if ($lastRun > 0) {
-			return time() - $lastRun < $this->frequency;
-		}
-
-		return false;
-	}
-
-	private function updateLimit(string $hash): void {
-		Yii::$app->cache->set($hash, time(), 31 * 24 * 60 * 60);
 	}
 }

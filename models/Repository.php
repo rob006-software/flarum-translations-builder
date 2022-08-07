@@ -75,6 +75,8 @@ class Repository {
 		if ($this->branch !== null) {
 			$output .= $this->git->checkout($this->branch);
 		}
+
+		$output .= $this->git->clean('-fd'); // make sure to clean all uncommitted changes
 		$output .= $this->git->pull();
 
 		return $output;

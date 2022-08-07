@@ -14,8 +14,6 @@ declare(strict_types=1);
 namespace app\commands;
 
 use app\components\ConsoleController;
-use app\models\Translations;
-use Yii;
 use yii\console\ExitCode;
 use function array_merge;
 
@@ -28,8 +26,6 @@ final class ReleaseController extends ConsoleController {
 
 	public $defaultAction = 'release';
 
-	public $update = true;
-	public $verbose = false;
 	public $draft = false;
 	/** @var string */
 	public $previousVersion = '';
@@ -70,21 +66,5 @@ final class ReleaseController extends ConsoleController {
 		}
 
 		echo $generator->getAnnouncement();
-	}
-
-	private function getTranslations(string $configFile): Translations {
-		$translations = new Translations(
-			Yii::$app->params['translationsRepository'],
-			null,
-			require Yii::getAlias($configFile)
-		);
-		if ($this->update) {
-			$output = $translations->getRepository()->update();
-			if ($this->verbose) {
-				echo $output;
-			}
-		}
-
-		return $translations;
 	}
 }

@@ -21,7 +21,6 @@ use app\models\Translations;
 use Yii;
 use yii\base\Exception;
 use function array_merge;
-use function time;
 
 /**
  * Class WeblateController.
@@ -37,16 +36,11 @@ class WeblateController extends ConsoleController {
 		0 => WeblateApi::PRIORITY_VERY_LOW,
 	];
 
-	public $update = true;
-	public $verbose = false;
-	/** @var int */
-	public $frequency;
-
 	public function beforeAction($action) {
 		// we release standard repository lock at the end of `getTranslations()`, so we need additional lock in order to
 		// avoid concurrent executions of the same command
 		if (!Yii::$app->mutex->acquire(__CLASS__ . '#' . $action->id, 900)) {
-			throw new Exception('Cannot acquire action lock.');
+			throw new Exception("Cannot acquire for {$action->getUniqueId()} action.");
 		}
 
 		return parent::beforeAction($action);
@@ -108,37 +102,10 @@ class WeblateController extends ConsoleController {
 		return WeblateApi::PRIORITY_VERY_LOW;
 	}
 
-	private function getTranslations(string $configFile): Translations {
-		$translations = new Translations(
-			Yii::$app->params['translationsRepository'],
-			null,
-			require Yii::getAlias($configFile)
-		);
-		if ($this->update) {
-			$output = $translations->getRepository()->update();
-			if ($this->verbose) {
-				echo $output;
-			}
-		}
-		$this->releaseLock();
+	protected function getTranslations(string $configFile): Translations {
+		$translations = parent::getTranslations($configFile);
+		Yii::$app->locks->releaseRepoLock($translations->getRepository()->getPath());
 
 		return $translations;
-	}
-
-	private function isLimited(string $hash): bool {
-		if ($this->frequency <= 0) {
-			return false;
-		}
-
-		$lastRun = Yii::$app->cache->get($hash);
-		if ($lastRun > 0) {
-			return time() - $lastRun < $this->frequency;
-		}
-
-		return false;
-	}
-
-	private function updateLimit(string $hash): void {
-		Yii::$app->cache->set($hash, time(), 31 * 24 * 60 * 60);
 	}
 }

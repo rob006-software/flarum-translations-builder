@@ -19,7 +19,6 @@ use app\components\extensions\exceptions\UnprocessableExtensionExceptionInterfac
 use app\components\extensions\PendingSummaryGenerator;
 use app\components\extensions\PullRequestGenerator;
 use app\models\ForkRepository;
-use app\models\Repository;
 use app\models\Translations;
 use Yii;
 use function array_filter;
@@ -47,13 +46,7 @@ use const JSON_UNESCAPED_UNICODE;
 final class ExtensionsController extends ConsoleController {
 
 	public $removeOutdated = false;
-	public $update = true;
-	public $commit = false;
-	public $push = false;
-	public $verbose = false;
 	public $useCache = false;
-	/** @var int */
-	public $frequency;
 
 	public function options($actionID) {
 		if ($actionID === 'update-cache') {
@@ -233,57 +226,5 @@ final class ExtensionsController extends ConsoleController {
 		$this->commitRepository($translations->getRepository(), 'Update cache for premium extensions.');
 		$this->pushRepository($translations->getRepository());
 		$this->updateLimit(__METHOD__);
-	}
-
-	private function getTranslations(string $configFile): Translations {
-		$translations = new Translations(
-			Yii::$app->params['translationsRepository'],
-			null,
-			require Yii::getAlias($configFile)
-		);
-		if ($this->update) {
-			$output = $translations->getRepository()->update();
-			if ($this->verbose) {
-				echo $output;
-			}
-		}
-
-		return $translations;
-	}
-
-	/* @noinspection PhpSameParameterValueInspection */
-	private function commitRepository(Repository $repository, string $commitMessage): void {
-		if ($this->commit || $this->push) {
-			$output = $repository->commit($commitMessage);
-			if ($this->verbose) {
-				echo $output;
-			}
-		}
-	}
-
-	private function pushRepository(Repository $repository): void {
-		if ($this->push) {
-			$output = $repository->push();
-			if ($this->verbose) {
-				echo $output;
-			}
-		}
-	}
-
-	private function isLimited(string $hash): bool {
-		if ($this->frequency <= 0) {
-			return false;
-		}
-
-		$lastRun = Yii::$app->cache->get($hash);
-		if ($lastRun > 0) {
-			return time() - $lastRun < $this->frequency;
-		}
-
-		return false;
-	}
-
-	private function updateLimit(string $hash): void {
-		Yii::$app->cache->set($hash, time(), 31 * 24 * 60 * 60);
 	}
 }

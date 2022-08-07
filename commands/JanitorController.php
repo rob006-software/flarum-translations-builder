@@ -20,10 +20,8 @@ use app\components\extensions\exceptions\UnprocessableExtensionExceptionInterfac
 use app\models\Extension;
 use app\models\ForkRepository;
 use app\models\PremiumExtension;
-use app\models\Translations;
 use Yii;
 use yii\base\InvalidConfigException;
-use yii\console\Controller;
 use yii\console\ExitCode;
 use yii\helpers\Console;
 use yii\helpers\FileHelper;
@@ -46,8 +44,6 @@ use function unlink;
  */
 final class JanitorController extends ConsoleController {
 
-	public $update = true;
-	public $verbose = false;
 	public $useCache = false;
 
 	public function options($actionID) {
@@ -335,21 +331,5 @@ final class JanitorController extends ConsoleController {
 				unlink($file);
 			}
 		}
-	}
-
-	private function getTranslations(string $configFile): Translations {
-		$translations = new Translations(
-			Yii::$app->params['translationsRepository'],
-			null,
-			require Yii::getAlias($configFile)
-		);
-		if ($this->update) {
-			$output = $translations->getRepository()->update();
-			if ($this->verbose) {
-				echo $output;
-			}
-		}
-
-		return $translations;
 	}
 }

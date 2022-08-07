@@ -17,6 +17,7 @@ use app\components\ExtiverseApi;
 use app\components\FrequencyLimiter;
 use app\components\GithubApi;
 use app\components\GitlabApi;
+use app\components\locks\Locker;
 use app\components\weblate\WeblateApi;
 use yii\caching\ArrayCache;
 use yii\caching\FileCache;
@@ -126,6 +127,9 @@ return [
 		],
 		'stats' => [
 			'class' => StatsRepository::class,
+		],
+		'locks' => [
+			'class' => Locker::class,
 		],
 	],
 	'params' => [
