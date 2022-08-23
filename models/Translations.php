@@ -87,7 +87,7 @@ final class Translations {
 	public function __construct(string $repository, ?string $branch, array $config) {
 		$this->hash = md5(json_encode($config, JSON_THROW_ON_ERROR));
 		Yii::$app->locks->acquireRepoLock($config['dir']);
-		$this->repository = new Repository($repository, $branch, $config['dir']);
+		$this->repository = [$repository, $branch, $config['dir']];
 		$this->dir = $config['dir'];
 		$this->sourcesDir = $config['sourcesDir'];
 		$this->translationsDir = $config['translationsDir'];
@@ -191,6 +191,18 @@ final class Translations {
 		return $this->subsplits[$id];
 	}
 
+	public function findSubsplit(string $gitUrl, string $branch): ?string {
+		foreach ($this->subsplits as $id => $subsplit) {
+			if ($subsplit instanceof Subsplit) {
+				if ($subsplit->getRepositoryUrl() === $gitUrl && $subsplit->getRepository()->getBranch() === $branch) {
+					return $id;
+				}
+			} elseif ($subsplit['repository'] === $gitUrl && $subsplit['branch'] === $branch) {
+				return $id;
+			}
+		}
+	}
+
 	/**
 	 * @return string[]
 	 */
@@ -211,6 +223,9 @@ final class Translations {
 	}
 
 	public function getRepository(): Repository {
+		if (is_array($this->repository)) {
+			$this->repository = new Repository(...$this->repository);
+		}
 		return $this->repository;
 	}
 

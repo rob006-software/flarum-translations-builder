@@ -40,7 +40,7 @@ class ReleasePullRequestGenerator {
 	use DontGet;
 	use DontSet;
 
-	private const MAINTAINER_ASSOCIATIONS = [
+	public const MAINTAINER_ASSOCIATIONS = [
 		'OWNER',
 		'MEMBER',
 		'COLLABORATOR',

@@ -11,11 +11,18 @@
 
 declare(strict_types=1);
 
+use yii\web\JsonParser;
+
 /**
  * Configuration adjustments for web application.
  */
 return [
 	'id' => 'app-web',
 	'components' => [
+		'request' => [
+			'parsers' => [
+				'application/json' => JsonParser::class,
+			],
+		],
 	],
 ];

@@ -24,6 +24,7 @@ use yii\caching\FileCache;
 use yii\db\Connection;
 use yii\log\FileTarget;
 use yii\mutex\FileMutex;
+use yii\queue\file\Queue as FileQueue;
 use yii\swiftmailer\Mailer;
 
 error_reporting(-1);
@@ -35,6 +36,7 @@ return [
 	'basePath' => dirname(__DIR__),
 	'bootstrap' => [
 		'log',
+		'queue',
 	],
 	'aliases' => [
 		'@bower' => '@vendor/bower-asset',
@@ -103,6 +105,12 @@ return [
 			'showScriptName' => false,
 			'rules' => [
 			],
+		],
+		'queue' => [
+			'class' => FileQueue::class,
+			'path' => '@runtime/queue',
+			'ttr' => 900,
+			'attempts' => 10,
 		],
 		'mutex' => [
 			'class' => FileMutex::class,
