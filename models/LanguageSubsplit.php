@@ -43,7 +43,7 @@ final class LanguageSubsplit extends Subsplit {
 		string $branch,
 		string $path,
 		?array $components,
-		?string $releaseGenerator = null
+		$releaseGenerator = null
 	) {
 		$this->language = $language;
 

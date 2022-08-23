@@ -133,6 +133,7 @@ return [
 		],
 	],
 	'params' => [
+		'puppetMaster' => 'rob006',
 		'repository' => 'git@github.com:rob006-software/flarum-translations-builder.git',
 		'translationsRepository' => 'git@github.com:rob006-software/flarum-translations.git',
 		'translationsForkRepository' => 'git@github.com:robbot006/flarum-translations.git',

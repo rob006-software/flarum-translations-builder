@@ -17,7 +17,7 @@ use app\components\ConsoleController;
 use app\components\extensions\exceptions\SoftFailureInterface;
 use app\components\extensions\exceptions\UnprocessableExtensionExceptionInterface;
 use app\components\extensions\PendingSummaryGenerator;
-use app\components\extensions\PullRequestGenerator;
+use app\components\extensions\NewExtensionPullRequestGenerator;
 use app\models\ForkRepository;
 use app\models\Translations;
 use Yii;
@@ -129,13 +129,14 @@ final class ExtensionsController extends ConsoleController {
 			}
 		}
 
+		Yii::$app->locks->acquireRepoLock(APP_ROOT . '/runtime/translations-fork');
 		$repository = new ForkRepository(
 			Yii::$app->params['translationsForkRepository'],
 			Yii::$app->params['translationsRepository'],
 			null,
 			APP_ROOT . '/runtime/translations-fork'
 		);
-		$generator = new PullRequestGenerator($repository);
+		$generator = new NewExtensionPullRequestGenerator($repository);
 		$generator->generateForNewExtensions($extensions, $limit);
 
 		$this->updatePendingExtensionsList($translations, $repository);
@@ -150,6 +151,7 @@ final class ExtensionsController extends ConsoleController {
 			return;
 		}
 
+		Yii::$app->locks->acquireRepoLock(APP_ROOT . '/runtime/translations-fork');
 		$repository = new ForkRepository(
 			Yii::$app->params['translationsForkRepository'],
 			Yii::$app->params['translationsRepository'],

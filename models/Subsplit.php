@@ -52,7 +52,7 @@ abstract class Subsplit {
 		string $branch,
 		string $path,
 		?array $components,
-		?string $releaseGenerator = null
+		$releaseGenerator = null
 	) {
 		$this->id = $id;
 		$this->path = $path;
@@ -60,6 +60,7 @@ abstract class Subsplit {
 		$this->releaseGenerator = $releaseGenerator;
 		$this->repositoryUrl = $repository;
 		$repoDirectory = $id . '__' . Inflector::slug($repository);
+		Yii::$app->locks->acquireRepoLock(APP_ROOT . "/runtime/subsplits/$repoDirectory");
 		$this->repository = new Repository($repository, $branch, APP_ROOT . "/runtime/subsplits/$repoDirectory");
 	}
 
@@ -96,7 +97,8 @@ abstract class Subsplit {
 			throw new InvalidConfigException('$releaseGenerator is not configured for this subsplit.');
 		}
 
-		return new $this->releaseGenerator($this);
+		/* @noinspection PhpIncompatibleReturnTypeInspection */
+		return Yii::createObject($this->releaseGenerator, [$this]);
 	}
 
 	/**
@@ -124,7 +126,7 @@ abstract class Subsplit {
 		$authors = [];
 		foreach ($this->getSourcesPaths($translations) as $path) {
 			if ($lastCommit === null) {
-				$firstCommit = $translations->getRepository()->getFirstCommitHash();
+				$firstCommit = Repository::ZERO_COMMIT_HASH;
 				$response = $translations->getRepository()
 					->getShortlog('-sne', '--no-merges', "$firstCommit..HEAD", '--', $path);
 			} else {

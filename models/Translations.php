@@ -86,6 +86,7 @@ final class Translations {
 
 	public function __construct(string $repository, ?string $branch, array $config) {
 		$this->hash = md5(json_encode($config, JSON_THROW_ON_ERROR));
+		Yii::$app->locks->acquireRepoLock($config['dir']);
 		$this->repository = new Repository($repository, $branch, $config['dir']);
 		$this->dir = $config['dir'];
 		$this->sourcesDir = $config['sourcesDir'];

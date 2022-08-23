@@ -77,6 +77,7 @@ final class JanitorController extends ConsoleController {
 			}
 		});
 
+		Yii::$app->locks->acquireRepoLock(APP_ROOT . '/runtime/translations-fork');
 		$repository = new ForkRepository(
 			Yii::$app->params['translationsForkRepository'],
 			Yii::$app->params['translationsRepository'],

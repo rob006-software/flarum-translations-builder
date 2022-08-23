@@ -52,7 +52,6 @@ abstract class ConsoleController extends Controller {
 
 	protected function getTranslations(string $configFile): Translations {
 		$config = require Yii::getAlias($configFile);
-		Yii::$app->locks->acquireRepoLock($config['dir']);
 		$translations = new Translations(Yii::$app->params['translationsRepository'], null, $config);
 		if ($this->update) {
 			$output = $translations->getRepository()->update();

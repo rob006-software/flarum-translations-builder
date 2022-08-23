@@ -43,6 +43,7 @@ final class SelfUpdateController extends ConsoleController {
 		$process->mustRun();
 
 		if ($this->update) {
+			Yii::$app->locks->acquireRepoLock(APP_ROOT . '/translations');
 			$translationsRepository = new Repository(Yii::$app->params['translationsRepository'], 'master', APP_ROOT . '/translations');
 			$translationsRepository->update();
 		}
