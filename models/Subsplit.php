@@ -52,7 +52,7 @@ abstract class Subsplit {
 		string $branch,
 		string $path,
 		?array $components,
-		?string $releaseGenerator = null
+		$releaseGenerator = null
 	) {
 		$this->id = $id;
 		$this->path = $path;
@@ -96,7 +96,8 @@ abstract class Subsplit {
 			throw new InvalidConfigException('$releaseGenerator is not configured for this subsplit.');
 		}
 
-		return new $this->releaseGenerator($this);
+		/* @noinspection PhpIncompatibleReturnTypeInspection */
+		return Yii::createObject($this->releaseGenerator, [$this]);
 	}
 
 	/**
