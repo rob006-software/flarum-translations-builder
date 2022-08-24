@@ -96,6 +96,10 @@ abstract class Subsplit {
 
 	abstract public function getReadmeGenerator(Translations $translations): ReadmeGenerator;
 
+	public function hasReleaseGenerator(): bool {
+		return $this->releaseGenerator !== null;
+	}
+
 	public function createReleaseGenerator(): ReleaseGenerator {
 		if ($this->releaseGenerator === null) {
 			throw new InvalidConfigException('$releaseGenerator is not configured for this subsplit.');

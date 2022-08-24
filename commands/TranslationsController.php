@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace app\commands;
 
 use app\components\ConsoleController;
+use app\components\release\ReleasePullRequestGenerator;
 use app\components\translations\TranslationsImporter;
 use Yii;
 
@@ -73,6 +74,10 @@ final class TranslationsController extends ConsoleController {
 				$subsplit->processCommitMessage($translations, 'Sync translations with main repository.')
 			);
 			$subsplit->markAsProcessed($translations);
+			if ($subsplit->hasReleaseGenerator()) {
+				(new ReleasePullRequestGenerator($subsplit))->generate();
+			}
+			Yii::$app->locks->releaseRepoLock($subsplit->getRepository()->getPath());
 		}
 		$this->updateLimit($token);
 	}
