@@ -25,6 +25,7 @@ use yii\helpers\Inflector;
 use function array_keys;
 use function arsort;
 use function basename;
+use function is_array;
 use function preg_match;
 
 /**
@@ -60,11 +61,14 @@ abstract class Subsplit {
 		$this->releaseGenerator = $releaseGenerator;
 		$this->repositoryUrl = $repository;
 		$repoDirectory = $id . '__' . Inflector::slug($repository);
-		Yii::$app->locks->acquireRepoLock(APP_ROOT . "/runtime/subsplits/$repoDirectory");
-		$this->repository = new Repository($repository, $branch, APP_ROOT . "/runtime/subsplits/$repoDirectory");
+		$this->repository = [$repository, $branch, APP_ROOT . "/runtime/subsplits/$repoDirectory"];
 	}
 
 	public function getRepository(): Repository {
+		if (is_array($this->repository)) {
+			Yii::$app->locks->acquireRepoLock($this->repository[2]);
+			$this->repository = new Repository(...$this->repository);
+		}
 		return $this->repository;
 	}
 

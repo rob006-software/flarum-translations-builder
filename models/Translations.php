@@ -86,7 +86,6 @@ final class Translations {
 
 	public function __construct(string $repository, ?string $branch, array $config) {
 		$this->hash = md5(json_encode($config, JSON_THROW_ON_ERROR));
-		Yii::$app->locks->acquireRepoLock($config['dir']);
 		$this->repository = [$repository, $branch, $config['dir']];
 		$this->dir = $config['dir'];
 		$this->sourcesDir = $config['sourcesDir'];
@@ -224,6 +223,7 @@ final class Translations {
 
 	public function getRepository(): Repository {
 		if (is_array($this->repository)) {
+			Yii::$app->locks->acquireRepoLock($this->repository[2]);
 			$this->repository = new Repository(...$this->repository);
 		}
 		return $this->repository;
