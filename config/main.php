@@ -18,6 +18,7 @@ use app\components\FrequencyLimiter;
 use app\components\GithubApi;
 use app\components\GitlabApi;
 use app\components\locks\Locker;
+use app\components\queue\QueueCommand;
 use app\components\weblate\WeblateApi;
 use yii\caching\ArrayCache;
 use yii\caching\FileCache;
@@ -111,6 +112,7 @@ return [
 			'path' => '@runtime/queue',
 			'ttr' => 900,
 			'attempts' => 10,
+			'commandClass' => QueueCommand::class,
 		],
 		'mutex' => [
 			'class' => FileMutex::class,
