@@ -210,7 +210,10 @@ class Repository {
 		$branches = $this->getWorkingCopy()->getBranches()->all();
 		foreach ($branches as $branch) {
 			if (strncmp($branch, 'remotes/origin/', 15) !== 0 && !in_array("remotes/origin/$branch", $branches, true)) {
-				$output .= $this->getWorkingCopy()->branch('-D', $branch);
+				// ignore all other remotes except origin
+				if (strncmp($branch, 'remotes/', 8) !== 0) {
+					$output .= $this->getWorkingCopy()->branch('-D', $branch);
+				}
 			} elseif (
 				strncmp($branch, 'remotes/origin/', 15) === 0 && strpos($branch, ' -> ') === false
 				&& !in_array(substr($branch, 15), $branches, true)
