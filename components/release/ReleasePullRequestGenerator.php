@@ -65,6 +65,9 @@ class ReleasePullRequestGenerator {
 
 	public function generate(): void {
 		$this->repository->syncBranchesWithRemote();
+		if (!$this->generator->hasChanges()) {
+			return;
+		}
 		$newChangelog = $this->generator->generateChangelog(true);
 		$branchName = "release/{$this->repository->getBranch()}";
 		if ($this->repository->hasBranch($branchName)) {

@@ -62,6 +62,8 @@ class ReleaseGenerator extends BaseObject {
 	private $locale;
 	private $fallbackLocale;
 
+	private $_changes;
+
 	public function __construct(Subsplit $subsplit, array $config = []) {
 		$this->subsplit = $subsplit;
 		$this->repository = $subsplit->getRepository();
@@ -307,10 +309,9 @@ class ReleaseGenerator extends BaseObject {
 	}
 
 	protected function getChangedExtensions(): array {
-		$changes = $this->repository->getChangesFrom($this->getPreviousVersion());
 		$changedExtensions = [];
 		$prefix = trim($this->subsplit->getPath(), '/') . '/';
-		foreach ($changes as $file => $changeType) {
+		foreach ($this->getChangedFiles() as $file => $changeType) {
 			if (
 				strncmp($file, $prefix, strlen($prefix)) === 0
 				&& substr($file, -4) === '.yml'
@@ -324,10 +325,9 @@ class ReleaseGenerator extends BaseObject {
 	}
 
 	protected function getCoreChanges(): array {
-		$changes = $this->repository->getChangesFrom($this->getPreviousVersion());
 		$coreChanges = [];
 		$prefix = trim($this->subsplit->getPath(), '/') . '/';
-		foreach ($changes as $file => $changeType) {
+		foreach ($this->getChangedFiles() as $file => $changeType) {
 			if (in_array($file, [
 				"{$prefix}core.yml",
 				"{$prefix}validation.yml",
@@ -339,6 +339,18 @@ class ReleaseGenerator extends BaseObject {
 		}
 
 		return $coreChanges;
+	}
+
+	public function hasChanges(): bool {
+		return !empty($this->getChangedExtensions()) || !empty($this->getCoreChanges());
+	}
+
+	protected function getChangedFiles(): array {
+		if ($this->_changes === null) {
+			$this->_changes = $this->repository->getChangesFrom($this->getPreviousVersion());
+		}
+
+		return $this->_changes;
 	}
 
 	public function release(bool $draft = false): array {
