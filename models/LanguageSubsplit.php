@@ -43,11 +43,13 @@ final class LanguageSubsplit extends Subsplit {
 		string $branch,
 		string $path,
 		?array $components,
-		$releaseGenerator = null
+		?array $releaseGenerator,
+		array $localeConfig,
+		array $maintainers
 	) {
 		$this->language = $language;
 
-		parent::__construct($id, $repository, $branch, $path, $components, $releaseGenerator);
+		parent::__construct($id, $repository, $branch, $path, $components, $releaseGenerator, $localeConfig, $maintainers);
 	}
 
 	public function split(Translations $translations): void {
@@ -114,8 +116,8 @@ final class LanguageSubsplit extends Subsplit {
 		return $this->language;
 	}
 
-	public function getReadmeGenerator(Translations $translations): ReadmeGenerator {
-		return new LanguageSubsplitReadmeGenerator($this->getLanguage());
+	public function createReadmeGenerator(Translations $translations): ReadmeGenerator {
+		return new LanguageSubsplitReadmeGenerator($this->getLanguage(), $this->getLocale());
 	}
 
 	protected function getSourcesPaths(Translations $translations): array {

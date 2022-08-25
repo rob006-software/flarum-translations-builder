@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace app\components\readme;
 
 use app\models\Extension;
+use app\models\SubsplitLocale;
 
 /**
  * Class LanguageSubsplitReadmeGenerator.
@@ -23,9 +24,11 @@ use app\models\Extension;
 final class LanguageSubsplitReadmeGenerator extends ReadmeGenerator {
 
 	private $language;
+	private $locale;
 
-	public function __construct(string $language) {
+	public function __construct(string $language, SubsplitLocale $locale) {
 		$this->language = $language;
+		$this->locale = $locale;
 	}
 
 	public function generate(): string {
@@ -34,10 +37,10 @@ final class LanguageSubsplitReadmeGenerator extends ReadmeGenerator {
 			return $a->getPackageName() <=> $b->getPackageName();
 		});
 
-		$output = "\n\n| Extension | Status |\n| --- | --- |\n";
+		$output = "\n\n| {$this->locale->t('readme.status-table.header-extension')} | {$this->locale->t('readme.status-table.header-status')} |\n| --- | --- |\n";
 		foreach ($extensions as $extension) {
 			$output .= "| [`{$extension->getPackageName()}`]({$extension->getRepositoryUrl()}) ";
-			$icon = "![Translation status](https://weblate.rob006.net/widgets/flarum/{$this->language}/{$extension->getId()}/svg-badge.svg)";
+			$icon = "![{$this->locale->t('readme.status-table.label-translation-status')}](https://weblate.rob006.net/widgets/flarum/{$this->language}/{$extension->getId()}/svg-badge.svg)";
 			$output .= "| [$icon](https://weblate.rob006.net/projects/flarum/{$extension->getId()}/{$this->language}/) ";
 			$output .= "|\n";
 		}

@@ -18,7 +18,6 @@ use app\models\Repository;
 use app\models\Subsplit;
 use Composer\Semver\Semver;
 use RuntimeException;
-use Webmozart\Assert\Assert;
 use Yii;
 use yii\base\BaseObject;
 use yii\helpers\ArrayHelper;
@@ -59,9 +58,6 @@ class ReleaseGenerator extends BaseObject {
 	private $nextVersion;
 	private $changelogEntryContent;
 
-	private $locale;
-	private $fallbackLocale;
-
 	private $_changes;
 
 	public function __construct(Subsplit $subsplit, array $config = []) {
@@ -72,21 +68,8 @@ class ReleaseGenerator extends BaseObject {
 		parent::__construct($config);
 	}
 
-	public function init(): void {
-		parent::init();
-
-		if ($this->localePath !== null) {
-			$this->locale = json_decode(file_get_contents($this->localePath), true, 512, JSON_THROW_ON_ERROR);
-		} else {
-			$this->locale = [];
-		}
-		$this->fallbackLocale = json_decode(file_get_contents($this->fallbackLocalePath), true, 512, JSON_THROW_ON_ERROR);
-	}
-
 	protected function t(string $key, array $params = []): string {
-		$string = ArrayHelper::getValue($this->locale, $key) ?? ArrayHelper::getValue($this->fallbackLocale, $key);
-		Assert::notNull($string);
-		return strtr($string, $params);
+		return $this->getSubsplit()->getLocale()->t($key, $params);
 	}
 
 	public function getRepository(): Repository {

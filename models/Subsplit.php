@@ -46,6 +46,8 @@ abstract class Subsplit {
 	private $components;
 	private $releaseGenerator;
 	private $repositoryUrl;
+	private $locale;
+	private $maintainers;
 
 	public function __construct(
 		string $id,
@@ -53,7 +55,9 @@ abstract class Subsplit {
 		string $branch,
 		string $path,
 		?array $components,
-		$releaseGenerator = null
+		?array $releaseGenerator,
+		array $localeConfig,
+		array $maintainers
 	) {
 		$this->id = $id;
 		$this->path = $path;
@@ -62,6 +66,7 @@ abstract class Subsplit {
 		$this->repositoryUrl = $repository;
 		$repoDirectory = $id . '__' . Inflector::slug($repository);
 		$this->repository = [$repository, $branch, APP_ROOT . "/runtime/subsplits/$repoDirectory"];
+		$this->locale = [$localeConfig['path'] ?? null, $localeConfig['fallbackPath']];
 	}
 
 	public function getRepository(): Repository {
@@ -74,6 +79,14 @@ abstract class Subsplit {
 
 	public function getRepositoryUrl(): string {
 		return $this->repositoryUrl;
+	}
+
+	public function getLocale(): SubsplitLocale {
+		if (is_array($this->locale)) {
+			$this->locale = new SubsplitLocale(...$this->locale);
+		}
+		/* @noinspection PhpIncompatibleReturnTypeInspection */
+		return $this->locale;
 	}
 
 	public function getId(): string {
@@ -94,7 +107,7 @@ abstract class Subsplit {
 
 	abstract public function split(Translations $translations): void;
 
-	abstract public function getReadmeGenerator(Translations $translations): ReadmeGenerator;
+	abstract public function createReadmeGenerator(Translations $translations): ReadmeGenerator;
 
 	public function hasReleaseGenerator(): bool {
 		return $this->releaseGenerator !== null;

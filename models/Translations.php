@@ -172,6 +172,10 @@ final class Translations {
 			/* @noinspection DegradedSwitchInspection */
 			switch ($config['type']) {
 				case LanguageSubsplit::TYPE:
+					$defaultLocaleConfig = [
+						'path' => $this->getDir() . "/config/subsplitsLocale/{$id}.json",
+						'fallbackPath' => $this->getDir() . '/config/subsplitsLocale/en.json',
+					];
 					$this->subsplits[$id] = new LanguageSubsplit(
 						$id,
 						$config['language'],
@@ -179,7 +183,9 @@ final class Translations {
 						$config['branch'],
 						$config['path'],
 						$config['components'] ?? null,
-						$config['releaseGenerator'] ?? null
+						$config['releaseGenerator'] ?? null,
+						($config['locale'] ?? []) + $defaultLocaleConfig,
+						$config['maintainers'] ?? []
 					);
 					break;
 				default:

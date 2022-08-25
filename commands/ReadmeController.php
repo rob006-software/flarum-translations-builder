@@ -144,7 +144,7 @@ final class ReadmeController extends ConsoleController {
 					strpos($readme, "<!-- {$group}-extensions-list-start -->") !== false
 					&& strpos($readme, "<!-- {$group}-extensions-list-stop -->") !== false
 				) {
-					$generator = $subsplit->getReadmeGenerator($translations);
+					$generator = $subsplit->createReadmeGenerator($translations);
 					foreach ($translations->getExtensionsComponents() as $component) {
 						if (
 							(!($subsplit instanceof LanguageSubsplit) || $component->isValidForLanguage($subsplit->getLanguage()))
