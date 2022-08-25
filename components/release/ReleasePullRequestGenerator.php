@@ -209,19 +209,25 @@ class ReleasePullRequestGenerator {
 
 	private function generatePullRequestBody(): string {
 		[$userName, $repoName] = Yii::$app->githubApi->explodeRepoUrl($this->subsplit->getRepositoryUrl());
-		$approvePrUrl = 'https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/reviewing-changes-in-pull-requests/approving-a-pull-request-with-required-reviews';
+		$approvePrUrl = 'https://github.com/rob006-software/flarum-translations/wiki/How-to-approve-release-pull-request';
 		return <<<MD
-			This is draft of changelog for `{$this->generator->getNextVersion()}` release.
+			This is a draft of changelog for the `{$this->generator->getNextVersion()}` release.
+			Here you can find all related translations changes: [{$this->generator->getPreviousVersion()}...{$this->repository->getBranch()}](https://github.com/$userName/$repoName/compare/{$this->generator->getPreviousVersion()}...{$this->repository->getBranch()}).
 			
-			If you [approve]($approvePrUrl) this pull request it will be automatically merged and new release will be tagged.
+			> ### ⚠️ Do not merge this pull request manually ⚠️
+			> 
+			> You should [approve]($approvePrUrl) this pull request instead. After approving, I will automatically update it (release date needs to be updated), merge, and tag a new release.
 			
-			Here you can see all changes in this release: [{$this->generator->getPreviousVersion()}...{$this->repository->getBranch()}](https://github.com/$userName/$repoName/compare/{$this->generator->getPreviousVersion()}...{$this->repository->getBranch()})
+			<details>
+			<summary>Show release notes preview</summary>
 			
-			## Release notes preview
+			## {$this->generator->getNextVersion()}
 			
 			<!-- release-notes-begin -->
 			{$this->generator->getChangelogEntryContent()}
 			<!-- release-notes-end -->
+			
+			</details>
 			MD;
 	}
 
