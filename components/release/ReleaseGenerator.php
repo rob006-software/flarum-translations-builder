@@ -13,21 +13,21 @@ declare(strict_types=1);
 
 namespace app\components\release;
 
+use app\models\Extension;
 use app\models\Repository;
 use app\models\Subsplit;
 use Composer\Semver\Semver;
-use Dont\DontCall;
-use Dont\DontCallStatic;
-use Dont\DontGet;
-use Dont\DontSet;
 use RuntimeException;
 use Yii;
+use yii\base\BaseObject;
+use yii\helpers\ArrayHelper;
 use function date;
 use function end;
 use function explode;
+use function file_exists;
 use function file_get_contents;
-use function file_put_contents;
 use function in_array;
+use function json_decode;
 use function ltrim;
 use function str_repeat;
 use function strlen;
@@ -35,67 +35,182 @@ use function strncmp;
 use function strpos;
 use function substr;
 use function trim;
+use const JSON_THROW_ON_ERROR;
 
 /**
  * Class ReleaseGenerator.
  *
  * @author Robert Korulczyk <robert@korulczyk.pl>
  */
-abstract class ReleaseGenerator {
+class ReleaseGenerator extends BaseObject {
 
-	use DontCall;
-	use DontCallStatic;
-	use DontGet;
-	use DontSet;
+	public $localePath;
+	public $fallbackLocalePath;
 
-	protected $versionTemplate = 'Major.Minor.Patch';
-	protected $skipPatch = false;
+	public $maintainers;
+
+	public $versionTemplate = 'Major.Minor.Patch';
 
 	private $subsplit;
 	private $repository;
 
-	private $previousVersion;
+	private $previousVersion = false;
 	private $nextVersion;
+	private $changelogEntryContent;
 
-	public function __construct(Subsplit $subsplit) {
+	private $_changes;
+
+	public function __construct(Subsplit $subsplit, array $config = []) {
 		$this->subsplit = $subsplit;
 		$this->repository = $subsplit->getRepository();
 		$this->repository->update();
+
+		parent::__construct($config);
 	}
 
-	protected function getRepository(): Repository {
+	protected function t(string $key, array $params = []): string {
+		return $this->getSubsplit()->getLocale()->t($key, $params);
+	}
+
+	public function getRepository(): Repository {
 		return $this->repository;
 	}
 
-	protected function getSubsplit(): Subsplit {
+	public function getSubsplit(): Subsplit {
 		return $this->subsplit;
 	}
 
-	public function generateChangelog(): string {
-		$oldVersion = ltrim($this->getPreviousVersion(), 'v');
-		$newVersion = ltrim($this->getNextVersion(), 'v');
-		$changelogPath = $this->repository->getPath() . '/CHANGELOG.md';
-		$oldChangelog = file_get_contents($changelogPath);
+	public function getChangelogPath(): string {
+		return $this->repository->getPath() . '/CHANGELOG.md';
+	}
 
-		$position = strpos($oldChangelog, "$oldVersion (");
+	public function generateChangelog(bool $draft = false): string {
+		$oldVersion = ltrim($this->getPreviousVersion() ?? $this->getZeroVersion(), 'v');
+		$newVersion = ltrim($this->getNextVersion(), 'v');
+		$changelogPath = $this->getChangelogPath();
+		if (file_exists($changelogPath)) {
+			$oldChangelog = file_get_contents($changelogPath);
+			$position = strpos($oldChangelog, "$oldVersion (");
+		} else {
+			$oldChangelog = "CHANGELOG\n=========\n\n\n";
+			$position = strlen($oldChangelog);
+		}
+
 		if ($position === false) {
 			throw new RuntimeException("Unable to locate '$oldVersion' in $changelogPath.");
 		}
 
-		$date = date('Y-m-d');
+		$date = $draft ? 'XXXX-XX-XX' : date('Y-m-d');
 		$versionHeader = "$newVersion ($date)";
 		$versionUnderline = str_repeat('-', strlen($versionHeader));
-		$newChangelog = substr($oldChangelog, 0, $position)
+		return substr($oldChangelog, 0, $position)
 			. "$versionHeader\n$versionUnderline\n\n"
-			. $this->generateChangelogEntryContent()
+			. $this->getChangelogEntryContent()
 			. substr($oldChangelog, $position);
-
-		file_put_contents($changelogPath, $newChangelog);
-
-		return $this->repository->getDiff();
 	}
 
-	abstract protected function generateChangelogEntryContent(): string;
+	public function setChangelogEntryContent(string $content): void {
+		$this->changelogEntryContent = $content;
+	}
+
+	public function getChangelogEntryContent(): string {
+		if ($this->changelogEntryContent !== null) {
+			return $this->changelogEntryContent;
+		}
+		$added = [];
+		$changed = [];
+		$removed = [];
+		foreach ($this->getChangedExtensions() as $extensionId => $changeType) {
+			if ($changeType === Repository::CHANGE_ADDED) {
+				$added[$extensionId] = Yii::$app->extensionsRepository->getExtension($extensionId, false);
+			} elseif ($changeType === Repository::CHANGE_MODIFIED) {
+				$changed[$extensionId] = Yii::$app->extensionsRepository->getExtension($extensionId, false);
+			} elseif ($changeType === Repository::CHANGE_DELETED) {
+				$removed[$extensionId] = Yii::$app->extensionsRepository->getExtension($extensionId, false);
+			}
+		}
+
+		$content = '';
+
+		if (!empty($this->getCoreChanges())) {
+			$content .= "**{$this->t('changelog.general-changes')}**:\n\n";
+			foreach ($this->getCoreChanges() as $file => $changeType) {
+				$label = $this->getCoreChangesLabels()[$file] ?? $this->t('changelog.updated-file', ['{file}' => $file]);
+				$content .= "* $label.\n";
+			}
+			$content .= "\n\n";
+		}
+
+		if (!empty($added)) {
+			$content .= "**{$this->t('changelog.extensions-added')}**:\n\n";
+			/* @var $extension Extension */
+			foreach ($added as $extension) {
+				$content .= "* [`{$extension->getPackageName()}`]({$extension->getRepositoryUrl()})\n";
+			}
+			$content .= "\n\n";
+		}
+		if (!empty($changed)) {
+			$content .= $this->isMajorUpdate()
+				? "**{$this->t('changelog.extensions-cleaned')}**:\n\n"
+				: "**{$this->t('changelog.extensions-updated')}**:\n\n";
+			/* @var $extension Extension */
+			foreach ($changed as $extension) {
+				$content .= "* [`{$extension->getPackageName()}`]({$extension->getRepositoryUrl()})\n";
+			}
+			$content .= "\n\n";
+		}
+		if (!empty($removed)) {
+			$content .= "**{$this->t('changelog.extensions-removed')}**:\n\n";
+			/* @var $extension Extension */
+			foreach ($removed as $id => $extension) {
+				if ($extension === null) {
+					$content .= "* `$id`\n";
+				} else {
+					$content .= "* [`{$extension->getPackageName()}`]({$extension->getRepositoryUrl()})\n";
+				}
+			}
+			$content .= "\n\n\n";
+		}
+
+		$old = $this->getPreviousVersion();
+		$new = $this->getNextVersion();
+		[$userName, $repoName] = Yii::$app->githubApi->explodeRepoUrl($this->subsplit->getRepositoryUrl());
+		/* @noinspection PhpStatementHasEmptyBodyInspection */
+		/* @noinspection MissingOrEmptyGroupStatementInspection */
+		if ($old === null) {
+			// this does not work - GitHub does not handle such compares
+			// $oldReference = Repository::ZERO_COMMIT_HASH;
+			//$content .= $this->t('changelog.all-changes', [
+			//	'{link}' => "[{$new}](https://github.com/rob006-software/flarum-lang-polish/compare/{$oldReference}...{$new})"
+			//]);
+			//$content .= "\n\n\n";
+		} else {
+			$content .= $this->t('changelog.all-changes', [
+				'{link}' => "[{$old}...{$new}](https://github.com/$userName/$repoName/compare/{$old}...{$new})",
+			]);
+			$content .= "\n\n\n";
+		}
+
+		$this->changelogEntryContent = $content;
+		return $this->changelogEntryContent;
+	}
+
+	private function getCoreChangesLabels(): array {
+		return [
+			'core.yml' => $this->isMajorUpdate()
+				? $this->t('changelog.cleaned-core', ['{version}' => $this->getSupportedFlarumVersion()])
+				: $this->t('changelog.updated-core'),
+			'validation.yml' => $this->isMajorUpdate()
+				? $this->t('changelog.cleaned-validation', ['{version}' => $this->getSupportedFlarumVersion()])
+				: $this->t('changelog.updated-validation'),
+			'config.js' => $this->t('changelog.updated-config-js'),
+			'config.css' => $this->t('changelog.updated-config-css'),
+		];
+	}
+
+	private function getSupportedFlarumVersion(): string {
+		return ltrim($this->getComposerJsonContent()['require']['flarum/core'], '~^');
+	}
 
 	public function commit(): string {
 		$output = $this->repository->commit("Update CHANGELOG.md for {$this->getNextVersion()} release.");
@@ -108,10 +223,10 @@ abstract class ReleaseGenerator {
 		$this->previousVersion = $value;
 	}
 
-	protected function getPreviousVersion(): string {
-		if ($this->previousVersion === null) {
+	public function getPreviousVersion(): ?string {
+		if ($this->previousVersion === false) {
 			$tags = Semver::sort($this->repository->getTags());
-			$this->previousVersion = end($tags);
+			$this->previousVersion = empty($tags) ? null : end($tags);
 		}
 
 		return $this->previousVersion;
@@ -121,10 +236,10 @@ abstract class ReleaseGenerator {
 		$this->nextVersion = $value;
 	}
 
-	protected function getNextVersion(): string {
+	public function getNextVersion(): string {
 		if ($this->nextVersion === null) {
 			$previous = $this->getPreviousVersion();
-			$parts = $this->tokenizeVersion($previous);
+			$parts = $this->tokenizeVersion($previous ?? $this->getZeroVersion());
 			if ($this->isMajorUpdate()) {
 				$parts['Major']++;
 				$parts['Minor'] = 0;
@@ -136,11 +251,7 @@ abstract class ReleaseGenerator {
 				$parts['Patch']++;
 			}
 
-			$version = strtr($this->versionTemplate, $parts);
-			if ($this->skipPatch && $parts['Patch'] === 0) {
-				$version = substr($version, 0, -2);
-			}
-			$this->nextVersion = $version;
+			$this->nextVersion = strtr($this->versionTemplate, $parts);
 		}
 
 		return $this->nextVersion;
@@ -153,7 +264,8 @@ abstract class ReleaseGenerator {
 			}
 		}
 
-		return false;
+		// If template does not have patch fragment treat all changes as minor releases. This is useful for pre-1.0.0 versions.
+		return strpos($this->versionTemplate, '.Patch') === false;
 	}
 
 	protected function isMajorUpdate(): bool {
@@ -180,10 +292,9 @@ abstract class ReleaseGenerator {
 	}
 
 	protected function getChangedExtensions(): array {
-		$changes = $this->repository->getChangesFrom($this->getPreviousVersion());
 		$changedExtensions = [];
 		$prefix = trim($this->subsplit->getPath(), '/') . '/';
-		foreach ($changes as $file => $changeType) {
+		foreach ($this->getChangedFiles() as $file => $changeType) {
 			if (
 				strncmp($file, $prefix, strlen($prefix)) === 0
 				&& substr($file, -4) === '.yml'
@@ -197,10 +308,9 @@ abstract class ReleaseGenerator {
 	}
 
 	protected function getCoreChanges(): array {
-		$changes = $this->repository->getChangesFrom($this->getPreviousVersion());
 		$coreChanges = [];
 		$prefix = trim($this->subsplit->getPath(), '/') . '/';
-		foreach ($changes as $file => $changeType) {
+		foreach ($this->getChangedFiles() as $file => $changeType) {
 			if (in_array($file, [
 				"{$prefix}core.yml",
 				"{$prefix}validation.yml",
@@ -214,12 +324,67 @@ abstract class ReleaseGenerator {
 		return $coreChanges;
 	}
 
+	public function hasChanges(): bool {
+		return !empty($this->getChangedExtensions()) || !empty($this->getCoreChanges());
+	}
+
+	protected function getChangedFiles(): array {
+		if ($this->_changes === null) {
+			$this->_changes = $this->repository->getChangesFrom($this->getPreviousVersion());
+		}
+
+		return $this->_changes;
+	}
+
 	public function release(bool $draft = false): array {
 		return Yii::$app->githubApi->createRelease($this->subsplit->getRepositoryUrl(), $this->getNextVersion(), [
 			'draft' => $draft,
-			'body' => trim($this->generateChangelogEntryContent()),
+			'name' => $this->getNextVersion(),
+			'body' => trim($this->getChangelogEntryContent()),
+			'target_commitish' => $this->repository->getBranch(),
 		]);
 	}
 
-	abstract public function getAnnouncement(): string;
+	public function getAnnouncement(): string {
+		[$userName, $repoName] = Yii::$app->githubApi->explodeRepoUrl($this->subsplit->getRepositoryUrl());
+		$command = $this->isMajorUpdate() ? 'require' : 'update';
+		$warning = $this->isMajorUpdate() ? "**{$this->t('announcement.major-warning')}**\n\n" : '';
+		$changes = trim($this->getChangelogEntryContent());
+
+		return <<<MD
+			## {$this->t('announcement.version', ['{version}' => "[`{$this->getNextVersion()}`](https://github.com/$userName/$repoName/releases/tag/{$this->getNextVersion()})"])}
+			
+			{$changes}
+			
+			{$this->t('announcement.to-update')}
+			
+			```console
+			composer $command {$this->getPackageName()}
+			php flarum cache:clear
+			```
+			$warning
+			MD;
+	}
+
+	protected function getZeroVersion(): string {
+		return strtr($this->versionTemplate, [
+			'Major' => 0,
+			'Minor' => 0,
+			'Patch' => 0,
+		]);
+	}
+
+	public function getPackageName(): string {
+		return $this->getComposerJsonContent()['name'];
+	}
+
+	public function getThreadUrl(): ?string {
+		$composerJson = $this->getComposerJsonContent();
+		$url = ArrayHelper::getValue($composerJson, 'extra.extiverse.discuss') ?? ArrayHelper::getValue($composerJson, 'extra.flagrow.discuss');
+		return !empty($url) ? $url : null;
+	}
+
+	protected function getComposerJsonContent(): array {
+		return json_decode(file_get_contents($this->getRepository()->getPath() . '/composer.json'), true, 512, JSON_THROW_ON_ERROR);
+	}
 }

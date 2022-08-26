@@ -14,10 +14,10 @@ declare(strict_types=1);
 namespace app\commands;
 
 use app\components\ConsoleController;
-use app\models\Translations;
-use Yii;
+use app\components\release\ReleasePullRequestGenerator;
 use yii\console\ExitCode;
 use function array_merge;
+use function file_put_contents;
 
 /**
  * Class ReleaseController.
@@ -28,8 +28,6 @@ final class ReleaseController extends ConsoleController {
 
 	public $defaultAction = 'release';
 
-	public $update = true;
-	public $verbose = false;
 	public $draft = false;
 	/** @var string */
 	public $previousVersion = '';
@@ -37,13 +35,43 @@ final class ReleaseController extends ConsoleController {
 	public $nextVersion = '';
 
 	public function options($actionID): array {
-		return array_merge(parent::options($actionID), [
+		$options = array_merge(parent::options($actionID), [
 			'update',
 			'verbose',
 			'draft',
 			'previousVersion',
 			'nextVersion',
 		]);
+		if (in_array($actionID, ['pr', 'release'], true)) {
+			$options = array_merge(parent::options($actionID), [
+				'previousVersion',
+				'nextVersion',
+			]);
+		}
+		if ($actionID === 'release') {
+			$options = array_merge(parent::options($actionID), [
+				'draft',
+			]);
+		}
+
+		return $options;
+	}
+
+	public function actionPr(string $subsplit, string $configFile = '@app/translations/config.php') {
+		$translations = $this->getTranslations($configFile);
+		$prGenerator = (new ReleasePullRequestGenerator($translations->getSubsplit($subsplit)));
+		if ($this->previousVersion !== '') {
+			$prGenerator->getGenerator()->setPreviousVersion($this->previousVersion);
+		}
+		if ($this->nextVersion !== '') {
+			$prGenerator->getGenerator()->setNextVersion($this->nextVersion);
+		}
+		$prGenerator->generate();
+	}
+
+	public function actionMerge(string $subsplit, string $configFile = '@app/translations/config.php') {
+		$translations = $this->getTranslations($configFile);
+		(new ReleasePullRequestGenerator($translations->getSubsplit($subsplit)))->merge();
 	}
 
 	public function actionRelease(string $subsplit, string $configFile = '@app/translations/config.php') {
@@ -56,7 +84,9 @@ final class ReleaseController extends ConsoleController {
 			$generator->setNextVersion($this->nextVersion);
 		}
 
-		echo $generator->generateChangelog();
+		$newChangelog = $generator->generateChangelog();
+		file_put_contents($generator->getChangelogPath(), $newChangelog);
+		echo $generator->getRepository()->getDiff();
 		if (!$this->confirm('OK?')) {
 			return ExitCode::UNSPECIFIED_ERROR;
 		}
@@ -70,21 +100,5 @@ final class ReleaseController extends ConsoleController {
 		}
 
 		echo $generator->getAnnouncement();
-	}
-
-	private function getTranslations(string $configFile): Translations {
-		$translations = new Translations(
-			Yii::$app->params['translationsRepository'],
-			null,
-			require Yii::getAlias($configFile)
-		);
-		if ($this->update) {
-			$output = $translations->getRepository()->update();
-			if ($this->verbose) {
-				echo $output;
-			}
-		}
-
-		return $translations;
 	}
 }

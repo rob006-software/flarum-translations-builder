@@ -86,7 +86,7 @@ final class Translations {
 
 	public function __construct(string $repository, ?string $branch, array $config) {
 		$this->hash = md5(json_encode($config, JSON_THROW_ON_ERROR));
-		$this->repository = new Repository($repository, $branch, $config['dir']);
+		$this->repository = [$repository, $branch, $config['dir']];
 		$this->dir = $config['dir'];
 		$this->sourcesDir = $config['sourcesDir'];
 		$this->translationsDir = $config['translationsDir'];
@@ -172,6 +172,10 @@ final class Translations {
 			/* @noinspection DegradedSwitchInspection */
 			switch ($config['type']) {
 				case LanguageSubsplit::TYPE:
+					$defaultLocaleConfig = [
+						'path' => $this->getDir() . "/config/subsplitsLocale/{$id}.json",
+						'fallbackPath' => $this->getDir() . '/config/subsplitsLocale/en.json',
+					];
 					$this->subsplits[$id] = new LanguageSubsplit(
 						$id,
 						$config['language'],
@@ -179,7 +183,9 @@ final class Translations {
 						$config['branch'],
 						$config['path'],
 						$config['components'] ?? null,
-						$config['releaseGenerator'] ?? null
+						$config['releaseGenerator'] ?? null,
+						($config['locale'] ?? []) + $defaultLocaleConfig,
+						$config['maintainers'] ?? []
 					);
 					break;
 				default:
@@ -188,6 +194,18 @@ final class Translations {
 		}
 
 		return $this->subsplits[$id];
+	}
+
+	public function findSubsplit(string $gitUrl, string $branch): ?string {
+		foreach ($this->subsplits as $id => $subsplit) {
+			if ($subsplit instanceof Subsplit) {
+				if ($subsplit->getRepositoryUrl() === $gitUrl && $subsplit->getRepository()->getBranch() === $branch) {
+					return $id;
+				}
+			} elseif ($subsplit['repository'] === $gitUrl && $subsplit['branch'] === $branch) {
+				return $id;
+			}
+		}
 	}
 
 	/**
@@ -210,6 +228,10 @@ final class Translations {
 	}
 
 	public function getRepository(): Repository {
+		if (is_array($this->repository)) {
+			Yii::$app->locks->acquireRepoLock($this->repository[2]);
+			$this->repository = new Repository(...$this->repository);
+		}
 		return $this->repository;
 	}
 

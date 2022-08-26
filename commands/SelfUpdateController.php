@@ -28,8 +28,6 @@ final class SelfUpdateController extends ConsoleController {
 
 	public $defaultAction = 'run';
 
-	public $update = true;
-
 	public function options($actionID) {
 		return array_merge(parent::options($actionID), [
 			'update',
@@ -45,6 +43,7 @@ final class SelfUpdateController extends ConsoleController {
 		$process->mustRun();
 
 		if ($this->update) {
+			Yii::$app->locks->acquireRepoLock(APP_ROOT . '/translations');
 			$translationsRepository = new Repository(Yii::$app->params['translationsRepository'], 'master', APP_ROOT . '/translations');
 			$translationsRepository->update();
 		}

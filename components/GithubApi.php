@@ -15,6 +15,7 @@ namespace app\components;
 
 use app\components\extensions\exceptions\GithubApiException;
 use Cache\Adapter\Filesystem\FilesystemCachePool;
+use Github\AuthMethod;
 use Github\Client;
 use Github\Exception\RuntimeException as GithubRuntimeException;
 use League\Flysystem\Adapter\Local;
@@ -35,7 +36,7 @@ final class GithubApi extends Component {
 
 	public $authToken;
 	public $authPassword;
-	public $authMethod = Client::AUTH_ACCESS_TOKEN;
+	public $authMethod = AuthMethod::ACCESS_TOKEN;
 
 	/** @var Client */
 	private $githubApiClient;
@@ -45,12 +46,18 @@ final class GithubApi extends Component {
 
 		$this->githubApiClient = new Client();
 		$this->githubApiClient->authenticate($this->authToken, $this->authPassword, $this->authMethod);
+	}
 
+	public function enableCache(): void {
 		$filesystemAdapter = new Local(APP_ROOT . '/runtime/github-cache');
 		$filesystem = new Filesystem($filesystemAdapter);
 
 		$pool = new FilesystemCachePool($filesystem);
 		$this->githubApiClient->addCache($pool);
+	}
+
+	public function disableCache(): void {
+		$this->githubApiClient->removeCache();
 	}
 
 	public function getDefaultBranch(string $repoUrl): ?string {
@@ -114,7 +121,57 @@ final class GithubApi extends Component {
 				'maintainer_can_modify' => true,
 				'title' => $settings['title'],
 				'body' => $settings['body'],
+				'draft' => $settings['draft'] ?? false,
 			]);
+	}
+
+	public function updatePullRequest(string $targetRepository, int $number, array $parameters): array {
+		[$targetUserName, $targetRepoName] = $this->explodeRepoUrl($targetRepository);
+		return $this->githubApiClient->pullRequest()
+			->update($targetUserName, $targetRepoName, $number, $parameters);
+	}
+
+	public function markPullRequestAsReadyForReview(string $nodeId) {
+		// REST API does not allow to change draft status, so we need to use GraphQL
+		$this->githubApiClient->graphql()->execute(
+			<<<'GRAPHQL'
+				mutation($prId: ID!) {
+					markPullRequestReadyForReview(input: {pullRequestId: $prId}){
+						clientMutationId 
+					}
+				}
+			GRAPHQL,
+			[
+				'prId' => $nodeId,
+			]
+		);
+	}
+
+	public function mergePullRequest(string $targetRepository, int $number, array $settings): array {
+		[$targetUserName, $targetRepoName] = $this->explodeRepoUrl($targetRepository);
+		return $this->githubApiClient->pullRequest()
+			->merge(
+				$targetUserName,
+				$targetRepoName,
+				$number,
+				$settings['message'] ?? '',
+				$settings['sha'] ?? '',
+				$settings['mergeMethod'] ?? 'merge',
+				$settings['title'] ?? null
+			);
+	}
+
+	public function addPullRequestRequestedReviewers(string $targetRepository, int $number, array $reviewers): array {
+		[$targetUserName, $targetRepoName] = $this->explodeRepoUrl($targetRepository);
+		return $this->githubApiClient->pullRequest()->reviewRequests()
+			->create($targetUserName, $targetRepoName, $number, $reviewers);
+	}
+
+	public function addPullRequestAssignees(string $targetRepository, int $number, array $assignees): array {
+		[$targetUserName, $targetRepoName] = $this->explodeRepoUrl($targetRepository);
+		/* @noinspection PhpIncompatibleReturnTypeInspection */ // see https://github.com/KnpLabs/php-github-api/pull/1078
+		return $this->githubApiClient->issues()->assignees()
+			->add($targetUserName, $targetRepoName, $number, ['assignees' => $assignees]);
 	}
 
 	public function createRelease(string $repository, string $tagName, array $settings): array {
@@ -123,10 +180,15 @@ final class GithubApi extends Component {
 			->create($username, $repositoryName, ['tag_name' => $tagName] + $settings);
 	}
 
-	public function addPullRequestComment(string $targetRepository, int $pullRequestId, array $settings): array {
+	public function addPullRequestComment(string $targetRepository, int $number, array $settings): array {
 		[$targetUserName, $targetRepoName] = $this->explodeRepoUrl($targetRepository);
 		return $this->githubApiClient->issues()->comments()
-			->create($targetUserName, $targetRepoName, $pullRequestId, $settings);
+			->create($targetUserName, $targetRepoName, $number, $settings);
+	}
+
+	public function getPullRequest(string $repository, int $number): ?array {
+		[$targetUserName, $targetRepoName] = $this->explodeRepoUrl($repository);
+		return $this->githubApiClient->pullRequest()->show($targetUserName, $targetRepoName, $number);
 	}
 
 	public function getPullRequestForBranch(string $targetRepository, string $sourceRepository, string $branch): ?array {
@@ -139,6 +201,19 @@ final class GithubApi extends Component {
 
 		// in case of multiple PRs for the same branch, we pick the most recent one (newest first is default GitHub sorting)
 		return $info[0] ?? null;
+	}
+
+	public function getReviewsForPullRequest(string $targetRepository, int $number): array {
+		[$targetUserName, $targetRepoName] = $this->explodeRepoUrl($targetRepository);
+		$page = 1;
+		$result = [];
+		do {
+			$response = $this->githubApiClient->pullRequests()->reviews()
+				->all($targetUserName, $targetRepoName, $number, ['per_page' => 100, 'page' => $page]);
+			$result = array_merge($result, $response);
+		} while (count($response) === 100);
+
+		return $result;
 	}
 
 	public function createIssueIfNotExist(string $repository, string $title, array $settings = []): ?array {

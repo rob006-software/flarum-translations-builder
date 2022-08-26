@@ -20,8 +20,6 @@ use app\components\readme\SummaryGenerator;
 use app\models\Extension;
 use app\models\LanguageSubsplit;
 use app\models\PremiumExtension;
-use app\models\Repository;
-use app\models\Translations;
 use mindplay\readable;
 use Yii;
 use yii\base\InvalidArgumentException;
@@ -46,13 +44,6 @@ final class ReadmeController extends ConsoleController {
 	];
 
 	public $defaultAction = 'update';
-
-	public $update = true;
-	public $commit = false;
-	public $push = false;
-	public $verbose = false;
-	/** @var int */
-	public $frequency;
 
 	public function options($actionID) {
 		return array_merge(parent::options($actionID), [
@@ -153,7 +144,7 @@ final class ReadmeController extends ConsoleController {
 					strpos($readme, "<!-- {$group}-extensions-list-start -->") !== false
 					&& strpos($readme, "<!-- {$group}-extensions-list-stop -->") !== false
 				) {
-					$generator = $subsplit->getReadmeGenerator($translations);
+					$generator = $subsplit->createReadmeGenerator($translations);
 					foreach ($translations->getExtensionsComponents() as $component) {
 						if (
 							(!($subsplit instanceof LanguageSubsplit) || $component->isValidForLanguage($subsplit->getLanguage()))
@@ -196,54 +187,6 @@ final class ReadmeController extends ConsoleController {
 		}
 
 		return substr($string, 0, $positionBegin) . $begin . $replacement . substr($string, $positionEnd);
-	}
-
-	private function getTranslations(string $configFile): Translations {
-		$translations = new Translations(
-			Yii::$app->params['translationsRepository'],
-			null,
-			require Yii::getAlias($configFile)
-		);
-		if ($this->update) {
-			$output = $translations->getRepository()->update();
-			if ($this->verbose) {
-				echo $output;
-			}
-		}
-
-		return $translations;
-	}
-
-	private function postProcessRepository(Repository $repository, string $commitMessage): void {
-		if ($this->commit || $this->push) {
-			$output = $repository->commit($commitMessage);
-			if ($this->verbose) {
-				echo $output;
-			}
-		}
-		if ($this->push) {
-			$output = $repository->push();
-			if ($this->verbose) {
-				echo $output;
-			}
-		}
-	}
-
-	private function isLimited(string $hash): bool {
-		if ($this->frequency <= 0) {
-			return false;
-		}
-
-		$lastRun = Yii::$app->cache->get($hash);
-		if ($lastRun > 0) {
-			return time() - $lastRun < $this->frequency;
-		}
-
-		return false;
-	}
-
-	private function updateLimit(string $hash): void {
-		Yii::$app->cache->set($hash, time(), 31 * 24 * 60 * 60);
 	}
 
 	private function isValidForGroup(Extension $extension, string $group): bool {

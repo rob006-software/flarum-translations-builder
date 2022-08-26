@@ -21,9 +21,11 @@ use app\components\ExtiverseApi;
 use app\components\FrequencyLimiter;
 use app\components\GithubApi;
 use app\components\GitlabApi;
+use app\components\locks\Locker;
 use app\components\weblate\WeblateApi;
 use yii\caching\ArrayCache;
 use yii\mutex\FileMutex;
+use yii\queue\file\Queue as FileQueue;
 
 /**
  * Fake class to define code completion for IDE.
@@ -54,12 +56,16 @@ abstract class BaseApplication extends \yii\base\Application {
 	public $weblateApi;
 	/** @var FileMutex */
 	public $mutex;
+	/** @var FileQueue */
+	public $queue;
 	/** @var FrequencyLimiter */
 	public $frequencyLimiter;
 	/** @var ArrayCache */
 	public $arrayCache;
 	/** @var StatsRepository */
 	public $stats;
+	/** @var Locker */
+	public $locks;
 }
 
 class WebApplication extends \yii\web\Application {

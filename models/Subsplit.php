@@ -25,6 +25,7 @@ use yii\helpers\Inflector;
 use function array_keys;
 use function arsort;
 use function basename;
+use function is_array;
 use function preg_match;
 
 /**
@@ -45,6 +46,8 @@ abstract class Subsplit {
 	private $components;
 	private $releaseGenerator;
 	private $repositoryUrl;
+	private $locale;
+	private $maintainers;
 
 	public function __construct(
 		string $id,
@@ -52,7 +55,9 @@ abstract class Subsplit {
 		string $branch,
 		string $path,
 		?array $components,
-		$releaseGenerator = null
+		/*?array*/ $releaseGenerator, // no type because of BC - old configs contains only class name as string
+		array $localeConfig,
+		array $maintainers
 	) {
 		$this->id = $id;
 		$this->path = $path;
@@ -60,15 +65,28 @@ abstract class Subsplit {
 		$this->releaseGenerator = $releaseGenerator;
 		$this->repositoryUrl = $repository;
 		$repoDirectory = $id . '__' . Inflector::slug($repository);
-		$this->repository = new Repository($repository, $branch, APP_ROOT . "/runtime/subsplits/$repoDirectory");
+		$this->repository = [$repository, $branch, APP_ROOT . "/runtime/subsplits/$repoDirectory"];
+		$this->locale = [$localeConfig['path'] ?? null, $localeConfig['fallbackPath']];
 	}
 
 	public function getRepository(): Repository {
+		if (is_array($this->repository)) {
+			Yii::$app->locks->acquireRepoLock($this->repository[2]);
+			$this->repository = new Repository(...$this->repository);
+		}
 		return $this->repository;
 	}
 
 	public function getRepositoryUrl(): string {
 		return $this->repositoryUrl;
+	}
+
+	public function getLocale(): SubsplitLocale {
+		if (is_array($this->locale)) {
+			$this->locale = new SubsplitLocale(...$this->locale);
+		}
+		/* @noinspection PhpIncompatibleReturnTypeInspection */
+		return $this->locale;
 	}
 
 	public function getId(): string {
@@ -89,7 +107,11 @@ abstract class Subsplit {
 
 	abstract public function split(Translations $translations): void;
 
-	abstract public function getReadmeGenerator(Translations $translations): ReadmeGenerator;
+	abstract public function createReadmeGenerator(Translations $translations): ReadmeGenerator;
+
+	public function hasReleaseGenerator(): bool {
+		return $this->releaseGenerator !== null;
+	}
 
 	public function createReleaseGenerator(): ReleaseGenerator {
 		if ($this->releaseGenerator === null) {
@@ -125,7 +147,7 @@ abstract class Subsplit {
 		$authors = [];
 		foreach ($this->getSourcesPaths($translations) as $path) {
 			if ($lastCommit === null) {
-				$firstCommit = $translations->getRepository()->getFirstCommitHash();
+				$firstCommit = Repository::ZERO_COMMIT_HASH;
 				$response = $translations->getRepository()
 					->getShortlog('-sne', '--no-merges', "$firstCommit..HEAD", '--', $path);
 			} else {

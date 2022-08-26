@@ -25,11 +25,11 @@ use Yii;
 use yii\base\InvalidArgumentException;
 
 /**
- * Class PullRequestGenerator.
+ * Class NewExtensionPullRequestGenerator.
  *
  * @author Robert Korulczyk <robert@korulczyk.pl>
  */
-final class PullRequestGenerator {
+final class NewExtensionPullRequestGenerator {
 
 	use DontCall;
 	use DontCallStatic;

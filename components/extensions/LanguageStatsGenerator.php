@@ -16,6 +16,7 @@ declare(strict_types=1);
 
 namespace app\components\extensions;
 
+use app\helpers\StringHelper;
 use app\models\Extension;
 use app\models\PremiumExtension;
 use app\models\RegularExtension;
@@ -27,7 +28,6 @@ use Locale;
 use Yii;
 use yii\base\InvalidArgumentException;
 use yii\helpers\Html;
-use yii\helpers\StringHelper;
 use function mb_strlen;
 use function strtotime;
 use function urlencode;

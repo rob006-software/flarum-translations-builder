@@ -9,6 +9,8 @@
  * with this source code in the file LICENSE.
  */
 
+/* @noinspection PhpConcatenationWithEmptyStringCanBeInlinedInspection */
+
 declare(strict_types=1);
 
 namespace app\models;
@@ -24,6 +26,10 @@ use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 use yii\helpers\Inflector;
 use function file_exists;
+use function in_array;
+use function strncmp;
+use function strpos;
+use function substr;
 use const APP_ROOT;
 
 /**
@@ -42,10 +48,15 @@ class Repository {
 	public const CHANGE_MODIFIED = 'M';
 	public const CHANGE_DELETED = 'D';
 
+	// @see https://stackoverflow.com/a/40884093/5812455
+	public const ZERO_COMMIT_HASH = '4b825dc642cb6eb9a060e54bf8d69288fbee4904';
+
 	private $remote;
 	private $branch;
 	private $git;
 	private $workingCopyDir;
+
+	private $_branches;
 
 	public function __construct(string $remote, ?string $branch, string $workingCopyDir) {
 		$this->remote = $remote;
@@ -70,11 +81,13 @@ class Repository {
 		return Inflector::slug($this->remote . '--' . $this->branch);
 	}
 
-	public function update(): string {
+	public function update(bool $switchBranch = true): string {
 		$output = '';
-		if ($this->branch !== null) {
+		if ($switchBranch && $this->branch !== null) {
 			$output .= $this->git->checkout($this->branch);
 		}
+
+		$output .= $this->git->clean('-fd'); // make sure to clean all uncommitted changes
 		$output .= $this->git->pull();
 
 		return $output;
@@ -98,8 +111,15 @@ class Repository {
 		return $this->workingCopyDir;
 	}
 
+	public function getBranch(): ?string {
+		return $this->branch;
+	}
+
 	public function getTags(): array {
-		return $this->git->tags()->all();
+		$tags = $this->git->tags()->all();
+		return array_filter($tags, static function (string $tag) {
+			return $tag !== '';
+		});
 	}
 
 	public function getDiff(): string {
@@ -125,12 +145,15 @@ class Repository {
 		return trim($this->git->run('rev-list', ['--max-parents=0', 'HEAD']));
 	}
 
+	public function getLastCommitHash(): string {
+		return trim($this->git->run('rev-parse', ['HEAD']));
+	}
+
 	/**
-	 * @param string $reference
 	 * @return string[] Change types (M, A or D) indexed by files paths.
 	 */
-	public function getChangesFrom(string $reference): array {
-		$changes = explode("\n", $this->git->diff('--name-status', $reference));
+	public function getChangesFrom(?string $reference): array {
+		$changes = explode("\n", $this->git->diff('--name-status', $reference ?? self::ZERO_COMMIT_HASH));
 		$changedFiles = [];
 		foreach ($changes as $change) {
 			$change = trim($change);
@@ -146,5 +169,60 @@ class Repository {
 
 	protected function getWorkingCopy(): GitWorkingCopy {
 		return $this->git;
+	}
+
+	public function hasBranch(string $name, bool $useCache = true): bool {
+		return in_array($name, $this->getBranches($useCache), true);
+	}
+
+	public function createBranch(string $name): string {
+		$output = '';
+		$output .= $this->getWorkingCopy()->checkoutNewBranch($name);
+		$output .= $this->getWorkingCopy()->push('--set-upstream', 'origin', $name);
+
+		return $output;
+	}
+
+	public function deleteBranch(string $name): string {
+		$output = '';
+		$output .= $this->getWorkingCopy()->branch('--delete', '--force', $name);
+		$output .= $this->getWorkingCopy()->push('origin', '--delete', $name);
+
+		return $output;
+	}
+
+	public function checkoutBranch(string $name): string {
+		return $this->getWorkingCopy()->checkout($name)
+			. $this->getWorkingCopy()->pull();
+	}
+
+	public function getBranches(bool $useCache = true): array {
+		if ($this->_branches === null || !$useCache) {
+			$this->_branches = $this->getWorkingCopy()->getBranches()->all();
+		}
+
+		return $this->_branches;
+	}
+
+	public function syncBranchesWithRemote(): string {
+		$output = '';
+		$output .= $this->getWorkingCopy()->fetchAll(['prune' => true, 'prune-tags' => true, 'force' => true]);
+		$branches = $this->getWorkingCopy()->getBranches()->all();
+		foreach ($branches as $branch) {
+			if (strncmp($branch, 'remotes/origin/', 15) !== 0 && !in_array("remotes/origin/$branch", $branches, true)) {
+				// ignore all other remotes except origin
+				if (strncmp($branch, 'remotes/', 8) !== 0) {
+					$output .= $this->getWorkingCopy()->branch('-D', $branch);
+				}
+			} elseif (
+				strncmp($branch, 'remotes/origin/', 15) === 0 && strpos($branch, ' -> ') === false
+				&& !in_array(substr($branch, 15), $branches, true)
+			) {
+				$output .= $this->getWorkingCopy()->checkout('-b', substr($branch, 15), '--track', 'origin/' . substr($branch, 15));
+				$output .= $this->getWorkingCopy()->checkout($this->getBranch() ?? 'master');
+			}
+		}
+
+		return $output;
 	}
 }

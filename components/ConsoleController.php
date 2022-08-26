@@ -13,9 +13,12 @@ declare(strict_types=1);
 
 namespace app\components;
 
+use app\models\Repository;
+use app\models\Translations;
 use Yii;
 use yii\base\Exception;
 use yii\console\Controller;
+use function time;
 
 /**
  * Class ConsoleController.
@@ -24,15 +27,72 @@ use yii\console\Controller;
  */
 abstract class ConsoleController extends Controller {
 
+	public $update = true;
+	public $commit = false;
+	public $push = false;
+	public $verbose = false;
+	/** @var int */
+	public $frequency;
+
 	public function beforeAction($action) {
-		if (!Yii::$app->mutex->acquire(__CLASS__, 900)) {
-			throw new Exception('Cannot acquire lock.');
+		// make sure we don't run the same actions concurrently
+		if (!Yii::$app->mutex->acquire(__CLASS__ . '#' . $action->id, 900)) {
+			throw new Exception("Cannot acquire lock for {$action->getUniqueId()} action.");
 		}
 
 		return parent::beforeAction($action);
 	}
 
-	protected function releaseLock(): void {
-		Yii::$app->mutex->release(__CLASS__);
+	protected function isLimited(string $hash): bool {
+		if ($this->frequency <= 0) {
+			return false;
+		}
+
+		$lastRun = Yii::$app->cache->get($hash);
+		if ($lastRun > 0) {
+			return time() - $lastRun < $this->frequency;
+		}
+
+		return false;
+	}
+
+	protected function updateLimit(string $hash): void {
+		Yii::$app->cache->set($hash, time(), 31 * 24 * 60 * 60);
+	}
+
+	protected function getTranslations(string $configFile): Translations {
+		$config = require Yii::getAlias($configFile);
+		$translations = new Translations(Yii::$app->params['translationsRepository'], null, $config);
+		if ($this->update) {
+			$output = $translations->getRepository()->update();
+			if ($this->verbose) {
+				echo $output;
+			}
+		}
+
+		return $translations;
+	}
+
+	protected function commitRepository(Repository $repository, string $commitMessage): void {
+		if ($this->commit || $this->push) {
+			$output = $repository->commit($commitMessage);
+			if ($this->verbose) {
+				echo $output;
+			}
+		}
+	}
+
+	protected function pushRepository(Repository $repository): void {
+		if ($this->push) {
+			$output = $repository->push();
+			if ($this->verbose) {
+				echo $output;
+			}
+		}
+	}
+
+	protected function postProcessRepository(Repository $repository, string $commitMessage): void {
+		$this->commitRepository($repository, $commitMessage);
+		$this->pushRepository($repository);
 	}
 }
