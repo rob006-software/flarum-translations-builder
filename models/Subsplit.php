@@ -55,7 +55,7 @@ abstract class Subsplit {
 		string $branch,
 		string $path,
 		?array $components,
-		?array $releaseGenerator,
+		/*?array*/ $releaseGenerator, // no type because of BC - old configs contains only class name as string
 		array $localeConfig,
 		array $maintainers
 	) {
