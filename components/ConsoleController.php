@@ -16,6 +16,7 @@ namespace app\components;
 use app\models\Repository;
 use app\models\Translations;
 use Yii;
+use yii\base\Exception;
 use yii\console\Controller;
 use function time;
 
@@ -32,6 +33,15 @@ abstract class ConsoleController extends Controller {
 	public $verbose = false;
 	/** @var int */
 	public $frequency;
+
+	public function beforeAction($action) {
+		// make sure we don't run the same actions concurrently
+		if (!Yii::$app->mutex->acquire(__CLASS__ . '#' . $action->id, 900)) {
+			throw new Exception("Cannot acquire lock for {$action->getUniqueId()} action.");
+		}
+
+		return parent::beforeAction($action);
+	}
 
 	protected function isLimited(string $hash): bool {
 		if ($this->frequency <= 0) {

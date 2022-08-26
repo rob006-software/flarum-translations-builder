@@ -19,7 +19,6 @@ use app\models\Extension;
 use app\models\PremiumExtension;
 use app\models\Translations;
 use Yii;
-use yii\base\Exception;
 use function array_merge;
 
 /**
@@ -35,16 +34,6 @@ class WeblateController extends ConsoleController {
 		20 => WeblateApi::PRIORITY_LOW,
 		0 => WeblateApi::PRIORITY_VERY_LOW,
 	];
-
-	public function beforeAction($action) {
-		// we release standard repository lock at the end of `getTranslations()`, so we need additional lock in order to
-		// avoid concurrent executions of the same command
-		if (!Yii::$app->mutex->acquire(__CLASS__ . '#' . $action->id, 900)) {
-			throw new Exception("Cannot acquire for {$action->getUniqueId()} action.");
-		}
-
-		return parent::beforeAction($action);
-	}
 
 	public function options($actionID) {
 		return array_merge(parent::options($actionID), [
@@ -104,6 +93,7 @@ class WeblateController extends ConsoleController {
 
 	protected function getTranslations(string $configFile): Translations {
 		$translations = parent::getTranslations($configFile);
+		// release lock early, since we're only using config, ant these actions can take a while
 		Yii::$app->locks->releaseRepoLock($translations->getRepository()->getPath());
 
 		return $translations;
