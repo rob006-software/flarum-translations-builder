@@ -16,6 +16,7 @@ namespace app\commands;
 use app\components\ConsoleController;
 use app\components\extensions\LanguageStatsGenerator;
 use app\components\extensions\StatsRepository;
+use app\models\SubsplitLocale;
 use app\models\Translations;
 use Yii;
 use function array_merge;
@@ -52,9 +53,12 @@ final class StatsController extends ConsoleController {
 
 		$repository = $translations->getRepository();
 
+		$fallbackLocale = new SubsplitLocale(null, $translations->getDir() . '/config/subsplitsLocale/en.json');
 		foreach ($translations->getLanguages() as $language) {
 			if (empty($languages) || in_array($language, $languages, true)) {
-				$generator = new LanguageStatsGenerator($language);
+				$subsplit = $translations->findSubsplitForLanguage($language);
+				$locale = $subsplit !== null ? $subsplit->getLocale() : $fallbackLocale;
+				$generator = new LanguageStatsGenerator($language, $locale);
 				foreach ($translations->getExtensionsComponents() as $component) {
 					$extension = Yii::$app->extensionsRepository->getExtension($component->getId());
 					if ($extension !== null) {

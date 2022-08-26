@@ -20,6 +20,7 @@ use app\helpers\StringHelper;
 use app\models\Extension;
 use app\models\PremiumExtension;
 use app\models\RegularExtension;
+use app\models\SubsplitLocale;
 use Dont\DontCall;
 use Dont\DontCallStatic;
 use Dont\DontGet;
@@ -56,16 +57,13 @@ final class LanguageStatsGenerator {
 
 	/** @var string */
 	private $language;
+	/** @var SubsplitLocale  */
+	private $locale;
 	private $sortingCriteria;
 
-	/**
-	 * LanguageStatsReadmeGenerator constructor.
-	 *
-	 * @param string $language
-	 * @param string $sortingCriteria
-	 */
-	public function __construct(string $language, string $sortingCriteria = 'monthly') {
+	public function __construct(string $language, SubsplitLocale $locale, string $sortingCriteria = 'monthly') {
 		$this->language = $language;
+		$this->locale = $locale;
 		$this->sortingCriteria = $sortingCriteria;
 	}
 
