@@ -162,6 +162,10 @@ final class Translations {
 		}
 	}
 
+	public function hasSubsplit(string $id): bool {
+		return isset($this->subsplits[$id]);
+	}
+
 	public function getSubsplit(string $id): Subsplit {
 		if (!isset($this->subsplits[$id])) {
 			throw new InvalidArgumentException('There is no subsplit with ' . readable::value($id) . ' ID.');
@@ -196,7 +200,7 @@ final class Translations {
 		return $this->subsplits[$id];
 	}
 
-	public function findSubsplit(string $gitUrl, string $branch): ?string {
+	public function findSubsplitIdForRepository(string $gitUrl, string $branch): ?string {
 		foreach ($this->subsplits as $id => $subsplit) {
 			if ($subsplit instanceof Subsplit) {
 				if ($subsplit->getRepositoryUrl() === $gitUrl && $subsplit->getRepository()->getBranch() === $branch) {
@@ -206,6 +210,18 @@ final class Translations {
 				return $id;
 			}
 		}
+
+		return null;
+	}
+
+	public function findSubsplitForLanguage(string $language): ?LanguageSubsplit {
+		foreach ($this->getSubsplits() as $subsplit) {
+			if ($subsplit instanceof LanguageSubsplit && $subsplit->getLanguage() === $language) {
+				return $subsplit;
+			}
+		}
+
+		return null;
 	}
 
 	/**

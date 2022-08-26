@@ -64,7 +64,7 @@ class GithubController extends Controller {
 		}
 
 		$translations = $this->getTranslations();
-		$subsplit = $translations->findSubsplit($payload['repository']['ssh_url'], $payload['pull_request']['base']['ref']);
+		$subsplit = $translations->findSubsplitIdForRepository($payload['repository']['ssh_url'], $payload['pull_request']['base']['ref']);
 		if ($subsplit === null) {
 			return $this->generateResponse('Cannot find subsplit - skip.');
 		}
