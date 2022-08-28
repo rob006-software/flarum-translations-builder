@@ -68,6 +68,25 @@ final class ReadmeController extends ConsoleController {
 		$readme = file_get_contents($translations->getDir() . '/README.md');
 		$summary = file_get_contents($translations->getDir() . '/status/summary.md');
 		$licenses = file_get_contents($translations->getDir() . '/status/licenses.md');
+
+		if (
+			strpos($readme, "<!-- languages-list-start -->") !== false
+			&& strpos($readme, "<!-- languages-list-stop -->") !== false
+		) {
+			$readmeGenerator = new MainReadmeGenerator();
+			/* @noinspection PhpParamsInspection */
+			$languageSubsplits = array_filter(iterator_to_array($translations->getSubsplits()), static function (Subsplit $subsplit) {
+				/* @noinspection PhpConditionAlreadyCheckedInspection */
+				return $subsplit instanceof LanguageSubsplit;
+			});
+			$readme = $this->replaceBetween(
+				"<!-- languages-list-start -->",
+				"<!-- languages-list-stop -->",
+				$readme,
+				$readmeGenerator->generateLanguagesList($languageSubsplits)
+			);
+		}
+
 		foreach (self::GROUPS as $group) {
 			if (
 				strpos($readme, "<!-- {$group}-extensions-list-start -->") !== false
@@ -76,17 +95,6 @@ final class ReadmeController extends ConsoleController {
 				$readmeGenerator = new MainReadmeGenerator();
 				$summaryGenerator = new SummaryGenerator();
 				$licensesGenerator = new LicenseSummaryGenerator();
-				/* @noinspection PhpParamsInspection */
-				$languageSubsplits = array_filter(iterator_to_array($translations->getSubsplits()), static function (Subsplit $subsplit) {
-					/* @noinspection PhpConditionAlreadyCheckedInspection */
-					return $subsplit instanceof LanguageSubsplit;
-				});
-				$readme = $this->replaceBetween(
-					"<!-- languages-list-start -->",
-					"<!-- languages-list-stop -->",
-					$readme,
-					$readmeGenerator->generateLanguagesList($languageSubsplits)
-				);
 
 				foreach ($translations->getExtensionsComponents() as $component) {
 					$extension = Yii::$app->extensionsRepository->getExtension($component->getId());
