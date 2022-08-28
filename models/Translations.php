@@ -158,7 +158,7 @@ final class Translations {
 	 */
 	public function getSubsplits(): iterable {
 		foreach ($this->subsplits as $id => $config) {
-			yield $this->getSubsplit($id);
+			yield $id => $this->getSubsplit($id);
 		}
 	}
 

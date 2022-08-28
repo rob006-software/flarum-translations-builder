@@ -21,12 +21,16 @@ use Dont\DontGet;
 use Dont\DontSet;
 use Yii;
 use yii\base\InvalidConfigException;
+use yii\helpers\ArrayHelper;
 use yii\helpers\Inflector;
 use function array_keys;
 use function arsort;
 use function basename;
+use function file_get_contents;
 use function is_array;
+use function json_decode;
 use function preg_match;
+use const JSON_THROW_ON_ERROR;
 
 /**
  * Class Subsplit.
@@ -67,6 +71,7 @@ abstract class Subsplit {
 		$repoDirectory = $id . '__' . Inflector::slug($repository);
 		$this->repository = [$repository, $branch, APP_ROOT . "/runtime/subsplits/$repoDirectory"];
 		$this->locale = [$localeConfig['path'] ?? null, $localeConfig['fallbackPath']];
+		$this->maintainers = $maintainers;
 	}
 
 	public function getRepository(): Repository {
@@ -99,6 +104,10 @@ abstract class Subsplit {
 
 	public function getDir(): string {
 		return $this->getRepository()->getPath();
+	}
+
+	public function getMaintainers(): array {
+		return $this->maintainers;
 	}
 
 	public function isValidForComponent(string $componentId): bool {
@@ -191,5 +200,19 @@ abstract class Subsplit {
 
 	public function markAsProcessed(Translations $translations): void {
 		$this->setLastProcessedHash($translations->getRepository()->getCurrentRevisionHash());
+	}
+
+	public function getPackageName(): string {
+		return $this->getComposerJsonContent()['name'];
+	}
+
+	public function getThreadUrl(): ?string {
+		$composerJson = $this->getComposerJsonContent();
+		$url = ArrayHelper::getValue($composerJson, 'extra.extiverse.discuss') ?? ArrayHelper::getValue($composerJson, 'extra.flagrow.discuss');
+		return !empty($url) ? $url : null;
+	}
+
+	public function getComposerJsonContent(): array {
+		return json_decode(file_get_contents($this->getRepository()->getPath() . '/composer.json'), true, 512, JSON_THROW_ON_ERROR);
 	}
 }

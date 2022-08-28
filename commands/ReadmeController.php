@@ -14,17 +14,21 @@ declare(strict_types=1);
 namespace app\commands;
 
 use app\components\ConsoleController;
+use app\components\languages\LanguagePacksSummaryGenerator;
 use app\components\readme\LicenseSummaryGenerator;
 use app\components\readme\MainReadmeGenerator;
 use app\components\readme\SummaryGenerator;
 use app\models\Extension;
 use app\models\LanguageSubsplit;
 use app\models\PremiumExtension;
+use app\models\Subsplit;
 use mindplay\readable;
 use Yii;
 use yii\base\InvalidArgumentException;
+use function array_filter;
 use function file_get_contents;
 use function in_array;
+use function iterator_to_array;
 use function strpos;
 use function substr;
 
@@ -72,6 +76,18 @@ final class ReadmeController extends ConsoleController {
 				$readmeGenerator = new MainReadmeGenerator();
 				$summaryGenerator = new SummaryGenerator();
 				$licensesGenerator = new LicenseSummaryGenerator();
+				/* @noinspection PhpParamsInspection */
+				$languageSubsplits = array_filter(iterator_to_array($translations->getSubsplits()), static function (Subsplit $subsplit) {
+					/* @noinspection PhpConditionAlreadyCheckedInspection */
+					return $subsplit instanceof LanguageSubsplit;
+				});
+				$readme = $this->replaceBetween(
+					"<!-- languages-list-start -->",
+					"<!-- languages-list-stop -->",
+					$readme,
+					$readmeGenerator->generateLanguagesList($languageSubsplits)
+				);
+
 				foreach ($translations->getExtensionsComponents() as $component) {
 					$extension = Yii::$app->extensionsRepository->getExtension($component->getId());
 					if ($extension !== null && $this->isValidForGroup($extension, $group)) {
@@ -115,8 +131,17 @@ final class ReadmeController extends ConsoleController {
 		file_put_contents($translations->getDir() . '/README.md', $readme);
 		file_put_contents($translations->getDir() . '/status/summary.md', $summary);
 		file_put_contents($translations->getDir() . '/status/licenses.md', $licenses);
-
 		$this->postProcessRepository($translations->getRepository(), 'Update list of supported extensions.');
+
+		/* @noinspection PhpParamsInspection */
+		$languageSubsplits = array_filter(iterator_to_array($translations->getSubsplits()), static function (Subsplit $subsplit) {
+			/* @noinspection PhpConditionAlreadyCheckedInspection */
+			return $subsplit instanceof LanguageSubsplit;
+		});
+		$languagePacksGenerator = new LanguagePacksSummaryGenerator($languageSubsplits);
+		file_put_contents($translations->getDir() . '/status/language-packs.md', $languagePacksGenerator->generate());
+		$this->postProcessRepository($translations->getRepository(), 'Update list of language packs.');
+
 		$this->updateLimit($token);
 	}
 

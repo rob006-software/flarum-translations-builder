@@ -177,17 +177,7 @@ final class ExtensionsController extends ConsoleController {
 			$generator->addExtension($extensionId);
 		}
 
-		$readme = <<<MD
-			# Pending extensions summary
-			
-			{$generator->generatePendingExtensions()}
-			
-			## Dead branches
-			
-			{$generator->generateDeadBranches()}
-			MD;
-
-		file_put_contents($translations->getDir() . '/status/pending.md', $readme);
+		file_put_contents($translations->getDir() . '/status/pending.md', $generator->generate());
 		$this->commitRepository($translations->getRepository(), 'Update list of pending extensions.');
 		$this->pushRepository($translations->getRepository());
 	}

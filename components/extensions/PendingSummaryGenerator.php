@@ -56,6 +56,18 @@ final class PendingSummaryGenerator {
 		}
 	}
 
+	public function generate(): string {
+		return <<<MD
+			# Pending extensions summary
+			
+			{$this->generatePendingExtensions()}
+			
+			## Dead branches
+			
+			{$this->generateDeadBranches()}
+			MD;
+	}
+
 	public function generatePendingExtensions(): string {
 		$extensions = $this->extensions;
 		usort($extensions, static function (Extension $a, Extension $b) {

@@ -209,7 +209,7 @@ class ReleaseGenerator extends BaseObject {
 	}
 
 	private function getSupportedFlarumVersion(): string {
-		return ltrim($this->getComposerJsonContent()['require']['flarum/core'], '~^');
+		return ltrim($this->getSubsplit()->getComposerJsonContent()['require']['flarum/core'], '~^');
 	}
 
 	public function commit(): string {
@@ -359,7 +359,7 @@ class ReleaseGenerator extends BaseObject {
 			{$this->t('announcement.to-update')}
 			
 			```console
-			composer $command {$this->getPackageName()}
+			composer $command {$this->getSubsplit()->getPackageName()}
 			php flarum cache:clear
 			```
 			$warning
@@ -372,19 +372,5 @@ class ReleaseGenerator extends BaseObject {
 			'Minor' => 0,
 			'Patch' => 0,
 		]);
-	}
-
-	public function getPackageName(): string {
-		return $this->getComposerJsonContent()['name'];
-	}
-
-	public function getThreadUrl(): ?string {
-		$composerJson = $this->getComposerJsonContent();
-		$url = ArrayHelper::getValue($composerJson, 'extra.extiverse.discuss') ?? ArrayHelper::getValue($composerJson, 'extra.flagrow.discuss');
-		return !empty($url) ? $url : null;
-	}
-
-	protected function getComposerJsonContent(): array {
-		return json_decode(file_get_contents($this->getRepository()->getPath() . '/composer.json'), true, 512, JSON_THROW_ON_ERROR);
 	}
 }

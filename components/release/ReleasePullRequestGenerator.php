@@ -232,7 +232,7 @@ class ReleasePullRequestGenerator {
 	}
 
 	private function generateAfterMergeComment(): string {
-		$forumUrl = $this->generator->getThreadUrl() ?? 'https://discuss.flarum.org/t/languages';
+		$forumUrl = $this->generator->getSubsplit()->getThreadUrl() ?? 'https://discuss.flarum.org/t/languages';
 		return <<<MD
 			Success! Now you can announce new release on [forum]({$forumUrl}):
 			
