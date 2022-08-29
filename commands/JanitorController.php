@@ -318,7 +318,7 @@ final class JanitorController extends ConsoleController {
 		$translations = $this->getTranslations($configFile);
 		$subsplitObject = $translations->getSubsplit($subsplit);
 		$dir = $subsplitObject->getDir() . $subsplitObject->getPath();
-		foreach (FileHelper::findFiles($dir, ['only' => ['/*.yml']]) as $file) {
+		foreach (FileHelper::findFiles($dir, ['only' => ['/*.yml', '/*.yaml']]) as $file) {
 			unlink($file);
 		}
 
