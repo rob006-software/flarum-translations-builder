@@ -114,7 +114,7 @@ final class GithubApi extends Component {
 	public function openPullRequest(string $targetRepository, string $sourceRepository, string $branch, array $settings): array {
 		[$targetUserName, $targetRepoName] = $this->explodeRepoUrl($targetRepository);
 		[$sourceUserName,] = $this->explodeRepoUrl($sourceRepository);
-		return $this->githubApiClient->pullRequest()
+		return $this->githubApiClient->pullRequests()
 			->create($targetUserName, $targetRepoName, [
 				'base' => $settings['base'] ?? 'master',
 				'head' => $sourceUserName === $targetUserName ? $branch : "$sourceUserName:$branch",
@@ -127,7 +127,7 @@ final class GithubApi extends Component {
 
 	public function updatePullRequest(string $targetRepository, int $number, array $parameters): array {
 		[$targetUserName, $targetRepoName] = $this->explodeRepoUrl($targetRepository);
-		return $this->githubApiClient->pullRequest()
+		return $this->githubApiClient->pullRequests()
 			->update($targetUserName, $targetRepoName, $number, $parameters);
 	}
 
@@ -149,7 +149,7 @@ final class GithubApi extends Component {
 
 	public function mergePullRequest(string $targetRepository, int $number, array $settings): array {
 		[$targetUserName, $targetRepoName] = $this->explodeRepoUrl($targetRepository);
-		return $this->githubApiClient->pullRequest()
+		return $this->githubApiClient->pullRequests()
 			->merge(
 				$targetUserName,
 				$targetRepoName,
@@ -163,7 +163,7 @@ final class GithubApi extends Component {
 
 	public function addPullRequestRequestedReviewers(string $targetRepository, int $number, array $reviewers): array {
 		[$targetUserName, $targetRepoName] = $this->explodeRepoUrl($targetRepository);
-		return $this->githubApiClient->pullRequest()->reviewRequests()
+		return $this->githubApiClient->pullRequests()->reviewRequests()
 			->create($targetUserName, $targetRepoName, $number, $reviewers);
 	}
 
@@ -188,14 +188,14 @@ final class GithubApi extends Component {
 
 	public function getPullRequest(string $repository, int $number): ?array {
 		[$targetUserName, $targetRepoName] = $this->explodeRepoUrl($repository);
-		return $this->githubApiClient->pullRequest()->show($targetUserName, $targetRepoName, $number);
+		return $this->githubApiClient->pullRequests()->show($targetUserName, $targetRepoName, $number);
 	}
 
 	public function getPullRequestForBranch(string $targetRepository, string $sourceRepository, string $branch): ?array {
 		[$targetUserName, $targetRepoName] = $this->explodeRepoUrl($targetRepository);
 		[$sourceUserName,] = $this->explodeRepoUrl($sourceRepository);
-		$info = $this->githubApiClient->pullRequest()->all($targetUserName, $targetRepoName, [
-			'head' => $sourceUserName === $targetUserName ? $branch : "$sourceUserName:$branch",
+		$info = $this->githubApiClient->pullRequests()->all($targetUserName, $targetRepoName, [
+			'head' => "$sourceUserName:$branch",
 			'state' => 'all',
 		]);
 
