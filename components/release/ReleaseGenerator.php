@@ -20,14 +20,12 @@ use Composer\Semver\Semver;
 use RuntimeException;
 use Yii;
 use yii\base\BaseObject;
-use yii\helpers\ArrayHelper;
 use function date;
 use function end;
 use function explode;
 use function file_exists;
 use function file_get_contents;
 use function in_array;
-use function json_decode;
 use function ltrim;
 use function str_repeat;
 use function strlen;
@@ -35,7 +33,6 @@ use function strncmp;
 use function strpos;
 use function substr;
 use function trim;
-use const JSON_THROW_ON_ERROR;
 
 /**
  * Class ReleaseGenerator.
@@ -46,8 +43,6 @@ class ReleaseGenerator extends BaseObject {
 
 	public $localePath;
 	public $fallbackLocalePath;
-
-	public $maintainers;
 
 	public $versionTemplate = 'Major.Minor.Patch';
 

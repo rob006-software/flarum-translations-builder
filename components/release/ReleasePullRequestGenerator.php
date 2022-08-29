@@ -180,9 +180,9 @@ class ReleasePullRequestGenerator {
 				'draft' => true,
 			]
 		);
-		if (!empty($this->generator->maintainers)) {
-			$this->githubApi->addPullRequestAssignees($this->subsplit->getRepositoryUrl(), $pullRequest['number'], $this->generator->maintainers);
-			$this->githubApi->addPullRequestRequestedReviewers($this->subsplit->getRepositoryUrl(), $pullRequest['number'], $this->generator->maintainers);
+		if (!empty($this->subsplit->getMaintainers())) {
+			$this->githubApi->addPullRequestAssignees($this->subsplit->getRepositoryUrl(), $pullRequest['number'], $this->subsplit->getMaintainers());
+			$this->githubApi->addPullRequestRequestedReviewers($this->subsplit->getRepositoryUrl(), $pullRequest['number'], $this->subsplit->getMaintainers());
 		}
 	}
 
