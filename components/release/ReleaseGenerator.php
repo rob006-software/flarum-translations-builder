@@ -17,9 +17,12 @@ use app\models\Extension;
 use app\models\Repository;
 use app\models\Subsplit;
 use Composer\Semver\Semver;
+use Composer\Semver\VersionParser;
 use RuntimeException;
+use UnexpectedValueException;
 use Yii;
 use yii\base\BaseObject;
+use function array_filter;
 use function date;
 use function end;
 use function explode;
@@ -220,7 +223,18 @@ class ReleaseGenerator extends BaseObject {
 
 	public function getPreviousVersion(): ?string {
 		if ($this->previousVersion === false) {
-			$tags = Semver::sort($this->repository->getTags());
+			// remove non-semver tags
+			$parser = new VersionParser();
+			$tags = array_filter($this->repository->getTags(), static function ($name) use ($parser) {
+				try {
+					$parser->normalize($name);
+					return true;
+				} catch (UnexpectedValueException $exception) {
+					return false;
+				}
+			});
+
+			$tags = Semver::sort($tags);
 			$this->previousVersion = empty($tags) ? null : end($tags);
 		}
 
