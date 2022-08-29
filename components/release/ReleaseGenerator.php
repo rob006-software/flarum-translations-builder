@@ -357,7 +357,7 @@ class ReleaseGenerator extends BaseObject {
 	public function getAnnouncement(): string {
 		[$userName, $repoName] = Yii::$app->githubApi->explodeRepoUrl($this->subsplit->getRepositoryUrl());
 		$command = $this->isMajorUpdate() ? 'require' : 'update';
-		$warning = $this->isMajorUpdate() ? "**{$this->t('announcement.major-warning')}**\n\n" : '';
+		$warning = $this->isMajorUpdate() ? "\n\n**{$this->t('announcement.major-warning')}**\n\n" : '';
 		$changes = trim($this->getChangelogEntryContent());
 
 		return <<<MD
