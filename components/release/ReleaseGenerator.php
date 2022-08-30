@@ -83,7 +83,7 @@ class ReleaseGenerator extends BaseObject {
 	}
 
 	public function generateChangelog(bool $draft = false): string {
-		$oldVersion = ltrim($this->getPreviousVersion() ?? $this->getFirstVersion(), 'v');
+		$oldVersion = ltrim($this->getPreviousVersion() ?? '0.0.0', 'v');
 		$newVersion = ltrim($this->getNextVersion(), 'v');
 		$changelogPath = $this->getChangelogPath();
 		if (file_exists($changelogPath)) {
@@ -248,16 +248,24 @@ class ReleaseGenerator extends BaseObject {
 	public function getNextVersion(): string {
 		if ($this->nextVersion === null) {
 			$previous = $this->getPreviousVersion();
-			$parts = $this->tokenizeVersion($previous ?? $this->getFirstVersion());
-			if ($this->isMajorUpdate()) {
-				$parts['Major']++;
-				$parts['Minor'] = 0;
-				$parts['Patch'] = 0;
-			} elseif ($this->isMinorUpdate()) {
-				$parts['Minor']++;
-				$parts['Patch'] = 0;
+			if ($previous === null) {
+				$parts = [
+					'Major' => 1,
+					'Minor' => 0,
+					'Patch' => 0,
+				];
 			} else {
-				$parts['Patch']++;
+				$parts = $this->tokenizeVersion($previous);
+				if ($this->isMajorUpdate()) {
+					$parts['Major']++;
+					$parts['Minor'] = 0;
+					$parts['Patch'] = 0;
+				} elseif ($this->isMinorUpdate()) {
+					$parts['Minor']++;
+					$parts['Patch'] = 0;
+				} else {
+					$parts['Patch']++;
+				}
 			}
 
 			$this->nextVersion = strtr($this->versionTemplate, $parts);
@@ -373,13 +381,5 @@ class ReleaseGenerator extends BaseObject {
 			```
 			$warning
 			MD;
-	}
-
-	protected function getFirstVersion(): string {
-		return strtr($this->versionTemplate, [
-			'Major' => 1,
-			'Minor' => 0,
-			'Patch' => 0,
-		]);
 	}
 }
