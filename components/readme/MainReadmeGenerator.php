@@ -97,12 +97,12 @@ final class MainReadmeGenerator extends ReadmeGenerator {
 
 	private function generateMaintainersUrls(array $maintainers): string {
 		if (empty($maintainers)) {
-			return '-';
+			return ' - ';
 		}
 
 		$links = [];
 		foreach ($maintainers as $maintainer) {
-			$links[] = Html::a(Html::encode($maintainer), "https://github.com/$maintainer/");
+			$links[] = Html::a(Html::encode($maintainer), "https://github.com/$maintainer");
 		}
 
 		return implode(', ', $links);
