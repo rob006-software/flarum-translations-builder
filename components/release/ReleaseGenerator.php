@@ -83,7 +83,7 @@ class ReleaseGenerator extends BaseObject {
 	}
 
 	public function generateChangelog(bool $draft = false): string {
-		$oldVersion = ltrim($this->getPreviousVersion() ?? $this->getZeroVersion(), 'v');
+		$oldVersion = ltrim($this->getPreviousVersion() ?? $this->getFirstVersion(), 'v');
 		$newVersion = ltrim($this->getNextVersion(), 'v');
 		$changelogPath = $this->getChangelogPath();
 		if (file_exists($changelogPath)) {
@@ -248,7 +248,7 @@ class ReleaseGenerator extends BaseObject {
 	public function getNextVersion(): string {
 		if ($this->nextVersion === null) {
 			$previous = $this->getPreviousVersion();
-			$parts = $this->tokenizeVersion($previous ?? $this->getZeroVersion());
+			$parts = $this->tokenizeVersion($previous ?? $this->getFirstVersion());
 			if ($this->isMajorUpdate()) {
 				$parts['Major']++;
 				$parts['Minor'] = 0;
@@ -294,7 +294,7 @@ class ReleaseGenerator extends BaseObject {
 		}
 		$parts = explode('.', substr($version, strlen($prefix)), 3);
 		return [
-			'Major' => (int) ($parts[0] ?? 0),
+			'Major' => (int) ($parts[0] ?? 1),
 			'Minor' => (int) ($parts[1] ?? 0),
 			'Patch' => (int) ($parts[2] ?? 0),
 		];
@@ -375,9 +375,9 @@ class ReleaseGenerator extends BaseObject {
 			MD;
 	}
 
-	protected function getZeroVersion(): string {
+	protected function getFirstVersion(): string {
 		return strtr($this->versionTemplate, [
-			'Major' => 0,
+			'Major' => 1,
 			'Minor' => 0,
 			'Patch' => 0,
 		]);
