@@ -153,7 +153,7 @@ class Repository {
 	 * @return string[] Change types (M, A or D) indexed by files paths.
 	 */
 	public function getChangesFrom(?string $reference): array {
-		$changes = explode("\n", $this->git->diff('--name-status', $reference ?? self::ZERO_COMMIT_HASH));
+		$changes = explode("\n", $this->git->diff('--name-status', '--no-renames', $reference ?? self::ZERO_COMMIT_HASH));
 		$changedFiles = [];
 		foreach ($changes as $change) {
 			$change = trim($change);
