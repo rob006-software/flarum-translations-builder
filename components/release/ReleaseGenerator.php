@@ -167,7 +167,7 @@ class ReleaseGenerator extends BaseObject {
 					$content .= "* [`{$extension->getPackageName()}`]({$extension->getRepositoryUrl()})\n";
 				}
 			}
-			$content .= "\n\n\n";
+			$content .= "\n\n";
 		}
 
 		$old = $this->getPreviousVersion();
