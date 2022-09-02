@@ -216,7 +216,7 @@ class ReleasePullRequestGenerator {
 			
 			> ### ⚠️ Do not merge this pull request manually ⚠️
 			> 
-			> You should **[approve]($approvePrUrl)** this pull request instead. After approving, I will automatically update it (release date needs to be adjusted), merge, and tag a new release.
+			> You should **[approve]($approvePrUrl)** this pull request instead. After approving, I will automatically update it (release date needs to be adjusted), merge, and tag a new release. You can read more about the process on [forum](https://discuss.flarum.org/d/20807-simplify-translation-process-with-weblate/76).
 			
 			<details>
 			<summary>Show release notes preview</summary>
