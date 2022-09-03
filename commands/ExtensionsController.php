@@ -16,8 +16,8 @@ namespace app\commands;
 use app\components\ConsoleController;
 use app\components\extensions\exceptions\SoftFailureInterface;
 use app\components\extensions\exceptions\UnprocessableExtensionExceptionInterface;
-use app\components\extensions\PendingSummaryGenerator;
 use app\components\extensions\NewExtensionPullRequestGenerator;
+use app\components\extensions\PendingSummaryGenerator;
 use app\models\ForkRepository;
 use app\models\Translations;
 use Yii;
@@ -178,8 +178,7 @@ final class ExtensionsController extends ConsoleController {
 		}
 
 		file_put_contents($translations->getDir() . '/status/pending.md', $generator->generate());
-		$this->commitRepository($translations->getRepository(), 'Update list of pending extensions.');
-		$this->pushRepository($translations->getRepository());
+		$this->postProcessRepository($translations->getRepository(), 'Update list of pending extensions.');
 	}
 
 	// Save API response to cache, since API is not publicly available.
@@ -215,8 +214,7 @@ final class ExtensionsController extends ConsoleController {
 			json_encode($result, JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n"
 		);
 
-		$this->commitRepository($translations->getRepository(), 'Update cache for premium extensions.');
-		$this->pushRepository($translations->getRepository());
+		$this->postProcessRepository($translations->getRepository(), 'Update cache for premium extensions.');
 		$this->updateLimit(__METHOD__);
 	}
 }

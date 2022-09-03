@@ -37,22 +37,38 @@ final class PendingSummaryGenerator {
 	use DontSet;
 
 	/** @var Extension[] */
-	private $extensions = [];
+	private $pendingExtensions = [];
 	/** @var string[] */
-	private $missing = [];
+	private $deadBranches = [];
+	/** @var Extension[] */
+	private $ignoredExtensions = [];
 	/** @var Translations */
 	private $translations;
 
 	public function __construct(Translations $translations) {
 		$this->translations = $translations;
+
+		foreach ($translations->getIgnoredExtensions() as $packageName) {
+			$extensionId = Extension::nameToId($packageName);
+			$extension = Yii::$app->extensionsRepository->getExtension($extensionId);
+			if ($extension !== null) {
+				$this->ignoredExtensions[$extensionId] = $extension;
+			} else {
+				$this->deadBranches[] = $extensionId;
+			}
+		}
 	}
 
 	public function addExtension(string $extensionId): void {
 		$extension = Yii::$app->extensionsRepository->getExtension($extensionId);
 		if ($extension !== null) {
-			$this->extensions[$extensionId] = $extension;
+			if (isset($this->ignoredExtensions[$extensionId])) {
+				$this->deadBranches[] = $extensionId;
+			} else {
+				$this->pendingExtensions[$extensionId] = $extension;
+			}
 		} else {
-			$this->missing[] = $extensionId;
+			$this->deadBranches[] = $extensionId;
 		}
 	}
 
@@ -60,7 +76,11 @@ final class PendingSummaryGenerator {
 		return <<<MD
 			# Pending extensions summary
 			
-			{$this->generatePendingExtensions()}
+			{$this->generateExtensions($this->pendingExtensions)}
+			
+			# Rejected extensions summary
+			
+			{$this->generateExtensions($this->ignoredExtensions)}
 			
 			## Dead branches
 			
@@ -68,8 +88,10 @@ final class PendingSummaryGenerator {
 			MD;
 	}
 
-	public function generatePendingExtensions(): string {
-		$extensions = $this->extensions;
+	/**
+	 * @param Extension[] $extensions
+	 */
+	public function generateExtensions(array $extensions): string {
 		usort($extensions, static function (Extension $a, Extension $b) {
 			return $a->getPackageName() <=> $b->getPackageName();
 		});
@@ -90,13 +112,13 @@ final class PendingSummaryGenerator {
 	}
 
 	public function generateDeadBranches(): string {
-		if (empty($this->missing)) {
+		if (empty($this->deadBranches)) {
 			return "There are no dead branches.\n";
 		}
 
 		$output = "| Extension | Pull request |\n";
 		$output .= "| --- | --- |\n";
-		foreach ($this->missing as $extensionId) {
+		foreach ($this->deadBranches as $extensionId) {
 			$output .= "| `{$extensionId}` ";
 			$output .= "| {$this->renderBranchBadge($extensionId)} ";
 			$output .= "|\n";
