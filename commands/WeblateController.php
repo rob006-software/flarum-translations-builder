@@ -18,6 +18,7 @@ use app\components\weblate\WeblateApi;
 use app\models\Extension;
 use app\models\PremiumExtension;
 use app\models\Translations;
+use Symfony\Component\HttpClient\Exception\ClientException;
 use Yii;
 use function array_merge;
 
@@ -59,16 +60,25 @@ class WeblateController extends ConsoleController {
 		if ($this->isLimited($token)) {
 			return;
 		}
+		$updateLimit = true;
 		foreach ($translations->getComponents() as $component) {
-			foreach (Yii::$app->weblateApi->getUnits($component->getId()) as $unit) {
-				if (strpos($unit['source'][0], '=> ') === 0 && strpos($unit['extra_flags'], 'ignore-same') === false) {
-					Yii::$app->weblateApi->updateUnit($unit['id'], [
-						'extra_flags' => trim("{$unit['extra_flags']},ignore-same", ','),
-					]);
+			try {
+				foreach (Yii::$app->weblateApi->getUnits($component->getId()) as $unit) {
+					if (strpos($unit['source'][0], '=> ') === 0 && strpos($unit['extra_flags'], 'ignore-same') === false) {
+						Yii::$app->weblateApi->updateUnit($unit['id'], [
+							'extra_flags' => trim("{$unit['extra_flags']},ignore-same", ','),
+						]);
+					}
 				}
+			} catch (ClientException $exception) {
+				Yii::warning("HTTP error while trying to refresh units flags for {$component->getId()}.");
+				$updateLimit = false;
 			}
 		}
-		$this->updateLimit($token);
+
+		if ($updateLimit) {
+			$this->updateLimit($token);
+		}
 	}
 
 	private function calculatePriority(Extension $extension): int {
