@@ -17,6 +17,7 @@ use app\components\ConsoleController;
 use app\components\extensions\ConfigGenerator;
 use Yii;
 use function array_merge;
+use function json_encode;
 
 /**
  * Class ConfigController.
@@ -40,10 +41,11 @@ final class ConfigController extends ConsoleController {
 	}
 
 	public function actionUpdate(string $configFile = '@app/translations/config.php') {
-		if ($this->isLimited(__METHOD__)) {
+		$translations = $this->getTranslations($configFile);
+		$token = __METHOD__ . '#' . json_encode($translations->getSupportedVersions(), JSON_THROW_ON_ERROR);
+		if ($this->isLimited($token)) {
 			return;
 		}
-		$translations = $this->getTranslations($configFile);
 
 		$configGenerator = new ConfigGenerator($translations->getDir() . '/config/components.php');
 
@@ -61,7 +63,7 @@ final class ConfigController extends ConsoleController {
 		}
 
 		$this->pushRepository($translations->getRepository());
-		$this->updateLimit(__METHOD__);
+		$this->updateLimit($token);
 	}
 
 	public static function resetFrequencyLimit(): void {
