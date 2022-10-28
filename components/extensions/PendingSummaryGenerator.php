@@ -188,7 +188,7 @@ final class PendingSummaryGenerator {
 		);
 
 		// @todo extract helper for Shields.io?
-		$requiredFlarum = urlencode(strtr($extension->getRequiredFlarumVersion(), [
+		$requiredFlarum = urlencode(strtr($extension->getRequiredFlarumVersion() ?? 'not found', [
 			'-' => '--',
 			'_' => '__',
 			' ' => '_',
