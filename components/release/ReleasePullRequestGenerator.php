@@ -21,6 +21,7 @@ use Dont\DontCall;
 use Dont\DontCallStatic;
 use Dont\DontGet;
 use Dont\DontSet;
+use Github\Exception\RuntimeException;
 use Yii;
 use yii\base\InvalidArgumentException;
 use function date;
@@ -182,7 +183,13 @@ class ReleasePullRequestGenerator {
 		);
 		if (!empty($this->subsplit->getMaintainers())) {
 			$this->githubApi->addPullRequestAssignees($this->subsplit->getRepositoryUrl(), $pullRequest['number'], $this->subsplit->getMaintainers());
-			$this->githubApi->addPullRequestRequestedReviewers($this->subsplit->getRepositoryUrl(), $pullRequest['number'], $this->subsplit->getMaintainers());
+			try {
+				$this->githubApi->addPullRequestRequestedReviewers($this->subsplit->getRepositoryUrl(), $pullRequest['number'], $this->subsplit->getMaintainers());
+			} catch (RuntimeException $exception) {
+				// this may happen if user have not yet accepted his invitation in repository - treat this as soft
+				// failure and only log this error
+				Yii::warning($exception);
+			}
 		}
 	}
 
