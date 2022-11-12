@@ -21,7 +21,6 @@ use Dont\DontGet;
 use Dont\DontSet;
 use mindplay\readable;
 use Symfony\Component\Translation\Loader\ArrayLoader;
-use Symfony\Component\Translation\Loader\JsonFileLoader;
 use Symfony\Component\Translation\MessageCatalogue;
 use Symfony\Component\Translation\Translator;
 use yii\base\InvalidArgumentException;
@@ -62,7 +61,7 @@ final class TranslationsImporter {
 
 		$translator = new Translator($language);
 		$translator->addLoader('array', new ArrayLoader());
-		$translator->addLoader('json', new JsonFileLoader());
+		$translator->addLoader('json', new JsonFileLoader(['skipEmpty' => true]));
 		if (file_exists($this->translations->getComponentTranslationPath($this->component->getId(), $language))) {
 			$translator->addResource(
 				'json',

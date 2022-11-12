@@ -15,15 +15,13 @@ namespace app\models;
 
 use app\components\readme\LanguageSubsplitReadmeGenerator;
 use app\components\readme\ReadmeGenerator;
+use app\components\translations\JsonFileLoader;
 use app\components\translations\YamlFileDumper;
 use Symfony\Component\Translation\Loader\ArrayLoader;
-use Symfony\Component\Translation\Loader\JsonFileLoader;
 use Symfony\Component\Translation\MessageCatalogue;
 use Symfony\Component\Translation\Translator;
-use function array_filter;
 use function assert;
 use function file_exists;
-use function ksort;
 
 /**
  * Class LanguageSubsplit.
@@ -57,7 +55,7 @@ final class LanguageSubsplit extends Subsplit {
 
 		$components = [];
 		$translator = new Translator('en');
-		$translator->addLoader('json_file', new JsonFileLoader());
+		$translator->addLoader('json_file', new JsonFileLoader(['skipEmpty' => true]));
 		$translator->addLoader('array', new ArrayLoader());
 
 		foreach ($translations->getComponents() as $component) {
@@ -74,13 +72,11 @@ final class LanguageSubsplit extends Subsplit {
 
 		$translationsCatalogue = $translator->getCatalogue($this->language);
 		assert($translationsCatalogue instanceof MessageCatalogue);
-		// add non-empty string from translations to sources
+		// define new catalogue with sorted strings and skipped components without translations
 		foreach ($translations->getComponents() as $component) {
 			if ($component->isValidForLanguage($this->language) && $this->isValidForComponent($component->getId())) {
 				$components[$component->getId()] = $components[$component->getId()] ?? $component;
-				$messages = array_filter($translationsCatalogue->all($component->getId()), static function ($string) {
-					return $string !== '';
-				});
+				$messages = $translationsCatalogue->all($component->getId());
 
 				if (!empty($messages)) {
 					ksort($messages);

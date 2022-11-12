@@ -16,6 +16,7 @@ namespace app\models;
 use app\commands\ConfigController;
 use app\components\extensions\ExtensionsRepository;
 use app\components\translations\JsonFileDumper;
+use app\components\translations\JsonFileLoader;
 use app\components\translations\YamlLoader;
 use app\helpers\HttpClient;
 use Dont\DontCall;
@@ -24,7 +25,6 @@ use Dont\DontGet;
 use Dont\DontSet;
 use mindplay\readable;
 use Symfony\Component\Translation\Loader\ArrayLoader;
-use Symfony\Component\Translation\Loader\JsonFileLoader;
 use Symfony\Component\Translation\MessageCatalogue;
 use Symfony\Component\Translation\Translator;
 use Symfony\Component\Translation\Util\ArrayConverter;
@@ -355,7 +355,7 @@ final class Translations {
 
 	public function updateComponents(string $language, MessageCatalogue $sourcesCatalogue): void {
 		$translator = new Translator($language);
-		$translator->addLoader('json_file', new JsonFileLoader());
+		$translator->addLoader('json_file', new JsonFileLoader(['skipEmpty' => true]));
 		$translator->addLoader('array', new ArrayLoader());
 
 		foreach ($this->getComponents() as $component) {
@@ -383,7 +383,7 @@ final class Translations {
 
 	public function cleanupComponents(string $language): void {
 		$translator = new Translator($language);
-		$translator->addLoader('json_file', new JsonFileLoader());
+		$translator->addLoader('json_file', new JsonFileLoader(['skipEmpty' => true]));
 		$translator->addLoader('array', new ArrayLoader());
 
 		foreach ($this->getComponents() as $component) {
