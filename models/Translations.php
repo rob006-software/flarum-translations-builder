@@ -37,6 +37,7 @@ use function array_filter;
 use function array_intersect_key;
 use function array_reverse;
 use function assert;
+use function count;
 use function dir;
 use function file_exists;
 use function file_get_contents;
@@ -83,6 +84,8 @@ final class Translations {
 	private $unsupportedVersions;
 
 	private $repository;
+
+	private $_sourcesContents = [];
 
 	public function __construct(string $repository, ?string $branch, array $config) {
 		$this->hash = md5(json_encode($config, JSON_THROW_ON_ERROR));
@@ -311,18 +314,46 @@ final class Translations {
 		$translator = new Translator('en');
 		$translator->addLoader('yaml', new YamlLoader());
 		foreach ($this->getComponents() as $component) {
-			// reverse array to process top record at the end - it will overwrite any previous translation
-			foreach (array_reverse($component->getSources()) as $source) {
+			// @todo there should be more efficient way of ensuring order and precedence than loading everything twice,
+			//       but it probably does not matter that much, so we can keep it in that way for now
+
+			// initial load to ensure correct order of elements (first source is a base and additional phrases are
+			// added at the end)
+			foreach ($component->getSources() as $source) {
 				// don't try to download URLs with placeholder for missing translation
 				if (strpos($source, ExtensionsRepository::NO_TRANSLATION_FILE) === false) {
-					$content = $this->fetchUrl($source, $component->getId());
+					$content = $this->getSourceContent($source, $component->getId());
 					$translator->addResource('yaml', $content, 'en', $component->getId());
 				} else {
 					Yii::warning("Skipped downloading $source.", __METHOD__ . '.skip');
 				}
 			}
+			// load everything again in reverse order to make sure that phrases from more important sources (from the top)
+			// overwrite the less important sources (from the bottom)
+			// we can skip this if component has only one source
+			if (count($component->getSources()) > 1) {
+				foreach (array_reverse($component->getSources()) as $source) {
+					// don't try to download URLs with placeholder for missing translation
+					if (strpos($source, ExtensionsRepository::NO_TRANSLATION_FILE) === false) {
+						$content = $this->getSourceContent($source, $component->getId());
+						$translator->addResource('yaml', $content, 'en', $component->getId());
+					}
+				}
+			}
+
+			// free memory
+			$this->_sourcesContents = [];
 		}
+
 		return $translator;
+	}
+
+	private function getSourceContent(string $url, string $componentId): string {
+		if (!isset($this->_sourcesContents[$url])) {
+			$this->_sourcesContents[$url] = $this->fetchUrl($url, $componentId);
+		}
+
+		return $this->_sourcesContents[$url];
 	}
 
 	private function fetchUrl(string $url, string $componentId): string {
