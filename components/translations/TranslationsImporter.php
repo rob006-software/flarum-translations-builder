@@ -19,11 +19,9 @@ use Dont\DontCall;
 use Dont\DontCallStatic;
 use Dont\DontGet;
 use Dont\DontSet;
-use mindplay\readable;
 use Symfony\Component\Translation\Loader\ArrayLoader;
 use Symfony\Component\Translation\MessageCatalogue;
 use Symfony\Component\Translation\Translator;
-use yii\base\InvalidArgumentException;
 use function array_filter;
 use function file_exists;
 use function file_get_contents;
@@ -51,10 +49,6 @@ final class TranslationsImporter {
 	}
 
 	public function import(string $source, string $language): void {
-		if (file_exists($source)) {
-			throw new InvalidArgumentException(sprintf('File %s does not exist.', readable::value($source)));
-		}
-
 		$sourceTranslator = new Translator($language);
 		$sourceTranslator->addLoader('yaml', new YamlLoader());
 		$sourceTranslator->addResource('yaml', file_get_contents($source), $language, 'sources');
