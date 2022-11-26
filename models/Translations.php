@@ -414,7 +414,7 @@ final class Translations {
 
 	public function cleanupComponents(string $language): void {
 		$translator = new Translator($language);
-		$translator->addLoader('json_file', new JsonFileLoader(['skipEmpty' => true]));
+		$translator->addLoader('json_file', new JsonFileLoader());
 		$translator->addLoader('array', new ArrayLoader());
 
 		foreach ($this->getComponents() as $component) {
