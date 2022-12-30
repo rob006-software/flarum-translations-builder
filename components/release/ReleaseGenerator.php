@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace app\components\release;
 
-use app\models\Extension;
 use app\models\Repository;
 use app\models\Subsplit;
 use Composer\Semver\Semver;
@@ -141,9 +140,12 @@ class ReleaseGenerator extends BaseObject {
 
 		if (!empty($added)) {
 			$content .= "**{$this->t('changelog.extensions-added')}**:\n\n";
-			/* @var $extension Extension */
-			foreach ($added as $extension) {
-				$content .= "* [`{$extension->getPackageName()}`]({$extension->getRepositoryUrl()})\n";
+			foreach ($added as $id => $extension) {
+				if ($extension === null) {
+					$content .= "* `$id`\n";
+				} else {
+					$content .= "* [`{$extension->getPackageName()}`]({$extension->getRepositoryUrl()})\n";
+				}
 			}
 			$content .= "\n\n";
 		}
@@ -151,15 +153,17 @@ class ReleaseGenerator extends BaseObject {
 			$content .= $this->isMajorUpdate()
 				? "**{$this->t('changelog.extensions-cleaned')}**:\n\n"
 				: "**{$this->t('changelog.extensions-updated')}**:\n\n";
-			/* @var $extension Extension */
-			foreach ($changed as $extension) {
-				$content .= "* [`{$extension->getPackageName()}`]({$extension->getRepositoryUrl()})\n";
+			foreach ($changed as $id => $extension) {
+				if ($extension === null) {
+					$content .= "* `$id`\n";
+				} else {
+					$content .= "* [`{$extension->getPackageName()}`]({$extension->getRepositoryUrl()})\n";
+				}
 			}
 			$content .= "\n\n";
 		}
 		if (!empty($removed)) {
 			$content .= "**{$this->t('changelog.extensions-removed')}**:\n\n";
-			/* @var $extension Extension */
 			foreach ($removed as $id => $extension) {
 				if ($extension === null) {
 					$content .= "* `$id`\n";
