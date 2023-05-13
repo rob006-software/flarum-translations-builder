@@ -14,18 +14,14 @@ declare(strict_types=1);
 namespace app\components;
 
 use app\components\extensions\exceptions\GithubApiException;
-use Cache\Adapter\Filesystem\FilesystemCachePool;
 use Github\AuthMethod;
 use Github\Client;
 use Github\Exception\RuntimeException as GithubRuntimeException;
-use League\Flysystem\Adapter\Local;
-use League\Flysystem\Filesystem;
 use mindplay\readable;
 use Yii;
 use yii\base\Component;
 use yii\base\InvalidArgumentException;
 use function strncmp;
-use const APP_ROOT;
 
 /**
  * Class GithubApi.
@@ -46,18 +42,6 @@ final class GithubApi extends Component {
 
 		$this->githubApiClient = new Client();
 		$this->githubApiClient->authenticate($this->authToken, $this->authPassword, $this->authMethod);
-	}
-
-	public function enableCache(): void {
-		$filesystemAdapter = new Local(APP_ROOT . '/runtime/github-cache');
-		$filesystem = new Filesystem($filesystemAdapter);
-
-		$pool = new FilesystemCachePool($filesystem);
-		$this->githubApiClient->addCache($pool);
-	}
-
-	public function disableCache(): void {
-		$this->githubApiClient->removeCache();
 	}
 
 	public function getDefaultBranch(string $repoUrl): ?string {
@@ -169,7 +153,6 @@ final class GithubApi extends Component {
 
 	public function addPullRequestAssignees(string $targetRepository, int $number, array $assignees): array {
 		[$targetUserName, $targetRepoName] = $this->explodeRepoUrl($targetRepository);
-		/* @noinspection PhpIncompatibleReturnTypeInspection */ // see https://github.com/KnpLabs/php-github-api/pull/1078
 		return $this->githubApiClient->issues()->assignees()
 			->add($targetUserName, $targetRepoName, $number, ['assignees' => $assignees]);
 	}
