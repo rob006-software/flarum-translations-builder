@@ -34,9 +34,6 @@
 		"yiisoft/yii2-queue": "^2.3",
 		"yiisoft/yii2-swiftmailer": "~2.1.1"
 	},
-	"require-dev": {
-		"roave/security-advisories": "dev-master"
-	},
 	"autoload": {
 		"psr-4": {
 			"app\\": ""
@@ -59,7 +56,8 @@
 		},
 		"sort-packages": true,
 		"allow-plugins": {
-			"yiisoft/yii2-composer": true
+			"yiisoft/yii2-composer": true,
+			"php-http/discovery": true
 		}
 	},
 	"scripts": {
