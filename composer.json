@@ -22,7 +22,7 @@
 		"knplabs/github-api": "^3.1",
 		"mindplay/readable": "^1.1",
 		"monolog/monolog": "^2.2",
-		"php-http/guzzle7-adapter": "^1.0",
+		"nyholm/psr7": "^1.8",
 		"roave/dont": "^1.0",
 		"symfony/http-client": "^5.2",
 		"symfony/translation": "^5.1.5",

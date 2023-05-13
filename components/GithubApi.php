@@ -14,10 +14,14 @@ declare(strict_types=1);
 namespace app\components;
 
 use app\components\extensions\exceptions\GithubApiException;
+use app\helpers\HttpClient;
 use Github\AuthMethod;
 use Github\Client;
 use Github\Exception\RuntimeException as GithubRuntimeException;
+use Github\HttpClient\Builder;
+use Http\Client\Common\Plugin\HeaderSetPlugin;
 use mindplay\readable;
+use Symfony\Component\HttpClient\HttplugClient;
 use Yii;
 use yii\base\Component;
 use yii\base\InvalidArgumentException;
@@ -40,7 +44,10 @@ final class GithubApi extends Component {
 	public function init(): void {
 		parent::init();
 
-		$this->githubApiClient = new Client();
+		$httpClient = new HttplugClient(HttpClient::create());
+		$httpBuilder = new Builder($httpClient);
+		$httpBuilder->addPlugin(new HeaderSetPlugin(['User-Agent' => HttpClient::USER_AGENT]));
+		$this->githubApiClient = new Client($httpBuilder);
 		$this->githubApiClient->authenticate($this->authToken, $this->authPassword, $this->authMethod);
 	}
 
