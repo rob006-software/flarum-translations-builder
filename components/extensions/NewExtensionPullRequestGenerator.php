@@ -58,7 +58,7 @@ final class NewExtensionPullRequestGenerator {
 			}
 			$branchName = "new/{$extension->getId()}";
 			if ($this->repository->hasBranch($branchName)) {
-				if ($this->updateBranch($branchName, $extension)) {
+				if (!$this->isRateLimited($extension) && $this->updateBranch($branchName, $extension)) {
 					$this->updatePullRequestForNewExtension($branchName);
 				}
 				continue;
@@ -72,6 +72,7 @@ final class NewExtensionPullRequestGenerator {
 			$this->repository->push();
 
 			$this->openPullRequestForNewExtension($branchName, $extension);
+			$this->bumpRateLimitToken($extension);
 
 			if (--$limit <= 0) {
 				return;
@@ -79,11 +80,29 @@ final class NewExtensionPullRequestGenerator {
 		}
 	}
 
+	private function isRateLimited(Extension $extension): bool {
+		$oldConfig = Yii::$app->cache->get($this->getRateLimitCacheKey($extension));
+		if ($oldConfig === false) {
+			return false;
+		}
+
+		return $oldConfig === ConfigGenerator::generateConfig($extension);
+	}
+
+	private function bumpRateLimitToken(Extension $extension): void {
+		Yii::$app->cache->set($this->getRateLimitCacheKey($extension), ConfigGenerator::generateConfig($extension), 31 * 24 * 3600);
+	}
+
+	private function getRateLimitCacheKey(Extension $extension): string {
+		return __METHOD__ . "({$extension->getId()})";
+	}
+
 	private function updateBranch(string $branchName, Extension $extension): bool {
 		$this->repository->checkoutBranch($branchName);
 		$this->addExtensionToConfig($extension);
 		$this->repository->commit("Update config for `{$extension->getPackageName()}`.", $commited);
 		$this->repository->push();
+		$this->bumpRateLimitToken($extension);
 
 		return $commited;
 	}
