@@ -114,6 +114,8 @@ abstract class Subsplit {
 		return $this->components === null || in_array($componentId, $this->components, true);
 	}
 
+	abstract public function getTranslationsHash(Translations $translations): string;
+
 	abstract public function split(Translations $translations): void;
 
 	abstract public function createReadmeGenerator(Translations $translations): ReadmeGenerator;

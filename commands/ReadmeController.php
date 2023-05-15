@@ -169,6 +169,10 @@ final class ReadmeController extends ConsoleController {
 		}
 
 		foreach ($subsplits as $subsplit) {
+			$subsplitToken = __METHOD__ . '#' . $subsplit->getId() . '#' . $subsplit->getTranslationsHash($translations);
+			if ($this->isLimited($subsplitToken)) {
+				continue;
+			}
 			$subsplit->getRepository()->update();
 			$readme = file_get_contents($subsplit->getDir() . '/README.md');
 			$changed = false;
@@ -205,6 +209,7 @@ final class ReadmeController extends ConsoleController {
 				file_put_contents($subsplit->getDir() . '/README.md', $readme);
 				$this->postProcessRepository($subsplit->getRepository(), 'Update translations status in README.');
 			}
+			$this->updateLimit($subsplitToken);
 		}
 		$this->updateLimit($token);
 	}

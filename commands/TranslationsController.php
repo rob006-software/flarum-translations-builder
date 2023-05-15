@@ -68,6 +68,10 @@ final class TranslationsController extends ConsoleController {
 		}
 
 		foreach ($subsplits as $subsplit) {
+			$subsplitToken = __METHOD__ . '#' . $subsplit->getId() . '#' . $subsplit->getTranslationsHash($translations);
+			if ($this->isLimited($subsplitToken)) {
+				continue;
+			}
 			$subsplit->split($translations);
 			$this->postProcessRepository(
 				$subsplit->getRepository(),
@@ -78,6 +82,7 @@ final class TranslationsController extends ConsoleController {
 				(new ReleasePullRequestGenerator($subsplit))->generate();
 			}
 			Yii::$app->locks->releaseRepoLock($subsplit->getRepository()->getPath());
+			$this->updateLimit($subsplitToken);
 		}
 		$this->updateLimit($token);
 	}

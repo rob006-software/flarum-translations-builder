@@ -21,7 +21,12 @@ use Symfony\Component\Translation\Loader\ArrayLoader;
 use Symfony\Component\Translation\MessageCatalogue;
 use Symfony\Component\Translation\Translator;
 use function assert;
+use function basename;
 use function file_exists;
+use function json_encode;
+use function ksort;
+use function md5;
+use const JSON_THROW_ON_ERROR;
 
 /**
  * Class LanguageSubsplit.
@@ -48,6 +53,22 @@ final class LanguageSubsplit extends Subsplit {
 		$this->language = $language;
 
 		parent::__construct($id, $repository, $branch, $path, $components, $releaseGenerator, $localeConfig, $maintainers);
+	}
+
+	public function getTranslationsHash(Translations $translations): string {
+		$values = [];
+		foreach ($translations->getComponents() as $component) {
+			if ($component->isValidForLanguage($this->language) && $this->isValidForComponent($component->getId())) {
+				$file = $translations->getComponentTranslationPath($component->getId(), $this->language);
+				$messages = (new JsonFileLoader(['skipEmpty' => true]))->load($file, 'en')->all();
+				if (!empty($messages)) {
+					$values[basename($file, '.json')] = md5(json_encode($messages, JSON_THROW_ON_ERROR));
+				}
+			}
+		}
+		ksort($values);
+
+		return md5(json_encode($values, JSON_THROW_ON_ERROR));
 	}
 
 	public function split(Translations $translations): void {
