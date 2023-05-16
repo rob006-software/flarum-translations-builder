@@ -80,6 +80,7 @@ class ReleasePullRequestGenerator {
 			$this->repository->push();
 
 			$this->updatePullRequest($branchName);
+			$this->repository->checkoutBranch($this->repository->getBranch());
 			return;
 		}
 
@@ -90,6 +91,7 @@ class ReleasePullRequestGenerator {
 		$this->repository->push();
 
 		$this->openPullRequest($branchName);
+		$this->repository->checkoutBranch($this->repository->getBranch());
 	}
 
 	public function merge(): void {
