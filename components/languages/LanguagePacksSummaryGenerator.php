@@ -13,12 +13,12 @@ declare(strict_types=1);
 
 namespace app\components\languages;
 
+use app\helpers\Language;
 use app\models\LanguageSubsplit;
 use Dont\DontCall;
 use Dont\DontCallStatic;
 use Dont\DontGet;
 use Dont\DontSet;
-use Locale;
 use Yii;
 use function uasort;
 
@@ -47,12 +47,11 @@ final class LanguagePacksSummaryGenerator {
 		$names = [];
 		foreach ($this->subsplits as $subsplit) {
 			/* @noinspection AmbiguousMethodsCallsInArrayMappingInspection */
-			$names[$subsplit->getLanguage()] = Locale::getDisplayName($subsplit->getLanguage(), 'en');
+			$names[$subsplit->getLanguage()] = Language::name($subsplit->getLanguage());
 		}
 		uasort($names, static function (string $a, string $b) {
 			return $a <=> $b;
 		});
-
 
 		$output = <<<HTML
 			# Language packs summary
@@ -74,7 +73,7 @@ final class LanguagePacksSummaryGenerator {
 			HTML;
 		foreach ($names as $language => $name) {
 			$subsplit = $this->subsplits[$language];
-			$name = Locale::getDisplayName($subsplit->getLanguage(), 'en');
+			$name = Language::name($subsplit->getLanguage());
 			$packageName = $subsplit->getPackageName();
 			[$userName, $repoName] = Yii::$app->githubApi->explodeRepoUrl($subsplit->getRepositoryUrl());
 			$prefix = '';

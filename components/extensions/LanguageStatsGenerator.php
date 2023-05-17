@@ -16,6 +16,7 @@ declare(strict_types=1);
 
 namespace app\components\extensions;
 
+use app\helpers\Language;
 use app\helpers\StringHelper;
 use app\models\Extension;
 use app\models\PremiumExtension;
@@ -24,7 +25,6 @@ use Dont\DontCall;
 use Dont\DontCallStatic;
 use Dont\DontGet;
 use Dont\DontSet;
-use Locale;
 use Yii;
 use yii\base\InvalidArgumentException;
 use yii\helpers\Html;
@@ -80,7 +80,7 @@ final class LanguageStatsGenerator {
 	}
 
 	public function generate(): string {
-		$languageName = Locale::getDisplayName($this->language, 'en');
+		$languageName = Language::name($this->language);
 		return "# $languageName translation status \n\n\n"
 			. $this->generateCore() . "\n\n"
 			. $this->generateRegularExtensions() . "\n\n"

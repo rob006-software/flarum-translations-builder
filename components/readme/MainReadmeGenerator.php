@@ -13,9 +13,9 @@ declare(strict_types=1);
 
 namespace app\components\readme;
 
+use app\helpers\Language;
 use app\models\Extension;
 use app\models\LanguageSubsplit;
-use Locale;
 use Yii;
 use yii\helpers\Html;
 use function usort;
@@ -50,7 +50,7 @@ final class MainReadmeGenerator extends ReadmeGenerator {
 		$names = [];
 		foreach ($subsplits as $subsplit) {
 			/* @noinspection AmbiguousMethodsCallsInArrayMappingInspection */
-			$names[$subsplit->getLanguage()] = Locale::getDisplayName($subsplit->getLanguage(), 'en');
+			$names[$subsplit->getLanguage()] = Language::name($subsplit->getLanguage());
 		}
 		uasort($names, static function (string $a, string $b) {
 			return $a <=> $b;
