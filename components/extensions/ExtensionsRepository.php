@@ -52,8 +52,12 @@ final class ExtensionsRepository extends Component {
 
 	public const NO_TRANSLATION_FILE = 'no-translation-source.yml';
 
+	/** @var int */
 	public $cacheDuration = 3600;
+	/** @var int */
 	public $packagistCacheDuration = 3600;
+	/** @var string[] */
+	public $ignoredExtensions = [];
 
 	private $_extensions;
 	private $_client;
@@ -215,6 +219,9 @@ final class ExtensionsRepository extends Component {
 		foreach ($this->getPackagesList() as $result) {
 			assert($result instanceof ListResult);
 			$extension = RegularExtension::createFromPackagistListResult($result);
+			if (in_array($extension->getPackageName(), $this->ignoredExtensions, true)) {
+				continue;
+			}
 			if (
 				!isset($extensions[$extension->getId()])
 				// handle ID conflicts

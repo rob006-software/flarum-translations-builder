@@ -122,6 +122,9 @@ return [
 		],
 		'extensionsRepository' => [
 			'class' => ExtensionsRepository::class,
+			'ignoredExtensions' => [
+				'ziiven/flarum-u2di', // constantly added and removed from packagist
+			],
 		],
 		'githubApi' => [
 			'class' => GithubApi::class,
