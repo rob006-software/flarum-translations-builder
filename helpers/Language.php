@@ -25,6 +25,7 @@ class Language {
 	private const OVERWRITES = [
 		'bn' => 'Bengali',
 		'ckb' => 'Kurdish (Central)',
+		'de@formal' => 'German (formal)',
 		'kmr' => 'Kurdish (Northern)',
 	];
 
