@@ -22,6 +22,7 @@ use UnexpectedValueException;
 use Yii;
 use yii\base\BaseObject;
 use function array_filter;
+use function basename;
 use function date;
 use function end;
 use function explode;
@@ -316,12 +317,12 @@ class ReleaseGenerator extends BaseObject {
 		$changedExtensions = [];
 		$prefix = trim($this->subsplit->getPath(), '/') . '/';
 		foreach ($this->getChangedFiles() as $file => $changeType) {
-			if (
-				strncmp($file, $prefix, strlen($prefix)) === 0
-				&& substr($file, -4) === '.yml'
-				&& !in_array($file, ["{$prefix}core.yml", "{$prefix}validation.yml"], true)
-			) {
-				$changedExtensions[substr($file, strlen($prefix), -4)] = $changeType;
+			if (strncmp($file, $prefix, strlen($prefix)) !== 0) {
+				continue;
+			}
+			$file = basename($file);
+			if (substr($file, -4) === '.yml' && !in_array($file, ['core.yml', 'validation.yml'], true)) {
+				$changedExtensions[substr($file, 0, -4)] = $changeType;
 			}
 		}
 
@@ -332,13 +333,12 @@ class ReleaseGenerator extends BaseObject {
 		$coreChanges = [];
 		$prefix = trim($this->subsplit->getPath(), '/') . '/';
 		foreach ($this->getChangedFiles() as $file => $changeType) {
-			if (in_array($file, [
-				"{$prefix}core.yml",
-				"{$prefix}validation.yml",
-				"{$prefix}config.js",
-				"{$prefix}config.css",
-			], true)) {
-				$coreChanges[substr($file, strlen($prefix))] = $changeType;
+			if (strncmp($file, $prefix, strlen($prefix)) !== 0) {
+				continue;
+			}
+			$file = basename($file);
+			if (in_array($file, ['core.yml', 'validation.yml', 'config.js', 'config.css'], true)) {
+				$coreChanges[$file] = $changeType;
 			}
 		}
 

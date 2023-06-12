@@ -72,6 +72,7 @@ final class TranslationsController extends ConsoleController {
 			if ($this->isLimited($subsplitToken)) {
 				continue;
 			}
+			$subsplit->getRepository()->update();
 			$subsplit->split($translations);
 			$this->postProcessRepository(
 				$subsplit->getRepository(),

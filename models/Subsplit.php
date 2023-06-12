@@ -26,6 +26,7 @@ use yii\helpers\Inflector;
 use function array_keys;
 use function arsort;
 use function basename;
+use function file_exists;
 use function file_get_contents;
 use function is_array;
 use function json_decode;
@@ -55,7 +56,7 @@ abstract class Subsplit {
 
 	public function __construct(
 		string $id,
-		string $repository,
+		$repository,
 		string $branch,
 		string $path,
 		?array $components,
@@ -67,11 +68,27 @@ abstract class Subsplit {
 		$this->path = $path;
 		$this->components = $components;
 		$this->releaseGenerator = $releaseGenerator;
-		$this->repositoryUrl = $repository;
-		$repoDirectory = $id . '__' . Inflector::slug($repository);
-		$this->repository = [$repository, $branch, APP_ROOT . "/runtime/subsplits/$repoDirectory"];
+		if (is_array($repository)) {
+			$this->repositoryUrl = $repository[0];
+			$this->repository = $repository;
+		} elseif ($repository instanceof Repository) {
+			$this->repositoryUrl = $repository->getRemote();
+			$this->repository = $repository;
+		} else {
+			$this->repositoryUrl = $repository;
+			$this->repository = [$repository, $branch, static::generateRepositoryPath($id, $repository)];
+		}
 		$this->locale = [$localeConfig['path'] ?? null, $localeConfig['fallbackPath']];
 		$this->maintainers = $maintainers;
+	}
+
+	public static function generateRepositoryPath(string $subsplitId, string $repositoryUrl): string {
+		$repoDirectory = $subsplitId . '__' . Inflector::slug($repositoryUrl);
+		return APP_ROOT . "/runtime/subsplits/$repoDirectory";
+	}
+
+	public function setRepository(Repository $repository): void {
+		$this->repository = $repository;
 	}
 
 	public function getRepository(): Repository {
@@ -110,8 +127,8 @@ abstract class Subsplit {
 		return $this->maintainers;
 	}
 
-	public function isValidForComponent(string $componentId): bool {
-		return $this->components === null || in_array($componentId, $this->components, true);
+	public function isValidForComponent(Component $component): bool {
+		return ($this->components === null || in_array($component->getId(), $this->components, true));
 	}
 
 	abstract public function getTranslationsHash(Translations $translations): string;
@@ -137,6 +154,10 @@ abstract class Subsplit {
 	 * @return string[]
 	 */
 	abstract protected function getSourcesPaths(Translations $translations): array;
+
+	public function hasTranslationForComponent(Component $component): bool {
+		return file_exists($this->getDir() . $this->getPath() . "/{$component->getId()}.yml");
+	}
 
 	public function processCommitMessage(Translations $translations, string $commitMessage): string {
 		$authors = $this->getAuthorsSinceLastChange($translations);

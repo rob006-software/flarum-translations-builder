@@ -176,7 +176,6 @@ final class Translations {
 
 		if (!$this->subsplits[$id] instanceof Subsplit) {
 			$config = $this->subsplits[$id];
-			/* @noinspection DegradedSwitchInspection */
 			switch ($config['type']) {
 				case LanguageSubsplit::TYPE:
 					$defaultLocaleConfig = [
@@ -186,6 +185,42 @@ final class Translations {
 					$this->subsplits[$id] = new LanguageSubsplit(
 						$id,
 						$config['language'],
+						$config['repository'],
+						$config['branch'],
+						$config['path'],
+						$config['components'] ?? null,
+						$config['releaseGenerator'] ?? null,
+						($config['locale'] ?? []) + $defaultLocaleConfig,
+						$config['maintainers'] ?? []
+					);
+					break;
+				case MultiLanguageSubsplit::TYPE:
+					$defaultLocaleConfig = [
+						'path' => $this->getDir() . "/config/subsplitsLocale/{$id}.json",
+						'fallbackPath' => $this->getDir() . '/config/subsplitsLocale/en.json',
+					];
+
+					$variants = [];
+					$variantsLabels = [];
+					foreach ($config['variants'] as $variantId => $variantConfig) {
+						$variantsLabels[$variantId] = $variantConfig['name'] ?? $variantId;
+						$variants[$variantId] = new LanguageSubsplit(
+							$variantId,
+							$variantConfig['language'],
+							[$config['repository'], $config['branch'], LanguageSubsplit::generateRepositoryPath($id, $config['repository'])],
+							$config['branch'],
+							$variantConfig['path'],
+							null,
+							null,
+							($config['locale'] ?? []) + $defaultLocaleConfig,
+							$config['maintainers'] ?? []
+						);
+					}
+
+					$this->subsplits[$id] = new MultiLanguageSubsplit(
+						$id,
+						$variants,
+						$variantsLabels,
 						$config['repository'],
 						$config['branch'],
 						$config['path'],
@@ -211,16 +246,6 @@ final class Translations {
 				}
 			} elseif ($subsplit['repository'] === $gitUrl && $subsplit['branch'] === $branch) {
 				return $id;
-			}
-		}
-
-		return null;
-	}
-
-	public function findSubsplitForLanguage(string $language): ?LanguageSubsplit {
-		foreach ($this->getSubsplits() as $subsplit) {
-			if ($subsplit instanceof LanguageSubsplit && $subsplit->getLanguage() === $language) {
-				return $subsplit;
 			}
 		}
 

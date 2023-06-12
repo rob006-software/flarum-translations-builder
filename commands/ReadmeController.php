@@ -20,15 +20,13 @@ use app\components\readme\MainReadmeGenerator;
 use app\components\readme\SummaryGenerator;
 use app\models\Extension;
 use app\models\LanguageSubsplit;
+use app\models\MultiLanguageSubsplit;
 use app\models\PremiumExtension;
-use app\models\Subsplit;
 use mindplay\readable;
 use Yii;
 use yii\base\InvalidArgumentException;
-use function array_filter;
 use function file_get_contents;
 use function in_array;
-use function iterator_to_array;
 use function strpos;
 use function substr;
 
@@ -74,11 +72,15 @@ final class ReadmeController extends ConsoleController {
 			&& strpos($readme, "<!-- languages-list-stop -->") !== false
 		) {
 			$readmeGenerator = new MainReadmeGenerator();
-			/* @noinspection PhpParamsInspection */
-			$languageSubsplits = array_filter(iterator_to_array($translations->getSubsplits()), static function (Subsplit $subsplit) {
-				/* @noinspection PhpConditionAlreadyCheckedInspection */
-				return $subsplit instanceof LanguageSubsplit;
-			});
+			$languageSubsplits = [];
+			foreach ($translations->getSubsplits() as $subsplit) {
+				if ($subsplit instanceof MultiLanguageSubsplit) {
+					$subsplit = $subsplit->getMainVariant();
+				}
+				if ($subsplit instanceof LanguageSubsplit) {
+					$languageSubsplits[$subsplit->getLanguage()] = $subsplit;
+				}
+			}
 			$readme = $this->replaceBetween(
 				"<!-- languages-list-start -->",
 				"<!-- languages-list-stop -->",
@@ -141,11 +143,15 @@ final class ReadmeController extends ConsoleController {
 		file_put_contents($translations->getDir() . '/status/licenses.md', $licenses);
 		$this->postProcessRepository($translations->getRepository(), 'Update list of supported extensions.');
 
-		/* @noinspection PhpParamsInspection */
-		$languageSubsplits = array_filter(iterator_to_array($translations->getSubsplits()), static function (Subsplit $subsplit) {
-			/* @noinspection PhpConditionAlreadyCheckedInspection */
-			return $subsplit instanceof LanguageSubsplit;
-		});
+		$languageSubsplits = [];
+		foreach ($translations->getSubsplits() as $subsplit) {
+			if ($subsplit instanceof MultiLanguageSubsplit) {
+				$subsplit = $subsplit->getMainVariant();
+			}
+			if ($subsplit instanceof LanguageSubsplit) {
+				$languageSubsplits[$subsplit->getLanguage()] = $subsplit;
+			}
+		}
 		$languagePacksGenerator = new LanguagePacksSummaryGenerator($languageSubsplits);
 		file_put_contents($translations->getDir() . '/status/language-packs.md', $languagePacksGenerator->generate());
 		$this->postProcessRepository($translations->getRepository(), 'Update list of language packs.');
@@ -183,11 +189,7 @@ final class ReadmeController extends ConsoleController {
 				) {
 					$generator = $subsplit->createReadmeGenerator($translations);
 					foreach ($translations->getExtensionsComponents() as $component) {
-						if (
-							(!($subsplit instanceof LanguageSubsplit) || $component->isValidForLanguage($subsplit->getLanguage()))
-							&& $subsplit->isValidForComponent($component->getId())
-							&& $subsplit->hasTranslationForComponent($component->getId())
-						) {
+						if ($subsplit->isValidForComponent($component) && $subsplit->hasTranslationForComponent($component)) {
 							$extension = Yii::$app->extensionsRepository->getExtension($component->getId());
 							if ($extension !== null && $this->isValidForGroup($extension, $group)) {
 								$generator->addExtension($extension);

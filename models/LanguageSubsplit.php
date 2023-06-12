@@ -22,7 +22,6 @@ use Symfony\Component\Translation\MessageCatalogue;
 use Symfony\Component\Translation\Translator;
 use function assert;
 use function basename;
-use function file_exists;
 use function json_encode;
 use function ksort;
 use function md5;
@@ -37,12 +36,15 @@ final class LanguageSubsplit extends Subsplit {
 
 	public const TYPE = 'language';
 
+	/** @var string */
 	private $language;
+	/** @var self */
+	private $fallbackLanguage;
 
 	public function __construct(
 		string $id,
 		string $language,
-		string $repository,
+		$repository,
 		string $branch,
 		string $path,
 		?array $components,
@@ -55,10 +57,14 @@ final class LanguageSubsplit extends Subsplit {
 		parent::__construct($id, $repository, $branch, $path, $components, $releaseGenerator, $localeConfig, $maintainers);
 	}
 
+	public function setFallbackLanguage(self $language): void {
+		$this->fallbackLanguage = $language;
+	}
+
 	public function getTranslationsHash(Translations $translations): string {
 		$values = [];
 		foreach ($translations->getComponents() as $component) {
-			if ($component->isValidForLanguage($this->language) && $this->isValidForComponent($component->getId())) {
+			if ($this->isValidForComponent($component)) {
 				$file = $translations->getComponentTranslationPath($component->getId(), $this->language);
 				$messages = (new JsonFileLoader(['skipEmpty' => true]))->load($file, 'en')->all();
 				if (!empty($messages)) {
@@ -72,16 +78,24 @@ final class LanguageSubsplit extends Subsplit {
 	}
 
 	public function split(Translations $translations): void {
-		$this->getRepository()->update();
-
 		$components = [];
 		$translator = new Translator('en');
 		$translator->addLoader('json_file', new JsonFileLoader(['skipEmpty' => true]));
 		$translator->addLoader('array', new ArrayLoader());
 
 		foreach ($translations->getComponents() as $component) {
-			if ($component->isValidForLanguage($this->language) && $this->isValidForComponent($component->getId())) {
+			if ($this->isValidForComponent($component)) {
 				$components[$component->getId()] = $components[$component->getId()] ?? $component;
+
+				if ($this->fallbackLanguage !== null && $this->fallbackLanguage->isValidForComponent($component)) {
+					$translator->addResource(
+						'json_file',
+						$translations->getComponentTranslationPath($component->getId(), $this->fallbackLanguage->getLanguage()),
+						$this->language,
+						$component->getId()
+					);
+				}
+
 				$translator->addResource(
 					'json_file',
 					$translations->getComponentTranslationPath($component->getId(), $this->language),
@@ -95,7 +109,7 @@ final class LanguageSubsplit extends Subsplit {
 		assert($translationsCatalogue instanceof MessageCatalogue);
 		// define new catalogue with sorted strings and skipped components without translations
 		foreach ($translations->getComponents() as $component) {
-			if ($component->isValidForLanguage($this->language) && $this->isValidForComponent($component->getId())) {
+			if ($this->isValidForComponent($component)) {
 				$components[$component->getId()] = $components[$component->getId()] ?? $component;
 				$messages = $translationsCatalogue->all($component->getId());
 
@@ -116,21 +130,21 @@ final class LanguageSubsplit extends Subsplit {
 				. "# You can read more about the process at https://github.com/rob006-software/flarum-translations/wiki.\n\n";
 		});
 		$dumper->setRelativePathTemplate('%domain%.%extension%');
-		$sourcesCatalogue = $translator->getCatalogue('en');
-		assert($sourcesCatalogue instanceof MessageCatalogue);
-		$dumper->dump($sourcesCatalogue, [
+		$catalogue = $translator->getCatalogue('en');
+		assert($catalogue instanceof MessageCatalogue);
+		$dumper->dump($catalogue, [
 			'path' => $this->getDir() . $this->getPath(),
 			'as_tree' => true,
 			'inline' => 10,
 		]);
 	}
 
-	public function hasTranslationForComponent(string $componentId): bool {
-		return file_exists($this->getDir() . $this->getPath() . "/$componentId.yml");
-	}
-
 	public function getLanguage(): string {
 		return $this->language;
+	}
+
+	public function isValidForComponent(Component $component): bool {
+		return parent::isValidForComponent($component) && $component->isValidForLanguage($this->language);
 	}
 
 	public function createReadmeGenerator(Translations $translations): ReadmeGenerator {

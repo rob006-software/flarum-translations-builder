@@ -111,6 +111,10 @@ class Repository {
 		return $this->workingCopyDir;
 	}
 
+	public function getRemote(): string {
+		return $this->remote;
+	}
+
 	public function getBranch(): ?string {
 		return $this->branch;
 	}
