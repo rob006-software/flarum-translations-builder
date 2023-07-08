@@ -26,6 +26,7 @@ class Language {
 		'bn' => 'Bengali',
 		'ckb' => 'Kurdish (Central)',
 		'de@formal' => 'German (formal)',
+		'es@formal' => 'Spanish (formal)',
 		'kmr' => 'Kurdish (Northern)',
 	];
 
