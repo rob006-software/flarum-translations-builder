@@ -206,7 +206,7 @@ final class LanguageStatsGenerator {
 						{$this->compatibilityIcon($extension)}
 						{$this->link("<code>{$this->truncate($extension->getPackageName())}</code>", $extension->getRepositoryUrl(), $extension->getPackageName())}
 					</td>
-					<td align="center">{$rank}{$this->statsChangeBadge($extension, 'rank', $rank, true)}</td>
+					<td align="center">{$this->formatNumber($rank)}{$this->statsChangeBadge($extension, 'rank', $rank, true)}</td>
 					<td align="center">{$this->premiumStats($extension, 'subscribers')}</td>
 					<td align="center">{$this->premiumStats($extension, 'downloads')}</td>
 					<td>{$this->statusBadge($extension)}</td>
@@ -240,11 +240,11 @@ final class LanguageStatsGenerator {
 		$badge = $this->statsChangeBadge($extension, $statsType, $this->getCurrentStats($extension, $statsType));
 		$statsUrl = "https://packagist.org/packages/{$extension->getPackageName()}/stats";
 
-		return $this->link($this->getCurrentStats($extension, $statsType) . $badge, $statsUrl);
+		return $this->link($this->formatNumber($this->getCurrentStats($extension, $statsType)) . $badge, $statsUrl);
 	}
 
 	private function premiumStats(PremiumExtension $extension, string $statsType): string {
-		return $this->getCurrentStats($extension, $statsType)
+		return $this->formatNumber($this->getCurrentStats($extension, $statsType))
 			. $this->statsChangeBadge($extension, $statsType, $this->getCurrentStats($extension, $statsType));
 	}
 
@@ -255,10 +255,10 @@ final class LanguageStatsGenerator {
 		}
 		$change = $currentValue - $old;
 		if ($change > 0) {
-			$label = "+$change";
+			$label = "+{$this->formatNumber($change)}";
 			$color = $reverseColor ? 'red' : 'brightgreen';
 		} elseif ($change < 0) {
-			$label = (string) $change;
+			$label = $this->formatNumber($change);
 			$color = $reverseColor ? 'brightgreen' : 'red';
 		} else {
 			$label = '~';
@@ -319,6 +319,10 @@ final class LanguageStatsGenerator {
 		}
 
 		return StringHelper::truncate($string, $limit, '…');
+	}
+
+	private function formatNumber(int $number): string {
+		return Yii::$app->formatter->asInteger($number);
 	}
 
 	private function getCurrentStats(Extension $extension, string $statsType): int {
