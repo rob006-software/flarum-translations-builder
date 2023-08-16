@@ -269,6 +269,7 @@ final class ExtensionsRepository extends Component {
 			try {
 				$response = $this->getClient()->request('GET', "https://packagist.org/packages/$name.json")->toArray();
 			} catch (HttpExceptionInterface $exception) {
+				Yii::warning("Unable to get Packagist data for $name: {$exception->getMessage()}");
 				return null;
 			}
 
