@@ -28,6 +28,7 @@ class Language {
 		'de@formal' => 'German (formal)',
 		'es@formal' => 'Spanish (formal)',
 		'kmr' => 'Kurdish (Northern)',
+		'tok' => 'Toki Pona',
 	];
 
 	public static function name(string $id): string {
