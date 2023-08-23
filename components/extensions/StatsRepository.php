@@ -43,7 +43,7 @@ class StatsRepository extends Component {
 	private function getStatsFromPackagist(string $name): PackagistStats {
 		return Yii::$app->cache->getOrSet($this->buildStatsKey($name), static function () use ($name) {
 			// @todo this is temporary logging to debug some weird stats behavior
-			Yii::info("Fetch packagist stats for $name\n: " . json_encode($stats['downloads'] ?? [], JSON_THROW_ON_ERROR), 'packagist.stats');
+			Yii::info("Fetch packagist stats for $name: " . json_encode($stats['downloads'] ?? [], JSON_THROW_ON_ERROR), 'packagist.stats');
 			$stats = Yii::$app->extensionsRepository->getPackagistData($name);
 			if ($stats === null || empty($stats['downloads'])) {
 				return new PackagistStats([]);

@@ -340,7 +340,7 @@ final class LanguageStatsGenerator {
 				default:
 					throw new InvalidArgumentException("Invalid stats type: '$statsType'.");
 			}
-		});
+		}, 31 * 24 * 3600);
 	}
 
 	private function getPreviousStats(Extension $extension, string $statsType): ?int {
@@ -357,6 +357,6 @@ final class LanguageStatsGenerator {
 	}
 
 	private function buildStatsKey(string $packageName, string $statsType, ?int $timestamp = null): string {
-		return __CLASS__ . "#stats:$packageName:$statsType:" . StatsRepository::getWeek($timestamp);
+		return __CLASS__ . "#stats_v2:$packageName:$statsType:" . StatsRepository::getWeek($timestamp);
 	}
 }
