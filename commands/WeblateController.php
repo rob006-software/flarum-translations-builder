@@ -103,7 +103,7 @@ class WeblateController extends ConsoleController {
 
 	protected function getTranslations(string $configFile): Translations {
 		$translations = parent::getTranslations($configFile);
-		// release lock early, since we're only using config, ant these actions can take a while
+		// release lock early, since we're only using config, and these actions can take a while
 		Yii::$app->locks->releaseRepoLock($translations->getRepository()->getPath());
 
 		return $translations;

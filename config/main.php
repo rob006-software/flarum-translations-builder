@@ -90,6 +90,17 @@ return [
 						'yii\web\HttpException:*',
 					],
 				],
+				[
+					'class' => FileTarget::class,
+					'maxFileSize' => 10240,
+					'maxLogFiles' => 10,
+					'logVars' => [],
+					'levels' => ['info'],
+					'logFile' => '@app/runtime/logs/packagist-stats.log',
+					'categories' => [
+						'packagist.stats',
+					],
+				],
 			],
 		],
 		'db' => [
