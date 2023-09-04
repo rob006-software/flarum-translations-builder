@@ -26,6 +26,8 @@ use yii\db\Connection;
 use yii\log\FileTarget;
 use yii\mutex\FileMutex;
 use yii\queue\file\Queue as FileQueue;
+use yii\queue\LogBehavior;
+use yii\queue\Queue;
 use yii\swiftmailer\Mailer;
 
 error_reporting(-1);
@@ -90,6 +92,17 @@ return [
 						'yii\web\HttpException:*',
 					],
 				],
+				[
+					'class' => FileTarget::class,
+					'maxFileSize' => 1024,
+					'maxLogFiles' => 3,
+					'logFile' => '@runtime/logs/queue.log',
+					'logVars' => [],
+					'levels' => ['info', 'warning', 'error'],
+					'categories' => [
+						Queue::class,
+					],
+				],
 			],
 		],
 		'db' => [
@@ -113,6 +126,7 @@ return [
 			'ttr' => 900,
 			'attempts' => 10,
 			'commandClass' => QueueCommand::class,
+			'as log' => LogBehavior::class,
 		],
 		'mutex' => [
 			'class' => FileMutex::class,
