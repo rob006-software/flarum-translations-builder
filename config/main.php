@@ -32,6 +32,9 @@ use yii\swiftmailer\Mailer;
 
 error_reporting(-1);
 
+ini_set('log_errors', '1');
+ini_set('error_log', dirname(__DIR__) . '/runtime/logs/php-' . date('Y') . '.log');
+
 /**
  * General configuration shared between console and web application.
  */
