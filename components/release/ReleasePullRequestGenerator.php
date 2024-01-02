@@ -184,13 +184,14 @@ class ReleasePullRequestGenerator {
 			]
 		);
 		if (!empty($this->subsplit->getMaintainers())) {
-			$this->githubApi->addPullRequestAssignees($this->subsplit->getRepositoryUrl(), $pullRequest['number'], $this->subsplit->getMaintainers());
 			try {
+				$this->githubApi->addPullRequestAssignees($this->subsplit->getRepositoryUrl(), $pullRequest['number'], $this->subsplit->getMaintainers());
 				$this->githubApi->addPullRequestRequestedReviewers($this->subsplit->getRepositoryUrl(), $pullRequest['number'], $this->subsplit->getMaintainers());
 			} catch (RuntimeException $exception) {
-				// this may happen if user have not yet accepted his invitation in repository - treat this as soft
-				// failure and only log this error
-				Yii::warning($exception);
+				// this may happen if user have not yet accepted his invitation in repository (or maintainer changed
+				// his name) - treat this as soft failure and only log this error
+				Yii::warning("An error occurred while assigning maintainers to PR for {$this->subsplit->getId()} language pack: {$exception->getMessage()}");
+				Yii::error($exception);
 			}
 		}
 	}
