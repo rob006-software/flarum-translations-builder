@@ -40,7 +40,7 @@ class StatsRepository extends Component {
 	}
 
 	private function getStatsFromPackagist(string $name): PackagistStats {
-		return Yii::$app->cache->getOrSet($this->buildStatsKey($name), static function () use ($name) {
+		$stats = Yii::$app->cache->getOrSet($this->buildStatsKey($name), static function () use ($name) {
 			$stats = Yii::$app->extensionsRepository->getPackagistData($name);
 			if ($stats === null || empty($stats['downloads'])) {
 				return new PackagistStats([]);
@@ -48,6 +48,14 @@ class StatsRepository extends Component {
 
 			return new PackagistStats($stats['downloads']);
 		}, 31 * 24 * 3600);
+
+		// This may happen for extensions that migrated from premium to free - cache from last week will contain
+		// ExtiverseStats object.
+		if ($stats instanceof ExtiverseStats) {
+			return new PackagistStats([]);
+		}
+
+		return $stats;
 	}
 
 	private function getStatsFromExtiverse(string $name): ExtiverseStats {
