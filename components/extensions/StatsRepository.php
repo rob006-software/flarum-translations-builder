@@ -59,9 +59,7 @@ class StatsRepository extends Component {
 	}
 
 	private function getStatsFromExtiverse(string $name): ExtiverseStats {
-		// @todo temporary workaround for API errors after extiverse -> flarum.org migration
-		return Yii::$app->cache->getOrSet($this->buildStatsKey($name, strtotime('2024-06-01')), static function () use ($name) {
-		// return Yii::$app->cache->getOrSet($this->buildStatsKey($name), static function () use ($name) {
+		return Yii::$app->cache->getOrSet($this->buildStatsKey($name), static function () use ($name) {
 			$stats = Yii::$app->extiverseApi->searchExtensions()[$name] ?? null;
 			if ($stats === null) {
 				return new ExtiverseStats([]);

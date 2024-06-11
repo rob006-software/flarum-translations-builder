@@ -228,7 +228,7 @@ final class PendingSummaryGenerator {
 		$defaultStats = [
 			'downloads' => 0,
 			'subscribers' => 0,
-			'plans' => count($extension->getSubscriptionPlans()),
+			'plans' => $extension->getSubscriptionPlansCount(),
 		];
 		return $stats + $defaultStats;
 	}

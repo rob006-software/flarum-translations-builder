@@ -32,7 +32,7 @@ use function json_decode;
 final class ExtiverseApi extends Component {
 
 	public $authToken;
-	public $apiUrl = 'https://extiverse.com/api/v1';
+	public $apiUrl = 'https://flarum.org/api';
 	public $cacheUrl = 'https://raw.githubusercontent.com/rob006-software/flarum-translations/master/cache/extiverse.json';
 
 	/** @var string|array|CacheInterface */
@@ -55,14 +55,14 @@ final class ExtiverseApi extends Component {
 	 */
 	public function searchExtensions(bool $useCache = true): array {
 		$callback = function () {
-			$response['links']['next'] = $this->apiUrl . '/extensions?sort=-created_at&filter[is][]=premium&include=versions,plans&page[size]=100';
+			$response['links']['next'] = $this->apiUrl . '/extensions?filter[is][]=premium&page[limit]=100';
 
 			$results = [];
 			do {
 				$response = $this->getClient()->request('GET', $response['links']['next'])->toArray();
 				foreach ($response['data'] as $item) {
 					try {
-						$result = ApiResult::createFromApiResponse($item, $response['included'] ?? []);
+						$result = ApiResult::createFromApiResponse($item);
 						$results[$result->getName()] = $result;
 					} catch (InvalidApiResponseException $exception) {
 						if (!$exception instanceof SoftFailureInterface) {

@@ -13,14 +13,10 @@ declare(strict_types=1);
 
 namespace app\models\extiverse;
 
-use app\models\extiverse\exceptions\MissingVersionException;
 use Dont\DontCall;
 use Dont\DontCallStatic;
 use Dont\DontGet;
 use Dont\DontSet;
-use function array_values;
-use function preg_replace;
-use function usort;
 
 /**
  * Class ApiResult.
@@ -48,8 +44,8 @@ final class ApiResult {
 	private $subscribers;
 	/** @var string|null */
 	private $requiredFlarum;
-	/** @var string[] */
-	private $subscriptionPlans;
+	/** @var int */
+	private $subscriptionPlansCount;
 
 	private function __construct(array $data) {
 		foreach ($data as $field => $value) {
@@ -57,50 +53,7 @@ final class ApiResult {
 		}
 	}
 
-	public static function createFromApiResponse(array $data, array $included): self {
-		if ($data['attributes']['highest-version'] === null) {
-			throw new MissingVersionException(
-				"Missing version for {$data['attributes']['name']} extension.",
-			);
-		}
-
-		$lastRelease = $data['attributes']['highest-version'];
-		$versions = [];
-		foreach ($data['relationships']['versions']['data'] as $version) {
-			if ($version['type'] === 'extension-versions') {
-				$versions[$version['id']] = $version['id'];
-			}
-		}
-		$subscriptionPlans = [];
-		foreach ($data['relationships']['plans']['data'] as $plan) {
-			if ($plan['type'] === 'plans') {
-				$subscriptionPlans[$plan['id']] = $plan['id'];
-			}
-		}
-
-		$requiredFlarum = null;
-		foreach ($included as $item) {
-			if (
-				$item['type'] === 'extension-versions' && isset($versions[$item['id']])
-				&& $item['attributes']['version'] === $lastRelease
-			) {
-				$requiredFlarum = $item['attributes']['flarum-version-required'];
-			}
-			if ($item['type'] === 'plans' && isset($subscriptionPlans[$item['id']])) {
-				if ($item['attributes']['is-active']) {
-					$subscriptionPlans[$item['id']] = "{$item['attributes']['price']} {$item['attributes']['per']}";
-				} else {
-					unset($subscriptionPlans[$item['id']]);
-				}
-			}
-		}
-
-		usort($subscriptionPlans, static function (string $a, string $b) {
-			$a = (float) preg_replace('/[^0-9.]/', '', $a);
-			$b = (float) preg_replace('/[^0-9.]/', '', $b);
-			return $a <=> $b;
-		});
-
+	public static function createFromApiResponse(array $data): self {
 		return new self([
 			'name' => $data['attributes']['name'],
 			'title' => $data['attributes']['title'] ?? null,
@@ -108,8 +61,8 @@ final class ApiResult {
 			'version' => $data['attributes']['highest-version'],
 			'downloads' => (int) $data['attributes']['downloads'],
 			'subscribers' => (int) $data['attributes']['subscribers-count'],
-			'requiredFlarum' => $requiredFlarum,
-			'subscriptionPlans' => array_values($subscriptionPlans),
+			'requiredFlarum' => $data['attributes']['latest-flarum-version-supported'],
+			'subscriptionPlansCount' => (int) $data['attributes']['plans-count'],
 		]);
 	}
 
@@ -141,7 +94,7 @@ final class ApiResult {
 		return $this->requiredFlarum;
 	}
 
-	public function getSubscriptionPlans(): array {
-		return $this->subscriptionPlans;
+	public function getSubscriptionPlansCount(): int {
+		return $this->subscriptionPlansCount;
 	}
 }

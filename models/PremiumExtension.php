@@ -20,9 +20,7 @@ use function strpos;
 /**
  * Premium extension handled manually.
  *
- * @see https://extiverse.com/
- *
- * @todo Reconsider naming.
+ * @see https://flarum.org/extensions
  *
  * @author Robert Korulczyk <robert@korulczyk.pl>
  */
@@ -31,14 +29,14 @@ final class PremiumExtension extends Extension {
 	private $title;
 	private $repositoryUrl;
 	private $requiredFlarum;
-	private $subscriptionPlans;
+	private $subscriptionPlansCount;
 
 	public static function createFromExtiverseCache(array $data): self {
 		$extension = new self($data['name']);
 		$extension->title = $data['title'] ?? null;
 		$extension->repositoryUrl = $data['url'] ?? null;
 		$extension->requiredFlarum = $data['requiredFlarum'] ?? null;
-		$extension->subscriptionPlans = $data['subscriptionPlans'] ?? [];
+		$extension->subscriptionPlansCount = $data['subscriptionPlansCount'] ?? 0;
 
 		return $extension;
 	}
@@ -48,7 +46,7 @@ final class PremiumExtension extends Extension {
 	}
 
 	public function getRepositoryUrl(): string {
-		return $this->repositoryUrl ?? "https://extiverse.com/extension/{$this->getPackageName()}";
+		return $this->repositoryUrl ?? "https://flarum.org/extension/{$this->getPackageName()}";
 	}
 
 	public function getTranslationSourceUrl(): string {
@@ -67,8 +65,8 @@ final class PremiumExtension extends Extension {
 		return $this->requiredFlarum;
 	}
 
-	public function getSubscriptionPlans(): array {
-		return $this->subscriptionPlans;
+	public function getSubscriptionPlansCount(): int {
+		return $this->subscriptionPlansCount;
 	}
 
 	public function hasTranslationSource(): bool {

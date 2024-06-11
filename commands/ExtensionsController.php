@@ -198,7 +198,7 @@ final class ExtensionsController extends ConsoleController {
 				'description' => $extension->getDescription(),
 				'version' => $extension->getVersion(),
 				'requiredFlarum' => $extension->getRequiredFlarum(),
-				'subscriptionPlans' => $extension->getSubscriptionPlans(),
+				'subscriptionPlansCount' => $extension->getSubscriptionPlansCount(),
 			];
 		}
 

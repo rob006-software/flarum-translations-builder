@@ -101,7 +101,7 @@ final class ExtensionsRepository extends Component {
 					|| $this->isExtensionRateLimited($extension->getPackageName())
 				) {
 					unset($extensions[$index]);
-				} elseif ($extension instanceof PremiumExtension && empty($extension->getSubscriptionPlans())) {
+				} elseif ($extension instanceof PremiumExtension && empty($extension->getSubscriptionPlansCount())) {
 					unset($extensions[$index]);
 				} elseif ($extension->isAbandoned()) {
 					unset($extensions[$index]);

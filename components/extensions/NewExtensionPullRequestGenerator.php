@@ -189,7 +189,7 @@ final class NewExtensionPullRequestGenerator {
 		}
 
 		$output .= "## Other\n\n";
-		$output .= "https://extiverse.com/extension/{$extension->getPackageName()}\n";
+		$output .= "https://flarum.org/extension/{$extension->getPackageName()}\n";
 		$discussUrl = $extension->getThreadUrl();
 		if ($discussUrl !== null) {
 			$output .= "$discussUrl\n";
