@@ -28,7 +28,7 @@
 		"symfony/translation": "^5.1.5",
 		"symfony/yaml": "^5.2.2",
 		"webmozart/assert": "^1.6",
-		"yiisoft/yii2": "~2.0.23",
+		"yiisoft/yii2": "~2.0.49.4",
 		"yiisoft/yii2-composer": "~2.0.8",
 		"yiisoft/yii2-queue": "^2.3",
 		"yiisoft/yii2-swiftmailer": "~2.1.1"
