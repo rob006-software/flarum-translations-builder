@@ -23,6 +23,7 @@
 		"mindplay/readable": "^1.1",
 		"monolog/monolog": "^2.2",
 		"nyholm/psr7": "^1.8",
+		"php-http/message-factory": "^1.1",
 		"roave/dont": "^1.0",
 		"symfony/http-client": "^5.2",
 		"symfony/translation": "^5.1.5",
