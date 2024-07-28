@@ -8,4 +8,3 @@
 ./yii readme/update --frequency=21600 --push;
 ./yii readme/update-subsplits --frequency=21600 --push;
 ./yii extensions/detect-new 10 --frequency=21600 --push;
-./yii weblate/update-units-flags --frequency=604800;
