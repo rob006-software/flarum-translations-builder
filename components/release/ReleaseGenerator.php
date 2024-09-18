@@ -281,7 +281,7 @@ class ReleaseGenerator extends BaseObject {
 
 	protected function isMinorUpdate(): bool {
 		foreach ($this->getChangedExtensions() as $changeType) {
-			if ($changeType === Repository::CHANGE_ADDED) {
+			if (in_array($changeType, [Repository::CHANGE_ADDED, Repository::CHANGE_DELETED], true)) {
 				return true;
 			}
 		}
@@ -291,11 +291,12 @@ class ReleaseGenerator extends BaseObject {
 	}
 
 	protected function isMajorUpdate(): bool {
-		foreach ($this->getChangedExtensions() as $changeType) {
-			if ($changeType === Repository::CHANGE_DELETED) {
-				return true;
-			}
-		}
+		// @todo major release should be explicitly requested (I have no ideas for this right now)
+//		foreach ($this->getChangedExtensions() as $changeType) {
+//			if ($changeType === Repository::CHANGE_DELETED) {
+//				return true;
+//			}
+//		}
 
 		return false;
 	}
