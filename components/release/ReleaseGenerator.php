@@ -22,6 +22,8 @@ use UnexpectedValueException;
 use Yii;
 use yii\base\BaseObject;
 use function array_filter;
+use function array_key_last;
+use function array_pop;
 use function basename;
 use function date;
 use function end;
@@ -52,6 +54,7 @@ class ReleaseGenerator extends BaseObject {
 	private $subsplit;
 	private $repository;
 
+	private $versions;
 	private $previousVersion = false;
 	private $nextVersion;
 	private $changelogEntryContent;
@@ -95,6 +98,11 @@ class ReleaseGenerator extends BaseObject {
 		}
 
 		if ($position === false) {
+			$oldChangelog = $this->fillOldVersionsInChangelog($oldChangelog);
+			$position = strpos($oldChangelog, "$oldVersion (");
+		}
+
+		if ($position === false) {
 			throw new RuntimeException("Unable to locate '$oldVersion' in $changelogPath.");
 		}
 
@@ -105,6 +113,34 @@ class ReleaseGenerator extends BaseObject {
 			. "$versionHeader\n$versionUnderline\n\n"
 			. $this->getChangelogEntryContent()
 			. substr($oldChangelog, $position);
+	}
+
+	protected function fillOldVersionsInChangelog(string $changelog): string {
+		$versions = $this->getVersions();
+		$newContent = '';
+		do {
+			$version = array_pop($versions);
+			$position = strpos($changelog, "$version (");
+			if ($position === false) {
+				$versionHeader = "$version (XXXX-XX-XX)";
+				$versionUnderline = str_repeat('-', strlen($versionHeader));
+				$newContent .=  "$versionHeader\n$versionUnderline\n\n";
+
+				$old = $versions[array_key_last($versions)];
+				[$userName, $repoName] = Yii::$app->githubApi->explodeRepoUrl($this->subsplit->getRepositoryUrl());
+				$newContent .= $this->t('changelog.all-changes', [
+					'{link}' => "[{$old}...{$version}](https://github.com/$userName/$repoName/compare/{$old}...{$version})",
+				]);
+				$newContent .= "\n\n\n";
+			} else {
+				return substr($changelog, 0, $position)
+					. $newContent
+					. substr($changelog, $position);
+			}
+
+		} while (!empty ($versions));
+
+		return $changelog;
 	}
 
 	public function setChangelogEntryContent(string $content): void {
@@ -228,6 +264,15 @@ class ReleaseGenerator extends BaseObject {
 
 	public function getPreviousVersion(): ?string {
 		if ($this->previousVersion === false) {
+			$versions = $this->getVersions();
+			$this->previousVersion = empty($versions) ? null : end($versions);
+		}
+
+		return $this->previousVersion;
+	}
+
+	public function getVersions(): array {
+		if ($this->versions === null) {
 			// remove non-semver tags
 			$parser = new VersionParser();
 			$tags = array_filter($this->repository->getTags(), static function ($name) use ($parser) {
@@ -239,11 +284,10 @@ class ReleaseGenerator extends BaseObject {
 				}
 			});
 
-			$tags = Semver::sort($tags);
-			$this->previousVersion = empty($tags) ? null : end($tags);
+			$this->versions = Semver::sort($tags);
 		}
 
-		return $this->previousVersion;
+		return $this->versions;
 	}
 
 	public function setNextVersion(string $value): void {
