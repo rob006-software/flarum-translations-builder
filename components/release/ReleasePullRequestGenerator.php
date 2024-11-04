@@ -125,7 +125,11 @@ class ReleasePullRequestGenerator {
 				$this->repository->checkoutBranch($branchName);
 				$this->repository->update(false);
 
-				$newChangelog = strtr(file_get_contents($this->generator->getChangelogPath()), ['XXXX-XX-XX' => date('Y-m-d')]);
+				$newChangelog = file_get_contents($this->generator->getChangelogPath());
+				$pos = strpos($newChangelog, 'XXXX-XX-XX');
+				if ($pos !== false) {
+					$newChangelog = substr_replace($newChangelog, date('Y-m-d'), $pos, strlen('XXXX-XX-XX'));
+				}
 				file_put_contents($this->generator->getChangelogPath(), $newChangelog);
 				$this->repository->commit("Update changelog.");
 				$this->repository->push();
