@@ -119,7 +119,7 @@ class ReleaseGenerator extends BaseObject {
 		$versions = $this->getVersions();
 		$newContent = '';
 		do {
-			$version = array_pop($versions);
+			$version = ltrim(array_pop($versions), 'v');
 			$position = strpos($changelog, "$version (");
 			if ($position === false) {
 				$versionHeader = "$version (XXXX-XX-XX)";
