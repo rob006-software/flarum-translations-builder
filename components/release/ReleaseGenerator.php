@@ -119,7 +119,8 @@ class ReleaseGenerator extends BaseObject {
 		$versions = $this->getVersions();
 		$newContent = '';
 		do {
-			$version = ltrim(array_pop($versions), 'v');
+			$new = array_pop($versions);
+			$version = ltrim($new, 'v');
 			$position = strpos($changelog, "$version (");
 			if ($position === false) {
 				$versionHeader = "$version (XXXX-XX-XX)";
@@ -129,7 +130,7 @@ class ReleaseGenerator extends BaseObject {
 				$old = $versions[array_key_last($versions)];
 				[$userName, $repoName] = Yii::$app->githubApi->explodeRepoUrl($this->subsplit->getRepositoryUrl());
 				$newContent .= $this->t('changelog.all-changes', [
-					'{link}' => "[{$old}...{$version}](https://github.com/$userName/$repoName/compare/{$old}...{$version})",
+					'{link}' => "[{$old}...{$new}](https://github.com/$userName/$repoName/compare/{$old}...{$new})",
 				]);
 				$newContent .= "\n\n\n";
 			} else {
