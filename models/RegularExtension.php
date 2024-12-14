@@ -84,8 +84,19 @@ final class RegularExtension extends Extension {
 	}
 
 	public function getRequiredFlarumVersion(): ?string {
-		$data = Yii::$app->extensionsRepository->getPackagistLastReleaseData($this->getPackageName());
-		return $data['require']['flarum/core'] ?? null;
+		$data = Yii::$app->extensionsRepository->getPackagistReleasesData($this->getPackageName());
+		foreach ($data as $release) {
+			$constraint = $release['require']['flarum/core'] ?? null;
+			if ($constraint === null) {
+				continue;
+			}
+			$result = Translations::$instance->isConstraintSupported($constraint);
+			if ($result !== false) {
+				return $result;
+			}
+		}
+
+		return null;
 	}
 
 	public function isLanguagePack(): bool {
@@ -122,17 +133,25 @@ final class RegularExtension extends Extension {
 		$releases = Yii::$app->extensionsRepository->getPackagistReleasesData($this->getPackageName());
 		$lastRelease = null;
 		foreach ($releases as $release) {
+			$constraint = $release['require']['flarum/core'] ?? null;
+			if ($constraint === null) {
+				continue;
+			}
 			if ($prefixes !== null) {
 				foreach ($prefixes as $prefix) {
 					if (
 						strncmp($prefix, $release['version_normalized'], strlen($prefix)) === 0
+						&& Translations::$instance->isConstraintSupported($constraint) !== false
 						&& in_array(VersionParser::parseStability($release['version_normalized']), $stabilities, true)
 					) {
 						$lastRelease = $release;
 						break 2;
 					}
 				}
-			} elseif (in_array(VersionParser::parseStability($release['version_normalized']), $stabilities, true)) {
+			} elseif (
+				in_array(VersionParser::parseStability($release['version_normalized']), $stabilities, true)
+				&& Translations::$instance->isConstraintSupported($constraint) !== false
+			) {
 				$lastRelease = $release;
 				break;
 			}

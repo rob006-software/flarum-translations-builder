@@ -23,6 +23,7 @@ use app\models\Extension;
 use app\models\packagist\ListResult;
 use app\models\PremiumExtension;
 use app\models\RegularExtension;
+use app\models\Translations;
 use Composer\MetadataMinifier\MetadataMinifier;
 use Composer\Semver\Semver;
 use Composer\Semver\VersionParser;
@@ -81,23 +82,15 @@ final class ExtensionsRepository extends Component {
 	}
 
 	/**
-	 * @param string[] $supportedVersions
-	 * @param string[] $unsupportedVersions
-	 * @param string[] $ignoredExtensions
 	 * @param bool $useCache
 	 * @return Extension[]
 	 */
-	public function getValidExtensions(
-		array $supportedVersions,
-		array $unsupportedVersions,
-		array $ignoredExtensions,
-		bool $useCache = true
-	): array {
+	public function getValidExtensions(bool $useCache = true): array {
 		$extensions = $this->getAllExtensions($useCache);
 		foreach ($extensions as $index => $extension) {
 			try {
 				if (
-					in_array($extension->getPackageName(), $ignoredExtensions, true)
+					in_array($extension->getPackageName(), Translations::$instance->getIgnoredExtensions(), true)
 					|| $this->isExtensionRateLimited($extension->getPackageName())
 				) {
 					unset($extensions[$index]);
@@ -108,7 +101,7 @@ final class ExtensionsRepository extends Component {
 				} elseif ($extension->isLanguagePack()) {
 					$this->registerLanguagePackDetection($extension->getPackageName());
 					unset($extensions[$index]);
-				} elseif ($extension->isOutdated($supportedVersions, $unsupportedVersions) !== false) {
+				} elseif ($extension->isOutdated() !== false) {
 					if ($extension instanceof RegularExtension) {
 						$this->registerOutdatedExtensionDetection($extension);
 					}

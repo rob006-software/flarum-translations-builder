@@ -19,6 +19,7 @@ use app\components\translations\JsonFileDumper;
 use app\components\translations\JsonFileLoader;
 use app\components\translations\YamlLoader;
 use app\helpers\HttpClient;
+use Composer\Semver\Semver;
 use Dont\DontCall;
 use Dont\DontCallStatic;
 use Dont\DontGet;
@@ -72,6 +73,8 @@ final class Translations {
 	use DontGet;
 	use DontSet;
 
+	public static $instance;
+
 	private $hash;
 	private $dir;
 	private $sourcesDir;
@@ -114,6 +117,8 @@ final class Translations {
 				throw new InvalidConfigException('Invalid $config: ' . readable::value($componentConfig) . '.');
 			}
 		}
+
+		self::$instance = $this;
 	}
 
 	/**
@@ -500,5 +505,21 @@ final class Translations {
 				}
 			}
 		}
+	}
+
+	public function isConstraintSupported(string $constraint): ?bool {
+		$unclear = false;
+		foreach ($this->getUnsupportedVersions() as $release) {
+			if (Semver::satisfies($release, $constraint)) {
+				$unclear = true;
+			}
+		}
+		foreach ($this->getSupportedVersions() as $release) {
+			if (Semver::satisfies($release, $constraint)) {
+				return $unclear ? null : true;
+			}
+		}
+
+		return false;
 	}
 }

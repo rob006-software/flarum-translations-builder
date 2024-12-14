@@ -13,7 +13,6 @@ declare(strict_types=1);
 
 namespace app\models;
 
-use Composer\Semver\Semver;
 use Dont\DontCall;
 use Dont\DontCallStatic;
 use Dont\DontGet;
@@ -75,25 +74,18 @@ abstract class Extension {
 
 	abstract public function isLanguagePack(): bool;
 
-	public function isOutdated(array $supportedReleases, array $unsupportedReleases): ?bool {
+	public function isOutdated(): ?bool {
 		$requiredFlarum = $this->getRequiredFlarumVersion();
 		if ($requiredFlarum === null) {
 			return true;
 		}
 
-		$unclear = false;
-		foreach ($unsupportedReleases as $release) {
-			if (Semver::satisfies($release, $requiredFlarum)) {
-				$unclear = true;
-			}
-		}
-		foreach ($supportedReleases as $release) {
-			if (Semver::satisfies($release, $requiredFlarum)) {
-				return $unclear ? null : false;
-			}
+		$result = Translations::$instance->isConstraintSupported($requiredFlarum);
+		if ($result === null) {
+			return null;
 		}
 
-		return true;
+		return !$result;
 	}
 
 	abstract public function getRequiredFlarumVersion(): ?string;

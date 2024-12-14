@@ -61,10 +61,7 @@ final class StatsController extends ConsoleController {
 						$generator->addExtension(
 							$extension,
 							!$component->isValidForLanguage($language),
-							$extension->isOutdated(
-								$translations->getSupportedVersions(),
-								$translations->getUnsupportedVersions()
-							)
+							$extension->isOutdated()
 						);
 					}
 				}

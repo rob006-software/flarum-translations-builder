@@ -182,10 +182,7 @@ final class PendingSummaryGenerator {
 	}
 
 	private function renderCompatibilityBadge(Extension $extension): string {
-		$outdated = $extension->isOutdated(
-			$this->translations->getSupportedVersions(),
-			$this->translations->getUnsupportedVersions()
-		);
+		$outdated = $extension->isOutdated();
 
 		// @todo extract helper for Shields.io?
 		$requiredFlarum = urlencode(strtr($extension->getRequiredFlarumVersion() ?? 'not found', [

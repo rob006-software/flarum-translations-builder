@@ -60,12 +60,7 @@ final class JanitorController extends ConsoleController {
 		$translations = $this->getTranslations($configFile);
 
 		$components = $translations->getExtensionsComponents();
-		$extensions = Yii::$app->extensionsRepository->getValidExtensions(
-			$translations->getSupportedVersions(),
-			$translations->getUnsupportedVersions(),
-			$translations->getIgnoredExtensions(),
-			$this->useCache
-		);
+		$extensions = Yii::$app->extensionsRepository->getValidExtensions($this->useCache);
 		$extensions = array_filter($extensions, static function (Extension $extension) use ($components) {
 			try {
 				return !isset($components[$extension->getId()]) && $extension->hasTranslationSource();
@@ -107,12 +102,7 @@ final class JanitorController extends ConsoleController {
 	public function actionComponents(string $configFile = '@app/translations/config.php') {
 		$translations = $this->getTranslations($configFile);
 
-		$extensions = Yii::$app->extensionsRepository->getValidExtensions(
-			$translations->getSupportedVersions(),
-			$translations->getUnsupportedVersions(),
-			$translations->getIgnoredExtensions(),
-			$this->useCache
-		);
+		$extensions = Yii::$app->extensionsRepository->getValidExtensions($this->useCache);
 		$extensions = array_filter($extensions, static function (Extension $extension) {
 			try {
 				return $extension->hasTranslationSource();
@@ -133,10 +123,7 @@ final class JanitorController extends ConsoleController {
 				if ($extension->isAbandoned()) {
 					$outdatedIcon = 'X';
 				} else {
-					$outdated = $extension->isOutdated(
-						$translations->getSupportedVersions(),
-						$translations->getUnsupportedVersions()
-					);
+					$outdated = $extension->isOutdated();
 					$outdatedIcon = $outdated === null ? '?' : '!';
 				}
 				echo " - $outdatedIcon [`{$component->getId()}`]({$extension->getRepositoryUrl()})"
@@ -194,7 +181,7 @@ final class JanitorController extends ConsoleController {
 					if (
 						(!empty($languages) && !in_array($language, $languages, true))
 						|| $extension instanceof PremiumExtension
-						|| $extension->isOutdated($translations->getSupportedVersions(), $translations->getUnsupportedVersions()) !== false
+						|| $extension->isOutdated() !== false
 					) {
 						continue;
 					}
