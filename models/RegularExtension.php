@@ -92,7 +92,7 @@ final class RegularExtension extends Extension {
 			}
 			$result = Translations::$instance->isConstraintSupported($constraint);
 			if ($result !== false) {
-				return $result;
+				return $constraint;
 			}
 		}
 
