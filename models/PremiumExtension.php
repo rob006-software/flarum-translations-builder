@@ -50,7 +50,7 @@ final class PremiumExtension extends Extension {
 	}
 
 	public function getTranslationSourceUrl(): string {
-		return "https://raw.githubusercontent.com/flarum-com/premium-translations/master/{$this->getId()}.yml";
+		return "https://raw.githubusercontent.com/flarum-com/premium-translations/bef89cfb5e916b4186d22033e697932f0f51f487/{$this->getId()}.yml";
 	}
 
 	public function isAbandoned(): bool {
@@ -70,7 +70,7 @@ final class PremiumExtension extends Extension {
 	}
 
 	public function hasTranslationSource(): bool {
-		$url = Yii::$app->extensionsRepository->detectTranslationSourceUrl('https://github.com/flarum-com/premium-translations', 'master', [
+		$url = Yii::$app->extensionsRepository->detectTranslationSourceUrl('https://github.com/flarum-com/premium-translations', 'bef89cfb5e916b4186d22033e697932f0f51f487', [
 			"{$this->getId()}.yml",
 		]);
 		return $url !== null && strpos($url, ExtensionsRepository::NO_TRANSLATION_FILE) === false;
