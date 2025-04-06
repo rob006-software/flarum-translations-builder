@@ -20,7 +20,7 @@ use yii\base\BaseObject;
 use yii\queue\JobInterface;
 
 /**
- * Class MergeSubsplitReleasePullRequestJob.
+ * Class MergeReleasePullRequestJob.
  *
  * @author Robert Korulczyk <robert@korulczyk.pl>
  */

@@ -24,6 +24,8 @@ use yii\web\Response;
 /**
  * Class GithubController.
  *
+ * @property Response $response
+ *
  * @author Robert Korulczyk <robert@korulczyk.pl>
  */
 class GithubController extends Controller {
