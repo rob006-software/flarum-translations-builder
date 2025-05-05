@@ -294,13 +294,6 @@ final class JanitorController extends ConsoleController {
 		}
 	}
 
-	public function actionCleanupTranslations(array $languages, string $configFile = '@app/translations/config.php') {
-		$translations = $this->getTranslations($configFile);
-		foreach ($languages as $language) {
-			$translations->cleanupComponents($language);
-		}
-	}
-
 	public function actionCleanupSubsplit(string $subsplit, string $configFile = '@app/translations/config.php') {
 		$translations = $this->getTranslations($configFile);
 		$subsplitObject = $translations->getSubsplit($subsplit);

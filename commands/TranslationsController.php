@@ -101,4 +101,27 @@ final class TranslationsController extends ConsoleController {
 			])
 		);
 	}
+
+	public function actionUpdateOutdatedTranslationsMetadata(string $configFile = '@app/translations/config.php') {
+		$translations = $this->getTranslations($configFile);
+		foreach ($translations->getLanguages() as $language) {
+			$translations->updateOutdatedTranslationsMetadata($language);
+		}
+
+		$this->postProcessRepository(
+			$translations->getRepository(),
+			'Update outdated translations metadata.'
+		);
+	}
+
+	public function actionCleanupOutdatedTranslations(string $range = '-1 year', string $configFile = '@app/translations/config.php') {
+		$translations = $this->getTranslations($configFile);
+		foreach ($translations->getLanguages() as $language) {
+			$translations->cleanupOutdatedTranslations($language, $range);
+		}
+		$this->postProcessRepository(
+			$translations->getRepository(),
+			'Cleanup outdated translations.'
+		);
+	}
 }

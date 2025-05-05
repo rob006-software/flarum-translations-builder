@@ -34,8 +34,8 @@ use yii\base\Exception;
 use yii\base\InvalidArgumentException;
 use yii\base\InvalidConfigException;
 use yii\caching\TagDependency;
+use function array_diff_key;
 use function array_filter;
-use function array_intersect_key;
 use function array_reverse;
 use function assert;
 use function count;
@@ -79,6 +79,7 @@ final class Translations {
 	private $dir;
 	private $sourcesDir;
 	private $translationsDir;
+	private $metadataDir;
 	private $components = [];
 	private $subsplits;
 	private $ignoredExtensions;
@@ -96,6 +97,7 @@ final class Translations {
 		$this->dir = $config['dir'];
 		$this->sourcesDir = $config['sourcesDir'];
 		$this->translationsDir = $config['translationsDir'];
+		$this->metadataDir = $config['metadataDir'] ?? ($config['sourcesDir'] . '/metadata');
 		$this->languages = array_keys($config['languages']);
 		$this->ignoredExtensions = $config['ignoredExtensions'] ?? [];
 		$this->subsplits = $config['subsplits'];
@@ -442,7 +444,16 @@ final class Translations {
 		$this->saveTranslations($catalogue, $this->getTranslationsPath($language));
 	}
 
-	public function cleanupComponents(string $language): void {
+	public function updateOutdatedTranslationsMetadata(string $language): void {
+		$metadataPath = "{$this->metadataDir}/outdated-translations/{$language}.json";
+		if (file_exists($metadataPath)) {
+			$oldDates = json_decode(file_get_contents($metadataPath), true, 512, JSON_THROW_ON_ERROR);
+		} else {
+			$oldDates = [];
+		}
+
+		$newDates = [];
+
 		$translator = new Translator($language);
 		$translator->addLoader('json_file', new JsonFileLoader());
 		$translator->addLoader('array', new ArrayLoader());
@@ -459,9 +470,49 @@ final class Translations {
 			$translations = $translator->getCatalogue($language)->all($component->getId());
 			if (!empty($translations)) {
 				$sources = $translator->getCatalogue('en')->all($component->getId());
-				// use only translations for phrases available in sources
-				$translator->getCatalogue($language)->replace(array_intersect_key($translations, $sources), $component->getId());
+				foreach (array_diff_key($translations, $sources) as $key => $_) {
+					$newDates[$component->getId()][$key] = $oldDates[$key] ?? date('Y-m-d');
+				}
 			}
+		}
+
+		file_put_contents(
+			$metadataPath,
+			json_encode($newDates, JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n"
+		);
+	}
+
+	public function cleanupOutdatedTranslations(string $language, string $range): void {
+		$metadataPath = "{$this->metadataDir}/outdated-translations/{$language}.json";
+		if (file_exists($metadataPath)) {
+			$oldDates = json_decode(file_get_contents($metadataPath), true, 512, JSON_THROW_ON_ERROR);
+		} else {
+			$oldDates = [];
+		}
+		$timestamp = strtotime($range);
+		$toRemove = [];
+		foreach ($oldDates as $componentId => $dates) {
+			$toRemove[$componentId] = array_filter($dates, static function ($date) use ($timestamp) {
+				return strtotime($date) <= $timestamp;
+			});
+		}
+		if (empty($toRemove)) {
+			return;
+		}
+
+		$translator = new Translator($language);
+		$translator->addLoader('json_file', new JsonFileLoader());
+		$translator->addLoader('array', new ArrayLoader());
+
+		foreach ($toRemove as $componentId => $toRemoveTranslations) {
+			$translationFilePath = $this->getComponentTranslationPath($componentId, $language);
+			if (file_exists($translationFilePath)) {
+				$translator->addResource('json_file', $translationFilePath, $language, $componentId);
+			}
+		}
+		foreach ($toRemove as $componentId => $toRemoveTranslations) {
+			$translations = $translator->getCatalogue($language)->all($componentId);
+			$translator->getCatalogue($language)->replace(array_diff_key($translations, $toRemoveTranslations), $componentId);
 		}
 
 		$catalogue = $translator->getCatalogue($language);
