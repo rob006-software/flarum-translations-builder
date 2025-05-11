@@ -459,19 +459,21 @@ final class Translations {
 		$translator->addLoader('array', new ArrayLoader());
 
 		foreach ($this->getComponents() as $component) {
-			$translationFilePath = $this->getComponentTranslationPath($component->getId(), $language);
+			$componentId = $component->getId();
+			$translationFilePath = $this->getComponentTranslationPath($componentId, $language);
 			if (file_exists($translationFilePath)) {
-				$translator->addResource('json_file', $translationFilePath, $language, $component->getId());
+				$translator->addResource('json_file', $translationFilePath, $language, $componentId);
 			}
-			$sourceFilePath = $this->getComponentSourcePath($component->getId());
-			$translator->addResource('json_file', $sourceFilePath, 'en', $component->getId());
+			$sourceFilePath = $this->getComponentSourcePath($componentId);
+			$translator->addResource('json_file', $sourceFilePath, 'en', $componentId);
 		}
 		foreach ($this->getComponents() as $component) {
-			$translations = $translator->getCatalogue($language)->all($component->getId());
+			$componentId = $component->getId();
+			$translations = $translator->getCatalogue($language)->all($componentId);
 			if (!empty($translations)) {
-				$sources = $translator->getCatalogue('en')->all($component->getId());
+				$sources = $translator->getCatalogue('en')->all($componentId);
 				foreach (array_diff_key($translations, $sources) as $key => $_) {
-					$newDates[$component->getId()][$key] = $oldDates[$key] ?? date('Y-m-d');
+					$newDates[$componentId][$key] = $oldDates[$componentId][$key] ?? date('Y-m-d');
 				}
 			}
 		}
