@@ -34,6 +34,7 @@ use yii\base\Exception;
 use yii\base\InvalidArgumentException;
 use yii\base\InvalidConfigException;
 use yii\caching\TagDependency;
+use yii\helpers\FileHelper;
 use function array_diff_key;
 use function array_filter;
 use function array_reverse;
@@ -51,10 +52,12 @@ use function is_dir;
 use function is_string;
 use function json_decode;
 use function json_encode;
+use function ksort;
 use function md5;
 use function md5_file;
 use function pathinfo;
 use function sleep;
+use function strlen;
 use function strpos;
 use function unlink;
 use const JSON_PRETTY_PRINT;
@@ -476,6 +479,9 @@ final class Translations {
 				foreach (array_diff_key($translations, $sources) as $key => $_) {
 					$newDates[$componentId][$key] = $oldDates[$componentId][$key] ?? date('Y-m-d');
 				}
+			}
+			if (!empty($newDates[$componentId])) {
+				ksort($newDates[$componentId]);
 			}
 		}
 
