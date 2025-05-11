@@ -39,6 +39,7 @@ use function array_filter;
 use function array_reverse;
 use function assert;
 use function count;
+use function date;
 use function dir;
 use function file_exists;
 use function file_get_contents;
@@ -491,11 +492,11 @@ final class Translations {
 		} else {
 			$oldDates = [];
 		}
-		$timestamp = strtotime($range);
+		$year = date('Y', strtotime($range)) - 1;
 		$toRemove = [];
 		foreach ($oldDates as $componentId => $dates) {
-			$toRemove[$componentId] = array_filter($dates, static function ($date) use ($timestamp) {
-				return strtotime($date) <= $timestamp;
+			$toRemove[$componentId] = array_filter($dates, static function ($date) use ($year) {
+				return date('Y', strtotime($date)) <= $year;
 			});
 		}
 		if (empty($toRemove)) {
