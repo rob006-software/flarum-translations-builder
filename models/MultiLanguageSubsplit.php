@@ -128,7 +128,7 @@ final class MultiLanguageSubsplit extends Subsplit {
 	}
 
 	public function getMainVariant(): LanguageSubsplit {
-		// inject Repository object to variants to avoid instantiating multiple objects for the same repository path
+		// inject `Repository` object to variants to avoid instantiating multiple objects for the same repository path
 		$this->getRepository();
 		return reset($this->variants);
 	}
@@ -137,7 +137,7 @@ final class MultiLanguageSubsplit extends Subsplit {
 	 * @return LanguageSubsplit[]
 	 */
 	public function getVariants(): array {
-		// inject Repository object to variants to avoid instantiating multiple objects for the same repository path
+		// inject `Repository` object to variants to avoid instantiating multiple objects for the same repository path
 		$this->getRepository();
 		return $this->variants;
 	}

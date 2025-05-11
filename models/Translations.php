@@ -529,6 +529,59 @@ final class Translations {
 		$this->saveTranslations($catalogue, $this->getTranslationsPath($language));
 	}
 
+	public function updateOutdatedSubsplitMetadata(Subsplit $subsplit): void {
+		$files = [];
+		$variants = $subsplit instanceof MultiLanguageSubsplit ? $subsplit->getVariants() : [$subsplit];
+		foreach ($variants as $variant) {
+			foreach (FileHelper::findFiles($variant->getDir() . $variant->getPath(), ['only' => ['/*.yml', '/*.yaml']]) as $file) {
+				$files[substr($file, strlen($variant->getDir()) + 1)] = true;
+			}
+			foreach ($this->getComponents() as $component) {
+				if ($variant->isValidForComponent($component)) {
+					unset($files[ltrim("{$variant->getPath()}/{$component->getId()}.yml", '/')]);
+				}
+			}
+		}
+
+		$metadataPath = "{$this->metadataDir}/outdated-subsplits/{$subsplit->getId()}.json";
+		if (file_exists($metadataPath)) {
+			$oldDates = json_decode(file_get_contents($metadataPath), true, 512, JSON_THROW_ON_ERROR);
+		} else {
+			$oldDates = [];
+		}
+
+		$newDates = [];
+		foreach ($files as $key => $_) {
+			$newDates[$key] = $oldDates[$key] ?? date('Y-m-d');
+		}
+
+		ksort($newDates);
+		file_put_contents(
+			$metadataPath,
+			json_encode($newDates, JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n"
+		);
+	}
+
+	public function cleanupOutdatedSubsplit(Subsplit $subsplit, string $range): void {
+		$metadataPath = "{$this->metadataDir}/outdated-subsplits/{$subsplit->getId()}.json";
+		if (file_exists($metadataPath)) {
+			$oldDates = json_decode(file_get_contents($metadataPath), true, 512, JSON_THROW_ON_ERROR);
+		} else {
+			$oldDates = [];
+		}
+		$year = date('Y', strtotime($range)) - 1;
+		$toRemove = array_filter($oldDates, static function ($date) use ($year) {
+			return date('Y', strtotime($date)) <= $year;
+		});
+		if (empty($toRemove)) {
+			return;
+		}
+
+		foreach ($toRemove as $filePath => $_) {
+			unlink($subsplit->getDir() . '/' . $filePath);
+		}
+	}
+
 	public function saveTranslations(MessageCatalogue $catalogue, string $path): void {
 		$dumper = new JsonFileDumper();
 		$dumper->setRelativePathTemplate('%domain%.%extension%');

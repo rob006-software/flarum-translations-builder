@@ -294,17 +294,6 @@ final class JanitorController extends ConsoleController {
 		}
 	}
 
-	public function actionCleanupSubsplit(string $subsplit, string $configFile = '@app/translations/config.php') {
-		$translations = $this->getTranslations($configFile);
-		$subsplitObject = $translations->getSubsplit($subsplit);
-		$dir = $subsplitObject->getDir() . $subsplitObject->getPath();
-		foreach (FileHelper::findFiles($dir, ['only' => ['/*.yml', '/*.yaml']]) as $file) {
-			unlink($file);
-		}
-
-		$subsplitObject->split($translations);
-	}
-
 	public function actionLogs() {
 		$files = FileHelper::findFiles(APP_ROOT . '/runtime/git-logs');
 		foreach ($files as $file) {

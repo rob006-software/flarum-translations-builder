@@ -119,9 +119,42 @@ final class TranslationsController extends ConsoleController {
 		foreach ($translations->getLanguages() as $language) {
 			$translations->cleanupOutdatedTranslations($language, $range);
 		}
+
 		$this->postProcessRepository(
 			$translations->getRepository(),
 			'Cleanup outdated translations.'
 		);
+	}
+
+	public function actionUpdateOutdatedSubsplitsMetadata(string $configFile = '@app/translations/config.php') {
+		$translations = $this->getTranslations($configFile);
+		foreach ($translations->getSubsplits() as $subsplit) {
+			$subsplit->getRepository()->update();
+			$translations->updateOutdatedSubsplitMetadata($subsplit);
+			Yii::$app->locks->releaseRepoLock($subsplit->getRepository()->getPath());
+		}
+
+		$this->postProcessRepository(
+			$translations->getRepository(),
+			'Update outdated subsplits metadata.'
+		);
+	}
+
+	public function actionCleanupOutdatedSubsplits(string $range = '-1 year', string $configFile = '@app/translations/config.php') {
+		$translations = $this->getTranslations($configFile);
+		// release lock early, since we're only using config, and these actions can take a while
+		Yii::$app->locks->releaseRepoLock($translations->getRepository()->getPath());
+
+		foreach ($translations->getSubsplits() as $subsplit) {
+			$subsplit->getRepository()->update();
+			$translations->cleanupOutdatedSubsplit($subsplit, $range);
+
+			$this->postProcessRepository(
+				$subsplit->getRepository(),
+				'Cleanup outdated components.'
+			);
+
+			Yii::$app->locks->releaseRepoLock($subsplit->getRepository()->getPath());
+		}
 	}
 }
