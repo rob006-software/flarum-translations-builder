@@ -41,7 +41,7 @@ class HttpClient {
 		if (!isset(self::$client[$host])) {
 			$defaultOptions = [];
 			if ($host === 'raw.githubusercontent.com' && Yii::$app->githubApi->authToken !== null) {
-				$defaultOptions['auth_bearer'] = Yii::$app->githubApi->authToken;
+				$defaultOptions['headers']['Authorization'] = 'token ' . Yii::$app->githubApi->authToken;
 			}
 			self::$client[$host] = static::create($defaultOptions);
 		}
