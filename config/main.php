@@ -145,6 +145,7 @@ return [
 		],
 		'githubApi' => [
 			'class' => GithubApi::class,
+			'authToken' => getenv('GITHUB_TOKEN') === false ? null : getenv('GITHUB_TOKEN'),
 		],
 		'gitlabApi' => [
 			'class' => GitlabApi::class,
