@@ -21,13 +21,13 @@ $localConfig = [];
 $localConfig = ArrayHelper::merge($localConfig, [
 	'components' => [
 		'githubApi' => [
-			'authToken' => null, // @todo fill me
+			//'authToken' => null, // @todo fill me
 		],
 		'extiverseApi' => [
-			'authToken' => null, // @todo fill me
+			//'authToken' => null, // @todo fill me
 		],
 		'weblateApi' => [
-			'authToken' => null, // @todo fill me
+			//'authToken' => null, // @todo fill me
 		],
 	],
 ]);
