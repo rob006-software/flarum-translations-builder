@@ -55,7 +55,7 @@ final class TranslationsImporter {
 
 		$translator = new Translator($language);
 		$translator->addLoader('array', new ArrayLoader());
-		$translator->addLoader('json', new JsonFileLoader(['skipEmpty' => true]));
+		$translator->addLoader('json', new JsonFileLoader(['skipEmpty' => false]));
 		if (file_exists($this->translations->getComponentTranslationPath($this->component->getId(), $language))) {
 			$translator->addResource(
 				'json',
