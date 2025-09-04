@@ -86,17 +86,17 @@ final class LanguagePacksSummaryGenerator {
 						<td>$prefix<a href="https://github.com/$userName/$repoName">$name</a></td>
 						<td align="right">
 							<a href="https://github.com/$userName/$repoName/tags">
-								<img src="https://img.shields.io/github/release-date/$packageName" alt="last release" style="max-width: 160px;" />
+								<img src="https://img.shields.io/github/release-date/$userName/$repoName" alt="last release" style="max-width: 160px;" />
 							</a>
 						</td>
 						<td>
 							<a href="https://github.com/$userName/$repoName/commits">
-								<img src="https://img.shields.io/github/commits-since/$packageName/latest" alt="commits since last release" style="max-width: 150px;" />
+								<img src="https://img.shields.io/github/commits-since/$userName/$repoName/latest" alt="commits since last release" style="max-width: 150px;" />
 							</a>
 						</td>
 						<td>
 							<a href="https://github.com/$userName/$repoName/pulls">
-								<img src="https://img.shields.io/github/issues-pr/$packageName" alt="open pull requests" />
+								<img src="https://img.shields.io/github/issues-pr/$userName/$repoName" alt="open pull requests" />
 							</a>
 						</td>
 						<td>
