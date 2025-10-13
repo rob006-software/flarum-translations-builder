@@ -29,6 +29,7 @@ use Symfony\Component\Translation\Loader\ArrayLoader;
 use Symfony\Component\Translation\MessageCatalogue;
 use Symfony\Component\Translation\Translator;
 use Symfony\Component\Translation\Util\ArrayConverter;
+use Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface;
 use Yii;
 use yii\base\Exception;
 use yii\base\InvalidArgumentException;
@@ -353,27 +354,37 @@ final class Translations {
 			// @todo there should be more efficient way of ensuring order and precedence than loading everything twice,
 			//       but it probably does not matter that much, so we can keep it in that way for now
 
-			// initial load to ensure correct order of elements (first source is a base and additional phrases are
-			// added at the end)
+			// First, fetch all sources to make sure that we won't call `addResource()` on a incomplete data.
+			$contents = [];
 			foreach ($component->getSources() as $source) {
 				// don't try to download URLs with placeholder for missing translation
 				if (strpos($source, ExtensionsRepository::NO_TRANSLATION_FILE) === false) {
-					$content = $this->getSourceContent($source, $component->getId());
-					$translator->addResource('yaml', $content, 'en', $component->getId());
+					try {
+						$contents[] = $this->getSourceContent($source, $component->getId());
+					} catch (ClientExceptionInterface $exception) {
+						// echo error so it will be visible in cron output
+						echo $exception->getMessage(), "\n";
+						// use an empty contents list to skip updating this component - sources will untouched
+						$contents = [];
+						break;
+					}
 				} else {
 					Yii::warning("Skipped downloading $source.", __METHOD__ . '.skip');
 				}
 			}
-			// load everything again in reverse order to make sure that phrases from more important sources (from the top)
-			// overwrite the less important sources (from the bottom)
-			// we can skip this if component has only one source
-			if (count($component->getSources()) > 1) {
-				foreach (array_reverse($component->getSources()) as $source) {
-					// don't try to download URLs with placeholder for missing translation
-					if (strpos($source, ExtensionsRepository::NO_TRANSLATION_FILE) === false) {
-						$content = $this->getSourceContent($source, $component->getId());
-						$translator->addResource('yaml', $content, 'en', $component->getId());
-					}
+
+			// Initial load to ensure a correct order of elements (the first source is a base and additional phrases are
+			// added at the end).
+			foreach ($contents as $content) {
+				$translator->addResource('yaml', $content, 'en', $component->getId());
+			}
+
+			// Load everything again in reverse order to make sure that phrases from more important sources (from the top)
+			// overwrite the less important sources (from the bottom).
+			// We can skip this if a component has only one source.
+			if (count($contents) > 1) {
+				foreach (array_reverse($contents) as $content) {
+					$translator->addResource('yaml', $content, 'en', $component->getId());
 				}
 			}
 
