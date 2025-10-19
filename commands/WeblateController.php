@@ -21,6 +21,8 @@ use app\models\Translations;
 use Symfony\Component\HttpClient\Exception\ClientException;
 use Yii;
 use function array_merge;
+use function str_contains;
+use function str_starts_with;
 
 /**
  * Class WeblateController.
@@ -64,7 +66,7 @@ class WeblateController extends ConsoleController {
 		foreach ($translations->getComponents() as $component) {
 			try {
 				foreach (Yii::$app->weblateApi->getUnits($component->getId()) as $unit) {
-					if (strpos($unit['source'][0], '=> ') === 0 && strpos($unit['extra_flags'], 'ignore-same') === false) {
+					if (str_starts_with($unit['source'][0], '=> ') && !str_contains($unit['extra_flags'], 'ignore-same')) {
 						Yii::$app->weblateApi->updateUnit($unit['id'], [
 							'extra_flags' => trim("{$unit['extra_flags']},ignore-same", ','),
 						]);

@@ -15,6 +15,7 @@ namespace app\models;
 
 use app\commands\ConfigController;
 use app\components\extensions\ExtensionsRepository;
+use app\components\inheritors\SerbianLatinToCyrillicTranslationsInheritor;
 use app\components\inheritors\TranslationsInheritor;
 use app\components\translations\JsonFileDumper;
 use app\components\translations\JsonFileLoader;
@@ -246,7 +247,7 @@ final class Translations {
 					);
 					break;
 				default:
-					throw new InvalidConfigException('Invalid subsplit type: ' . readable::value($id) . '.');
+					throw new InvalidConfigException('Invalid subsplit type for ' . readable::value($id) . '.');
 			}
 		}
 
@@ -287,15 +288,34 @@ final class Translations {
 
 		if (!$this->inheritors[$id] instanceof TranslationsInheritor) {
 			$config = $this->inheritors[$id];
-			$this->inheritors[$id] = new TranslationsInheritor(
-				$id,
-				$config['inheritFromLabel'],
-				$config['inheritFromSources'],
-				$config['inheritFromTranslations'],
-				$config['inheritToSources'],
-				$config['inheritToTranslations'],
-				"{$this->metadataDir}/inheritors/{$id}.json",
-			);
+			$className = $config['class'];
+			assert(is_a($className, TranslationsInheritor::class, true));
+			switch ($config['class']) {
+				case TranslationsInheritor::class:
+					$this->inheritors[$id] = new TranslationsInheritor(
+						$id,
+						$config['inheritFromLabel'],
+						$config['inheritFromSources'],
+						$config['inheritFromTranslations'],
+						$config['inheritToSources'],
+						$config['inheritToTranslations'],
+						"{$this->metadataDir}/inheritors/{$id}.json",
+					);
+					break;
+				case SerbianLatinToCyrillicTranslationsInheritor::class:
+					$this->inheritors[$id] = new SerbianLatinToCyrillicTranslationsInheritor(
+						$id,
+						$config['inheritFromLabel'],
+						$config['inheritFromSources'],
+						$config['inheritFromTranslations'],
+						$config['inheritToSources'],
+						$config['inheritToTranslations'],
+						"{$this->metadataDir}/inheritors/{$id}.json",
+					);
+					break;
+				default:
+					throw new InvalidConfigException('Invalid inheritor class for ' . readable::value($id) . '.');
+			}
 		}
 
 		return $this->inheritors[$id];

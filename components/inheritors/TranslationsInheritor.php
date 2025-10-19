@@ -112,7 +112,7 @@ class TranslationsInheritor {
 		$newTranslations = $toTranslations;
 		foreach ($toTranslations as $key => $toTranslation) {
 			$fromSource = $fromSources[$key] ?? '';
-			$fromTranslation = $fromTranslations[$key] ?? '';
+			$fromTranslation = $this->processFromTranslation($fromTranslations[$key] ?? '');
 			$toSource = $toSources[$key] ?? '';
 
 			// keep existing metadata, even if there is nothing to inherit - old strings could be restored in the future
@@ -157,6 +157,10 @@ class TranslationsInheritor {
 		}
 
 		return ArrayConverter::expandToTree($newMetadata);
+	}
+
+	protected function processFromTranslation(string $translation): string {
+		return $translation;
 	}
 
 	public function getId(): string {
