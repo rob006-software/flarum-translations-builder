@@ -15,6 +15,7 @@ namespace app\models;
 
 use app\commands\ConfigController;
 use app\components\extensions\ExtensionsRepository;
+use app\components\inheritors\TranslationsInheritor;
 use app\components\translations\JsonFileDumper;
 use app\components\translations\JsonFileLoader;
 use app\components\translations\YamlLoader;
@@ -87,6 +88,7 @@ final class Translations {
 	private $metadataDir;
 	private $components = [];
 	private $subsplits;
+	private $inheritors;
 	private $ignoredExtensions;
 	private $languages;
 	private $supportedVersions;
@@ -106,6 +108,7 @@ final class Translations {
 		$this->languages = array_keys($config['languages']);
 		$this->ignoredExtensions = $config['ignoredExtensions'] ?? [];
 		$this->subsplits = $config['subsplits'];
+		$this->inheritors = $config['inheritors'] ?? [];
 		$this->supportedVersions = $config['supportedVersions'];
 		$this->unsupportedVersions = $config['unsupportedVersions'] ?? [];
 		foreach ($config['components'] as $componentId => $componentConfig) {
@@ -262,6 +265,40 @@ final class Translations {
 		}
 
 		return null;
+	}
+
+	/**
+	 * @return TranslationsInheritor[]
+	 */
+	public function getInheritors(): iterable {
+		foreach ($this->inheritors as $id => $config) {
+			yield $id => $this->getInheritor($id);
+		}
+	}
+
+	public function hasInheritor(string $id): bool {
+		return isset($this->inheritors[$id]);
+	}
+
+	public function getInheritor(string $id): TranslationsInheritor {
+		if (!isset($this->inheritors[$id])) {
+			throw new InvalidArgumentException('There is no inheritor with ' . readable::value($id) . ' ID.');
+		}
+
+		if (!$this->inheritors[$id] instanceof TranslationsInheritor) {
+			$config = $this->inheritors[$id];
+			$this->inheritors[$id] = new TranslationsInheritor(
+				$id,
+				$config['inheritFromLabel'],
+				$config['inheritFromSources'],
+				$config['inheritFromTranslations'],
+				$config['inheritToSources'],
+				$config['inheritToTranslations'],
+				"{$this->metadataDir}/inheritors/{$id}.json",
+			);
+		}
+
+		return $this->inheritors[$id];
 	}
 
 	/**

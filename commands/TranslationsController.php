@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace app\commands;
 
 use app\components\ConsoleController;
+use app\components\inheritors\TranslationsInheritor;
 use app\components\release\ReleasePullRequestGenerator;
 use app\components\translations\TranslationsImporter;
 use Yii;
@@ -86,6 +87,37 @@ final class TranslationsController extends ConsoleController {
 			$this->updateLimit($subsplitToken);
 		}
 		$this->updateLimit($token);
+	}
+
+	public function actionInherit(array $inheritors = [], string $configFile = '@app/translations/config.php') {
+		$translations = $this->getTranslations($configFile);
+
+		if (empty($inheritors)) {
+			$inheritors = $translations->getInheritors();
+		} else {
+			foreach ($inheritors as $key => $inheritorId) {
+				$inheritors[$key] = $translations->getInheritor($inheritorId);
+			}
+		}
+
+		foreach ($inheritors as $inheritor) {
+			assert($inheritor instanceof TranslationsInheritor);
+			$inheritorToken = __METHOD__ . '#' . $inheritor->getId() . '#' . $inheritor->getHash();
+			if ($this->isLimited($inheritorToken)) {
+				continue;
+			}
+			$inheritor->inherit();
+			$this->postProcessRepository(
+				$translations->getRepository(),
+				strtr('Inherit translations from {sourceLabel}.', [
+					'{sourceLabel}' => $inheritor->getInheritFromLabel(),
+				])
+			);
+
+			// generate hash again, since inheritance may change the `inheritToTranslations` directory, and hash depends on it
+			$inheritorToken = __METHOD__ . '#' . $inheritor->getId() . '#' . $inheritor->getHash();
+			$this->updateLimit($inheritorToken);
+		}
 	}
 
 	public function actionImport(string $source, string $component, string $language, string $configFile = '@app/translations/config.php') {
