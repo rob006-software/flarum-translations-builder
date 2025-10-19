@@ -98,6 +98,7 @@ class TranslationsInheritor {
 		}
 
 		$newMetadata = array_filter($newMetadata);
+		ksort($newMetadata);
 		file_put_contents($this->metadataFile, json_encode($newMetadata, JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n");
 	}
 
