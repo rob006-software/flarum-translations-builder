@@ -14,7 +14,7 @@ declare(strict_types=1);
 
 namespace app\components\inheritors;
 
-use Turanjanin\SerbianTransliterator\Transliterator;
+use app\helpers\SerbianTransliterator;
 use function str_starts_with;
 
 /**
@@ -31,6 +31,6 @@ class SerbianLatinToCyrillicTranslationsInheritor extends TranslationsInheritor 
 			return $translation;
 		}
 
-		return Transliterator::toCyrillic($translation);
+		return SerbianTransliterator::toCyrillic($translation);
 	}
 }
