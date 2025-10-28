@@ -15,7 +15,7 @@ namespace app\models;
 
 use app\commands\ConfigController;
 use app\components\extensions\ExtensionsRepository;
-use app\components\inheritors\SerbianLatinToCyrillicTranslationsInheritor;
+use app\components\inheritors\SerbianCyrillicToLatinTranslationsInheritor;
 use app\components\inheritors\TranslationsInheritor;
 use app\components\translations\JsonFileDumper;
 use app\components\translations\JsonFileLoader;
@@ -302,8 +302,8 @@ final class Translations {
 						"{$this->metadataDir}/inheritors/{$id}.json",
 					);
 					break;
-				case SerbianLatinToCyrillicTranslationsInheritor::class:
-					$this->inheritors[$id] = new SerbianLatinToCyrillicTranslationsInheritor(
+				case SerbianCyrillicToLatinTranslationsInheritor::class:
+					$this->inheritors[$id] = new SerbianCyrillicToLatinTranslationsInheritor(
 						$id,
 						$config['inheritFromLabel'],
 						$config['inheritFromSources'],

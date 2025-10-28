@@ -18,19 +18,19 @@ use Turanjanin\SerbianTransliterator\Transliterator;
 use function str_starts_with;
 
 /**
- * Class SerbianLatinToCyrillicTranslationsInheritor.
+ * Class SerbianCyrillicToLatinTranslationsInheritor.
  *
  * @see https://github.com/rob006-software/flarum-translations/issues/1052#issuecomment-3399134450
  *
  * @author Robert Korulczyk <robert@korulczyk.pl>
  */
-class SerbianLatinToCyrillicTranslationsInheritor extends TranslationsInheritor {
+class SerbianCyrillicToLatinTranslationsInheritor extends TranslationsInheritor {
 
 	protected function processFromTranslation(string $translation): string {
 		if (str_starts_with($translation, '=> ')) {
 			return $translation;
 		}
 
-		return Transliterator::toCyrillic($translation);
+		return Transliterator::toLatin($translation);
 	}
 }
