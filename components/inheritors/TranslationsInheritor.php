@@ -121,8 +121,16 @@ class TranslationsInheritor {
 				$newMetadata[$key] = $metadata[$key];
 			}
 
-			if ($fromSource === '' || $fromTranslation === '' || $toSource === '') {
-				// phrase is outdated (empty source) or not translated in origin
+			if ($fromSource === '' || $toSource === '') {
+				// phrase is outdated (empty source)
+				continue;
+			}
+			if ($fromTranslation === '') {
+				// phrase is not translated in origin...
+				if ($toTranslation !== '') {
+					// ...but it is translated in target - save metadata to prevent inheritance in the future
+					$newMetadata[$key] = implode(' ', [md5($fromTranslation), md5($newTranslations[$key])]);
+				}
 				continue;
 			}
 
@@ -142,7 +150,6 @@ class TranslationsInheritor {
 				// translation has been inherited before - we need to check if a current phrase is inherited
 				if ($meta[1] === md5($toTranslation) && $meta[0] === $meta[1]) {
 					$newTranslations[$key] = $fromTranslation;
-
 				}
 			}
 
