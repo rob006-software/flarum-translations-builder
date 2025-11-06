@@ -177,10 +177,10 @@ class TranslationsInheritor {
 
 	public function getHash(): string {
 		$values = [];
-		foreach (FileHelper::findFiles($this->inheritFromTranslations, ['only' => ['/*.json']]) as $file) {
+		foreach (FileHelper::findFiles($this->inheritFromTranslations, ['only' => ['*.json']]) as $file) {
 			$values[$file] = md5_file($file);
 		}
-		foreach (FileHelper::findFiles($this->inheritToTranslations, ['only' => ['/*.json']]) as $file) {
+		foreach (FileHelper::findFiles($this->inheritToTranslations, ['only' => ['*.json']]) as $file) {
 			$values[$file] = md5_file($file);
 		}
 		ksort($values);
