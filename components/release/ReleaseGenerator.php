@@ -36,6 +36,7 @@ use function str_repeat;
 use function strlen;
 use function strncmp;
 use function strpos;
+use function strtr;
 use function substr;
 use function trim;
 
@@ -49,7 +50,7 @@ class ReleaseGenerator extends BaseObject {
 	public $localePath;
 	public $fallbackLocalePath;
 
-	public $versionTemplate = 'Major.Minor.Patch';
+	public $versionTemplate = '1.Minor.Patch';
 
 	private $subsplit;
 	private $repository;
@@ -188,7 +189,7 @@ class ReleaseGenerator extends BaseObject {
 			$content .= "\n\n";
 		}
 		if (!empty($changed)) {
-			$content .= $this->isMajorUpdate()
+			$content .= $this->isMinorUpdate()
 				? "**{$this->t('changelog.extensions-cleaned')}**:\n\n"
 				: "**{$this->t('changelog.extensions-updated')}**:\n\n";
 			foreach ($changed as $id => $extension) {
@@ -237,10 +238,10 @@ class ReleaseGenerator extends BaseObject {
 
 	private function getCoreChangesLabels(): array {
 		return [
-			'core.yml' => $this->isMajorUpdate()
+			'core.yml' => $this->isMinorUpdate()
 				? $this->t('changelog.cleaned-core', ['{version}' => $this->getSupportedFlarumVersion()])
 				: $this->t('changelog.updated-core'),
-			'validation.yml' => $this->isMajorUpdate()
+			'validation.yml' => $this->isMinorUpdate()
 				? $this->t('changelog.cleaned-validation', ['{version}' => $this->getSupportedFlarumVersion()])
 				: $this->t('changelog.updated-validation'),
 			'config.js' => $this->t('changelog.updated-config-js'),
@@ -274,12 +275,14 @@ class ReleaseGenerator extends BaseObject {
 
 	public function getVersions(): array {
 		if ($this->versions === null) {
-			// remove non-semver tags
 			$parser = new VersionParser();
-			$tags = array_filter($this->repository->getTags(), static function ($name) use ($parser) {
+			$requiredMajor = explode('.', ltrim('v', $this->versionTemplate), 2)[0];
+			$tags = array_filter($this->repository->getTags(), static function ($name) use ($parser, $requiredMajor) {
 				try {
-					$parser->normalize($name);
-					return true;
+					// remove non-semver tags
+					$version = $parser->normalize($name);
+					// ignore releases from different major line
+					return $requiredMajor === explode('.', $version, 2)[0];
 				} catch (UnexpectedValueException $exception) {
 					return false;
 				}
@@ -299,18 +302,13 @@ class ReleaseGenerator extends BaseObject {
 		if ($this->nextVersion === null) {
 			$previous = $this->getPreviousVersion();
 			if ($previous === null) {
-				$parts = [
-					'Major' => 1,
+				$parts = $this->tokenizeVersion(strtr($this->versionTemplate, [
 					'Minor' => 0,
 					'Patch' => 0,
-				];
+				]));
 			} else {
 				$parts = $this->tokenizeVersion($previous);
-				if ($this->isMajorUpdate()) {
-					$parts['Major']++;
-					$parts['Minor'] = 0;
-					$parts['Patch'] = 0;
-				} elseif ($this->isMinorUpdate()) {
+				if ($this->isMinorUpdate()) {
 					$parts['Minor']++;
 					$parts['Patch'] = 0;
 				} else {
@@ -325,35 +323,23 @@ class ReleaseGenerator extends BaseObject {
 	}
 
 	protected function isMinorUpdate(): bool {
+		// @todo improve this detection - this should also return true if we remove some old translations lines without
+		//       removing the whole files. There are more things that we should consider and what may help:
+		//       1. we should update the flarum version in `composer.json` - we could detect this change.
+		//       2. Flarum version may need to be updated in README.md
 		foreach ($this->getChangedExtensions() as $changeType) {
-			if (in_array($changeType, [Repository::CHANGE_ADDED, Repository::CHANGE_DELETED], true)) {
+			if ($changeType === Repository::CHANGE_DELETED) {
 				return true;
 			}
 		}
-
-		// If template does not have patch fragment treat all changes as minor releases. This is useful for pre-1.0.0 versions.
-		return strpos($this->versionTemplate, '.Patch') === false;
-	}
-
-	protected function isMajorUpdate(): bool {
-		// @todo major release should be explicitly requested (I have no ideas for this right now)
-//		foreach ($this->getChangedExtensions() as $changeType) {
-//			if ($changeType === Repository::CHANGE_DELETED) {
-//				return true;
-//			}
-//		}
 
 		return false;
 	}
 
 	protected function tokenizeVersion(string $version): array {
-		$prefix = explode('Major', $this->versionTemplate, 2)[0];
-		if (strncmp($prefix, $version, strlen($prefix)) !== 0) {
-			throw new RuntimeException("'$version' does not match '$this->versionTemplate' template.");
-		}
-		$parts = explode('.', substr($version, strlen($prefix)), 3);
+		$parts = explode('.', ltrim($version, 'v'), 3);
 		return [
-			'Major' => (int) ($parts[0] ?? 1),
+			'Major' => (int) $parts[0],
 			'Minor' => (int) ($parts[1] ?? 0),
 			'Patch' => (int) ($parts[2] ?? 0),
 		];
@@ -414,8 +400,8 @@ class ReleaseGenerator extends BaseObject {
 
 	public function getAnnouncement(): string {
 		[$userName, $repoName] = Yii::$app->githubApi->explodeRepoUrl($this->subsplit->getRepositoryUrl());
-		$command = $this->isMajorUpdate() ? 'require' : 'update';
-		$warning = $this->isMajorUpdate() ? "\n\n**{$this->t('announcement.major-warning')}**\n\n" : '';
+		$command = 'update';
+		$warning = $this->isMinorUpdate() ? "\n\n**{$this->t('announcement.major-warning')}**\n\n" : '';
 		$changes = trim($this->getChangelogEntryContent());
 
 		return <<<MD
