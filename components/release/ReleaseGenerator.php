@@ -276,13 +276,13 @@ class ReleaseGenerator extends BaseObject {
 	public function getVersions(): array {
 		if ($this->versions === null) {
 			$parser = new VersionParser();
-			$requiredMajor = explode('.', ltrim('v', $this->versionTemplate), 2)[0];
+			$requiredMajor = explode('.', ltrim($this->versionTemplate, 'v'), 2)[0];
 			$tags = array_filter($this->repository->getTags(), static function ($name) use ($parser, $requiredMajor) {
 				try {
 					// remove non-semver tags
 					$version = $parser->normalize($name);
-					// ignore releases from different major line
-					return $requiredMajor === explode('.', $version, 2)[0];
+					// ignore releases from the newer major line
+					return $requiredMajor >= explode('.', $version, 2)[0];
 				} catch (UnexpectedValueException $exception) {
 					return false;
 				}
