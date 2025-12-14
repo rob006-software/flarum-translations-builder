@@ -308,7 +308,11 @@ class ReleaseGenerator extends BaseObject {
 				]));
 			} else {
 				$parts = $this->tokenizeVersion($previous);
-				if ($this->isMinorUpdate()) {
+				$requiredMajor = explode('.', ltrim($this->versionTemplate, 'v'), 2)[0];
+				if ($parts['Major'] < $requiredMajor) {
+					$parts['Minor'] = 0;
+					$parts['Patch'] = 0;
+				} elseif ($this->isMinorUpdate()) {
 					$parts['Minor']++;
 					$parts['Patch'] = 0;
 				} else {
