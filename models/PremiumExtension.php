@@ -76,6 +76,10 @@ final class PremiumExtension extends Extension {
 		return $url !== null && strpos($url, ExtensionsRepository::NO_TRANSLATION_FILE) === false;
 	}
 
+	public function hasBetaTranslationSource(): bool {
+		return false;
+	}
+
 	public function verifyName(): bool {
 		return true;
 	}

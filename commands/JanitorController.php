@@ -63,7 +63,7 @@ final class JanitorController extends ConsoleController {
 		$extensions = Yii::$app->extensionsRepository->getValidExtensions($this->useCache);
 		$extensions = array_filter($extensions, static function (Extension $extension) use ($components) {
 			try {
-				return !isset($components[$extension->getId()]) && $extension->hasTranslationSource();
+				return !isset($components[$extension->getId()]) && ($extension->hasTranslationSource() || $extension->hasBetaTranslationSource());
 			} catch (UnprocessableExtensionExceptionInterface $exception) {
 				if (!$exception instanceof SoftFailureInterface) {
 					Yii::warning($exception->getMessage());
@@ -105,7 +105,7 @@ final class JanitorController extends ConsoleController {
 		$extensions = Yii::$app->extensionsRepository->getValidExtensions($this->useCache);
 		$extensions = array_filter($extensions, static function (Extension $extension) {
 			try {
-				return $extension->hasTranslationSource();
+				return $extension->hasTranslationSource() || $extension->hasBetaTranslationSource();
 			} catch (UnprocessableExtensionExceptionInterface $exception) {
 				if (!$exception instanceof SoftFailureInterface) {
 					Yii::warning($exception->getMessage());

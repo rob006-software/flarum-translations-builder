@@ -92,6 +92,8 @@ abstract class Extension {
 
 	abstract public function hasTranslationSource(): bool;
 
+	abstract public function hasBetaTranslationSource(): bool;
+
 	/**
 	 * @return bool `true` if name was not changed, `false` otherwise.
 	 */

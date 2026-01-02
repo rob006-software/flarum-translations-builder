@@ -107,7 +107,7 @@ final class ExtensionsController extends ConsoleController {
 		}
 		foreach ($extensions as $index => $extension) {
 			try {
-				if (!$extension->hasTranslationSource()) {
+				if (!$extension->hasTranslationSource() && !$extension->hasBetaTranslationSource()) {
 					unset($extensions[$index]);
 				}
 			} catch (UnprocessableExtensionExceptionInterface $exception) {
