@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace app\components\extensions;
 
+use app\components\extensions\exceptions\UnprocessableExtensionExceptionInterface;
 use app\models\Extension;
 use app\models\PremiumExtension;
 use app\models\Translations;
@@ -202,8 +203,13 @@ final class PendingSummaryGenerator {
 			$badge .= " <br /> ![Extension is abandoned](https://img.shields.io/badge/status-abandoned-red)";
 		}
 
-		if (!$extension->hasTranslationSource() && !$extension->hasBetaTranslationSource()) {
-			$badge .= " <br /> ![Extension does not have translations](https://img.shields.io/badge/status-no_translation-orange)";
+		try {
+			if (!$extension->hasTranslationSource() && !$extension->hasBetaTranslationSource()) {
+				$badge .= " <br /> ![Extension does not have translations](https://img.shields.io/badge/status-no_translation-orange)";
+			}
+		} catch (UnprocessableExtensionExceptionInterface $exception) {
+			Yii::warning("Extension not found during pending report generation: {$exception->getMessage()}", __METHOD__);
+			$badge .= " <br /> ![Extension is not found in API](https://img.shields.io/badge/status-404-red)";
 		}
 
 		return $badge;
