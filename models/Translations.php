@@ -406,6 +406,7 @@ final class Translations {
 
 	private function fetchSources(): Translator {
 		$translator = new Translator('en');
+		$translator->addLoader('json_file', new JsonFileLoader());
 		$translator->addLoader('yaml', new YamlLoader());
 		foreach ($this->getComponents() as $component) {
 			// @todo there should be more efficient way of ensuring order and precedence than loading everything twice,
@@ -427,6 +428,13 @@ final class Translations {
 					}
 				} else {
 					Yii::warning("Skipped downloading $source.", __METHOD__ . '.skip');
+				}
+			}
+			// extension might have been removed - fallback to the existing source (if exist)
+			if (empty($contents)) {
+				$oldSourcePath = $this->getComponentSourcePath($component->getId());
+				if (file_exists($oldSourcePath)) {
+					$translator->addResource('json_file', $oldSourcePath, 'en', $component->getId());
 				}
 			}
 
