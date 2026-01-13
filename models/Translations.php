@@ -669,6 +669,10 @@ final class Translations {
 				continue;
 			}
 			$new = ArrayConverter::expandToTree($catalogue->all($component->getId()));
+			if (empty($new)) {
+				// this may happen when the extension repo is removed
+				continue;
+			}
 			$old = json_decode(file_get_contents($this->getComponentSourcePath($component->getId())), true, 512, JSON_THROW_ON_ERROR);
 			if ($old !== $new) {
 				$extension = Yii::$app->extensionsRepository->getExtension($component->getId());
