@@ -55,7 +55,7 @@ final class ExtiverseApi extends Component {
 	 */
 	public function searchExtensions(bool $useCache = true): array {
 		$callback = function () {
-			$response['links']['next'] = $this->apiUrl . '/extensions?filter[is][]=premium&page[limit]=100';
+			$response['links']['next'] = $this->apiUrl . '/extensions?filter[is][]=premium&page[limit]=100&filter[compatible-with]=v1.8.12'; // @todo version should be dynamic. maybe we could pass multiple versions
 
 			$results = [];
 			do {
