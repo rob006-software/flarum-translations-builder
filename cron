@@ -2,7 +2,7 @@
 
 ./yii self-update;
 #./yii extensions/update-cache --frequency=21600 --push;
-./yii config/update --frequency=21600 --push;
+#./yii config/update --frequency=21600 --push;
 ./yii translations/update --frequency=21600 --push;
 ./yii translations/inherit --frequency=86400 --push;
 ./yii translations/split --frequency=21600 --push;
