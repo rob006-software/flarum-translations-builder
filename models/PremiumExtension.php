@@ -83,11 +83,11 @@ final class PremiumExtension extends Extension {
 			'blomstra-realtime',
 			'datitisev-backup',
 			'justoverclock-related-discussions',
-		])) {
+		], true)) {
 			return 'bef89cfb5e916b4186d22033e697932f0f51f487';
 		}
 
-		return '2ad4ed84ebf5507666810a66b9195fcdc5288c32';
+		return '84b06a54d8679050557844666ca9436064cb016b';
 	}
 
 	public function hasBetaTranslationSource(): bool {
