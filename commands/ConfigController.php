@@ -66,6 +66,21 @@ final class ConfigController extends ConsoleController {
 		$this->updateLimit($token);
 	}
 
+	public function actionUpdateBuiltInLanguages(array $extensionsIds, string $configFile = '@app/translations/config.php') {
+		$translations = $this->getTranslations($configFile);
+
+		$configGenerator = new ConfigGenerator($translations->getDir() . '/config/components.php', true);
+		foreach ($extensionsIds as $extensionId) {
+			$component = $translations->getComponent($extensionId);
+			$extension = Yii::$app->extensionsRepository->getExtension($component->getId());
+			if ($extension === null) {
+				echo "Unable to update {$component->getId()} extension.\n";
+				continue;
+			}
+			$configGenerator->updateExtension($extension);
+		}
+	}
+
 	public static function resetFrequencyLimit(): void {
 		Yii::$app->cache->delete(__CLASS__ . '::actionUpdate');
 	}

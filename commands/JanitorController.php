@@ -19,7 +19,6 @@ use app\components\extensions\exceptions\SoftFailureInterface;
 use app\components\extensions\exceptions\UnprocessableExtensionExceptionInterface;
 use app\models\Extension;
 use app\models\ForkRepository;
-use app\models\PremiumExtension;
 use Yii;
 use yii\base\InvalidConfigException;
 use yii\console\ExitCode;
@@ -31,9 +30,7 @@ use function array_flip;
 use function array_merge;
 use function file_exists;
 use function filemtime;
-use function in_array;
 use function rename;
-use function strtolower;
 use function strtotime;
 use function unlink;
 
@@ -153,62 +150,6 @@ final class JanitorController extends ConsoleController {
 			if (file_exists($translationPath)) {
 				unlink($translationPath);
 				echo "Removed $sourcePath translation.\n";
-			}
-		}
-	}
-
-	// @todo we probably should remove this - https://github.com/rob006-software/flarum-translations-builder/issues/53
-	public function actionRedundantTranslations(array $languages = [], string $configFile = '@app/translations/config.php') {
-		$translations = $this->getTranslations($configFile);
-		$alternativeLanguagesGenerator = static function (string $language) {
-			yield $language;
-
-			if (strpos($language, '_')) {
-				yield strtr($language, ['_' => '-']);
-
-				$parts = explode('_', $language, 2);
-				$newLanguage = $parts[0] . '_' . strtolower($parts[1]);
-				if ($language !== $newLanguage) {
-					yield $newLanguage;
-					yield strtr($newLanguage, ['_' => '-']);
-				}
-			}
-		};
-
-		foreach ($translations->getExtensionsComponents() as $component) {
-			$extension = Yii::$app->extensionsRepository->getExtension($component->getId());
-			foreach ($component->getSources() as $source) {
-				foreach ($translations->getLanguages() as $language) {
-					if (
-						(!empty($languages) && !in_array($language, $languages, true))
-						|| $extension instanceof PremiumExtension
-						|| $extension->isOutdated() !== false
-					) {
-						continue;
-					}
-
-					if ($component->isValidForLanguage($language)) {
-						foreach ($alternativeLanguagesGenerator($language) as $alternativeLanguage) {
-							$url = strtr($source, ['/en.' => "/$alternativeLanguage."]);
-							if (Yii::$app->extensionsRepository->testSourceUrl($url)) {
-								echo "{$component->getId()} - $language: $url\n";
-							}
-						}
-					} else {
-						$exists = false;
-						foreach ($alternativeLanguagesGenerator($language) as $alternativeLanguage) {
-							$url = strtr($source, ['/en.' => "/$alternativeLanguage."]);
-							if (Yii::$app->extensionsRepository->testSourceUrl($url)) {
-								$exists = true;
-								break;
-							}
-						}
-
-						if (!$exists) {
-							echo "{$component->getId()} - missing translation for $language\n";
-						}
-					}
-				}
 			}
 		}
 	}
