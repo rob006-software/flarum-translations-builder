@@ -291,11 +291,11 @@ final class ExtensionsRepository extends Component {
 
 	public function detectTranslationSourceUrl(string $repositoryUrl, ?string $branch = null, ?array $possiblePaths = null): string {
 		$possiblePaths = $possiblePaths ?? [
-				'resources/locale/en.yml',
-				'locale/en.yml',
-				'resources/locale/en.yaml',
-				'locale/en.yaml',
-			];
+			'resources/locale/en.yml',
+			'locale/en.yml',
+			'resources/locale/en.yaml',
+			'locale/en.yaml',
+		];
 		foreach ($possiblePaths as $possiblePath) {
 			$url = $this->generateRawUrl($repositoryUrl, $possiblePath, $branch);
 			if ($this->testSourceUrl($url)) {
@@ -338,6 +338,88 @@ final class ExtensionsRepository extends Component {
 		}
 
 		return false;
+	}
+
+	public function findBuiltInLanguages(string $repositoryUrl, string $ref, string $path): array {
+		$path = trim($path, '/');
+
+		// Only GitHub and GitLab are supported; otherwise return empty array as requested.
+		if (!$this->isGithubRepo($repositoryUrl) && !$this->isGitlabRepo($repositoryUrl)) {
+			return [];
+		}
+
+		$languages = [];
+
+		if ($this->isGithubRepo($repositoryUrl)) {
+			[$userName, $repoName] = Yii::$app->githubApi->explodeRepoUrl($repositoryUrl);
+			$apiUrl = "https://api.github.com/repos/{$userName}/{$repoName}/contents/{$path}?ref=" . urlencode($ref);
+			try {
+				$items = $this->getClient()->request('GET', $apiUrl)->toArray();
+				foreach ($items as $item) {
+					if (($item['type'] ?? null) === 'file') {
+						$name = $item['name'] ?? '';
+						if (preg_match('/^([A-Za-z0-9_\-]+)\.(ya?ml)$/', $name, $m)) {
+							$languages[$this->normalizeLanguage($m[1])] = true;
+						}
+					}
+				}
+			} catch (HttpExceptionInterface $exception) {
+				Yii::warning(
+					"Unable to list GitHub directory for $repositoryUrl: {$exception->getMessage()}",
+					__METHOD__
+				);
+			}
+		}
+
+		if ($this->isGitlabRepo($repositoryUrl)) {
+			$projectId = urlencode(Yii::$app->gitlabApi->extractRepoName($repositoryUrl));
+			$apiUrl = "https://gitlab.com/api/v4/projects/{$projectId}/repository/tree?path=" . urlencode($path) . "&ref=" . urlencode($ref);
+			try {
+				$items = $this->getClient()->request('GET', $apiUrl)->toArray();
+				foreach ($items as $item) {
+					if (($item['type'] ?? null) === 'blob') {
+						$name = $item['name'] ?? '';
+						if (preg_match('/^([A-Za-z0-9_\-]+)\.(ya?ml)$/', $name, $m)) {
+							$languages[$this->normalizeLanguage($m[1])] = true;
+						}
+					}
+				}
+			} catch (HttpExceptionInterface $exception) {
+				Yii::warning(
+					"Unable to list GitLab directory for $repositoryUrl: {$exception->getMessage()}",
+					__METHOD__
+				);
+			}
+		}
+
+		ksort($languages);
+		return array_values(array_keys($languages));
+	}
+
+	private function normalizeLanguage(string $language): string {
+		if (Translations::$instance === null) {
+			return $language;
+		}
+
+		static $aliases = [
+			'zh' => 'zh_Hans',
+		];
+
+		foreach (Translations::$instance->getLanguages() as $supportedLanguage) {
+			if (strcasecmp($language, $supportedLanguage) === 0) {
+				return $supportedLanguage;
+			}
+			$normalizedSupported = str_replace('_', '-', strtolower($supportedLanguage));
+			$normalizedInput = str_replace('_', '-', strtolower($language));
+			if ($normalizedInput === $normalizedSupported) {
+				return $supportedLanguage;
+			}
+			if (isset($aliases[$normalizedInput])) {
+				return $aliases[$normalizedInput];
+			}
+		}
+
+		return $language;
 	}
 
 	public function findTagForCommit(string $repositoryUrl, string $commitHash): ?string {
@@ -426,6 +508,28 @@ final class ExtensionsRepository extends Component {
 
 	public function isGitlabRepo(string $url): bool {
 		return strncasecmp('https://gitlab.com/', $url, 19) === 0 || strncasecmp('git@gitlab.com:', $url, 15) === 0;
+	}
+
+	public function parseRawUrl(string $url): ?array {
+		if (str_starts_with($url, 'https://raw.githubusercontent.com/')) {
+			if (preg_match('/^https:\/\/raw\.githubusercontent\.com\/([^\/]+\/[^\/]+)\/([^\/]+)\/(.+)$/', $url, $matches)) {
+				return [
+					'repository' => "https://github.com/{$matches[1]}",
+					'branch' => $matches[2],
+					'file' => $matches[3],
+				];
+			}
+		} elseif (strncasecmp($url, 'https://gitlab.com/', 19) === 0) {
+			if (preg_match('/^https:\/\/gitlab\.com\/([^\/]+\/[^\/]+)\/(?:-\/)?raw\/([^\/]+)\/(.+)$/', $url, $matches)) {
+				return [
+					'repository' => "https://gitlab.com/{$matches[1]}",
+					'branch' => $matches[2],
+					'file' => $matches[3],
+				];
+			}
+		}
+
+		return null;
 	}
 
 	private function getPackagesList(): array {

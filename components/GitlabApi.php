@@ -97,7 +97,7 @@ final class GitlabApi extends Component {
 		return $this->_client;
 	}
 
-	private function extractRepoName(string $repoUrl): string {
+	public function extractRepoName(string $repoUrl): string {
 		if (strncmp($repoUrl, 'https://gitlab.com/', 19) === 0) {
 			$path = trim(parse_url($repoUrl, PHP_URL_PATH), '/');
 		} elseif (strncmp($repoUrl, 'git@gitlab.com:', 15) === 0) {

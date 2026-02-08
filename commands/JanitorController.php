@@ -157,6 +157,7 @@ final class JanitorController extends ConsoleController {
 		}
 	}
 
+	// @todo we probably should remove this - https://github.com/rob006-software/flarum-translations-builder/issues/53
 	public function actionRedundantTranslations(array $languages = [], string $configFile = '@app/translations/config.php') {
 		$translations = $this->getTranslations($configFile);
 		$alternativeLanguagesGenerator = static function (string $language) {

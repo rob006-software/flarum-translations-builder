@@ -44,9 +44,11 @@ final class ConfigGenerator {
 	use DontSet;
 
 	private $configPath;
+	private $detectBuiltInLanguages;
 
-	public function __construct(string $configFilePath) {
+	public function __construct(string $configFilePath, bool $detectBuiltInLanguages = false) {
 		$this->configPath = $configFilePath;
+		$this->detectBuiltInLanguages = $detectBuiltInLanguages;
 	}
 
 	public function updateExtension(Extension $extension): void {
@@ -114,20 +116,33 @@ final class ConfigGenerator {
 		if (!is_array($extensionConfig)) {
 			$extensionConfig = [];
 		}
-		$extensionConfig = self::generateConfig($extension, $extensionConfig);
+		$extensionConfig = self::generateConfig($extension, $extensionConfig, $this->detectBuiltInLanguages);
 
-		$result = "'{$extension->getId()}' => [\n";
-		foreach ($extensionConfig as $key => $value) {
-			$result .= "\t\t'$key' => '$value',\n";
+		return "'{$extension->getId()}' => " . $this->renderValue($extensionConfig, 1) . ',';
+	}
+
+	private function renderValue($value, int $indent): string {
+		if (!is_array($value)) {
+			return "'$value'";
 		}
-		$result .= "\t],";
+
+		$tabs = str_repeat("\t", $indent);
+		$result = "[\n";
+		foreach ($value as $key => $item) {
+			$result .= $tabs . "\t";
+			if (!is_int($key)) {
+				$result .= "'$key' => ";
+			}
+			$result .= $this->renderValue($item, $indent + 1) . ",\n";
+		}
+		$result .= $tabs . "]";
 
 		return $result;
 	}
 
-	public static function generateConfig(Extension $extension, array $extensionConfig = []): array {
+	public static function generateConfig(Extension $extension, array $extensionConfig = [], bool $detectBuiltInLanguages = false): array {
 		$configJson = json_encode($extensionConfig, JSON_THROW_ON_ERROR);
-		return Yii::$app->arrayCache->getOrSet(__METHOD__ . "({$extension->getId()}, $configJson)", static function () use ($extension, $extensionConfig) {
+		return Yii::$app->arrayCache->getOrSet(__METHOD__ . "({$extension->getId()}, $configJson)", static function () use ($extension, $extensionConfig, $detectBuiltInLanguages) {
 			if ($extension instanceof RegularExtension) {
 				if ($extension->hasTranslationSource()) {
 					$extensionConfig['tag'] = $extension->getStableTranslationSourceUrl();
@@ -152,12 +167,42 @@ final class ConfigGenerator {
 						$extensionConfig[$key] = $extension->getTranslationSourceUrl(substr($key, 4));
 					}
 				}
+				if ($detectBuiltInLanguages && isset($extensionConfig['tag'])) {
+					$parsedRepo = Yii::$app->extensionsRepository->parseRawUrl($extensionConfig['tag']);
+					if ($parsedRepo !== null) {
+						$builtInLanguages = Yii::$app->extensionsRepository->findBuiltInLanguages(
+							$parsedRepo['repository'],
+							$parsedRepo['branch'],
+							dirname($parsedRepo['file'])
+						);
+						$builtInLanguages = array_diff($builtInLanguages, ['en']);
+						if (!empty($builtInLanguages)) {
+							$extensionConfig['__builtInLanguages'] = $builtInLanguages;
+						} else {
+							unset($extensionConfig['__builtInLanguages']);
+						}
+					}
+				}
 			} elseif ($extension instanceof PremiumExtension) {
 				$extensionConfig['tag'] = $extension->getTranslationSourceUrl();
 			}
 
-			// make sure tha beta is after stable, so stable translations will have precedence
+			// make sure that beta is after stable, so stable translations will have precedence
 			uksort($extensionConfig, static function ($a, $b) {
+				$aIsMeta = strncmp($a, '__', 2) === 0;
+				$bIsMeta = strncmp($b, '__', 2) === 0;
+
+				// Put all "__*" keys at the end
+				if ($aIsMeta !== $bIsMeta) {
+					return $aIsMeta ? 1 : -1;
+				}
+
+				// If both are "__*", sort them alphabetically
+				if ($aIsMeta && $bIsMeta) {
+					return strcmp($a, $b);
+				}
+
+				// Keep special ordering at the top
 				if (in_array($a, ['tag', 'beta'], true) && in_array($b, ['tag', 'beta'], true)) {
 					if ($a === 'tag' && $b === 'beta') {
 						return -1;
@@ -165,9 +210,11 @@ final class ConfigGenerator {
 					if ($a === 'beta' && $b === 'tag') {
 						return 1;
 					}
+					return 0;
 				}
 
-				return 0;
+				// Otherwise sort alphabetically for deterministic output
+				return strcmp($a, $b);
 			});
 
 			return $extensionConfig;

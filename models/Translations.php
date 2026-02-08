@@ -37,7 +37,9 @@ use yii\base\Exception;
 use yii\base\InvalidArgumentException;
 use yii\base\InvalidConfigException;
 use yii\caching\TagDependency;
+use yii\helpers\ArrayHelper;
 use yii\helpers\FileHelper;
+use function array_diff;
 use function array_diff_key;
 use function array_filter;
 use function array_reverse;
@@ -52,7 +54,6 @@ use function implode;
 use function in_array;
 use function is_array;
 use function is_dir;
-use function is_string;
 use function json_decode;
 use function json_encode;
 use function ksort;
@@ -113,16 +114,16 @@ final class Translations {
 		$this->supportedVersions = $config['supportedVersions'];
 		$this->unsupportedVersions = $config['unsupportedVersions'] ?? [];
 		foreach ($config['components'] as $componentId => $componentConfig) {
-			$languages = [];
-			foreach ($config['languages'] as $language => $languageComponents) {
-				if (in_array($componentId, $languageComponents, true)) {
-					$languages[] = $language;
+			if (is_array($componentConfig)) {
+				$builtInLanguages = ArrayHelper::remove($componentConfig, '__builtInLanguages', []);
+				$languages = array_diff($this->languages, $builtInLanguages);
+				foreach ($config['languages'] as $language => $languageComponents) {
+					if (in_array($componentId, $languageComponents, true)) {
+						$languages[] = $language;
+					} elseif (in_array("!$componentId", $languageComponents, true)) {
+						$languages = array_diff($languages, [$language]);
+					}
 				}
-			}
-
-			if (is_string($componentConfig)) {
-				$this->components[$componentId] = new Component([$componentConfig], $componentId, $languages);
-			} elseif (is_array($componentConfig)) {
 				$this->components[$componentId] = new Component($componentConfig, $componentId, $languages);
 			} else {
 				throw new InvalidConfigException('Invalid $config: ' . readable::value($componentConfig) . '.');

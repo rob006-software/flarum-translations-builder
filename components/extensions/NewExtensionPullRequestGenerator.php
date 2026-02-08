@@ -109,7 +109,7 @@ final class NewExtensionPullRequestGenerator {
 
 	private function addExtensionToConfig(Extension $extension): void {
 		$filePath = $this->repository->getPath() . '/config/components.php';
-		$generator = new ConfigGenerator($filePath);
+		$generator = new ConfigGenerator($filePath, true);
 		$generator->updateExtension($extension);
 	}
 
