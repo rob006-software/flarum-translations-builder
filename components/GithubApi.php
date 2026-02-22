@@ -51,12 +51,6 @@ final class GithubApi extends Component {
 		$this->githubApiClient->authenticate($this->authToken, $this->authPassword, $this->authMethod);
 	}
 
-	public function getDefaultBranch(string $repoUrl): ?string {
-		return Yii::$app->cache->getOrSet(__METHOD__ . '#' . $repoUrl, function () use ($repoUrl) {
-			return $this->getRepoInfo($repoUrl)['default_branch'];
-		}, 7 * 24 * 3600);
-	}
-
 	public function getRepoInfo(string $repoUrl): array {
 		[$userName, $repoName] = $this->explodeRepoUrl($repoUrl);
 		try {
@@ -107,7 +101,7 @@ final class GithubApi extends Component {
 		[$sourceUserName,] = $this->explodeRepoUrl($sourceRepository);
 		return $this->githubApiClient->pullRequests()
 			->create($targetUserName, $targetRepoName, [
-				'base' => $settings['base'] ?? 'master',
+				'base' => $settings['base'],
 				'head' => $sourceUserName === $targetUserName ? $branch : "$sourceUserName:$branch",
 				'maintainer_can_modify' => true,
 				'title' => $settings['title'],

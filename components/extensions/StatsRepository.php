@@ -78,7 +78,7 @@ class StatsRepository extends Component {
 	}
 
 	public static function getWeek(?int $timestamp = null): string {
-		// We're delaying beginning of the week to Tuesday. In Monday stats from last 24h will include Sunday, so
+		// We're delaying the beginning of the week to Tuesday. In Monday stats from last 24h will include Sunday, so
 		// they're not measurable.
 		return date('W', strtotime('-1 day', $timestamp ?? time()));
 	}

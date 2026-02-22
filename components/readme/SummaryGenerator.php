@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace app\components\readme;
 
+use app\helpers\FlarumVersion;
 use app\models\Extension;
 use function usort;
 
@@ -28,12 +29,13 @@ final class SummaryGenerator extends ReadmeGenerator {
 		usort($extensions, static function (Extension $a, Extension $b) {
 			return $a->getPackageName() <=> $b->getPackageName();
 		});
+		$weblateProject = FlarumVersion::weblateProject();
 
 		$output = "\n\n| Extension | Status |\n| --- | --- |\n";
 		foreach ($extensions as $extension) {
 			$output .= "| [`{$extension->getPackageName()}`]({$extension->getRepositoryUrl()}) ";
-			$icon = "![Translation status](https://weblate.rob006.net/widgets/flarum/-/{$extension->getId()}/multi-auto.svg)";
-			$output .= "| [$icon](https://weblate.rob006.net/projects/flarum/{$extension->getId()}/) ";
+			$icon = "![Translation status](https://weblate.rob006.net/widgets/{$weblateProject}/-/{$extension->getId()}/multi-auto.svg)";
+			$output .= "| [$icon](https://weblate.rob006.net/projects/{$weblateProject}/{$extension->getId()}/) ";
 			$output .= "|\n";
 		}
 

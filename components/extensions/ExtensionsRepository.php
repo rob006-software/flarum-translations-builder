@@ -289,7 +289,7 @@ final class ExtensionsRepository extends Component {
 		});
 	}
 
-	public function detectTranslationSourceUrl(string $repositoryUrl, ?string $branch = null, ?array $possiblePaths = null): string {
+	public function detectTranslationSourceUrl(string $repositoryUrl, string $branch, ?array $possiblePaths = null): string {
 		$possiblePaths = $possiblePaths ?? [
 			'resources/locale/en.yml',
 			'locale/en.yml',
@@ -373,7 +373,7 @@ final class ExtensionsRepository extends Component {
 
 		if ($this->isGitlabRepo($repositoryUrl)) {
 			$projectId = urlencode(Yii::$app->gitlabApi->extractRepoName($repositoryUrl));
-			$apiUrl = "https://gitlab.com/api/v4/projects/{$projectId}/repository/tree?path=" . urlencode($path) . "&ref=" . urlencode($ref);
+			$apiUrl = "https://gitlab.com/api/v4/projects/{$projectId}/repository/tree?path=" . urlencode($path) . '&ref=' . urlencode($ref);
 			try {
 				$items = $this->getClient()->request('GET', $apiUrl)->toArray();
 				foreach ($items as $item) {
@@ -485,17 +485,15 @@ final class ExtensionsRepository extends Component {
 		throw new InvalidRepositoryUrlException('Invalid repository URL: ' . readable::value($repositoryUrl) . '.');
 	}
 
-	private function generateRawUrl(string $repositoryUrl, string $file, ?string $branch = null): string {
+	private function generateRawUrl(string $repositoryUrl, string $file, string $branch): string {
 		$path = trim(parse_url($repositoryUrl, PHP_URL_PATH), '/');
 		if (substr($path, -4) === '.git') {
 			$path = substr($path, 0, -4);
 		}
 		if ($this->isGithubRepo($repositoryUrl)) {
-			$branch = $branch ?? Yii::$app->githubApi->getDefaultBranch($repositoryUrl) ?? 'master';
 			return "https://raw.githubusercontent.com/{$path}/{$branch}/{$file}";
 		}
 		if ($this->isGitlabRepo($repositoryUrl)) {
-			$branch = $branch ?? Yii::$app->gitlabApi->getDefaultBranch($repositoryUrl) ?? 'master';
 			return "https://gitlab.com/{$path}/raw/{$branch}/{$file}";
 		}
 

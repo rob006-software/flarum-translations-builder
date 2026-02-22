@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace app\components\readme;
 
+use app\helpers\FlarumVersion;
 use app\models\Extension;
 use app\models\SubsplitLocale;
 
@@ -37,11 +38,12 @@ final class LanguageSubsplitReadmeGenerator extends ReadmeGenerator {
 			return $a->getPackageName() <=> $b->getPackageName();
 		});
 
+		$weblateProject = FlarumVersion::weblateProject();
 		$output = "\n\n| {$this->locale->t('readme.status-table.header-extension')} | {$this->locale->t('readme.status-table.header-status')} |\n| --- | --- |\n";
 		foreach ($extensions as $extension) {
 			$output .= "| [`{$extension->getPackageName()}`]({$extension->getRepositoryUrl()}) ";
-			$icon = "![{$this->locale->t('readme.status-table.label-translation-status')}](https://weblate.rob006.net/widgets/flarum/{$this->language}/{$extension->getId()}/svg-badge.svg)";
-			$output .= "| [$icon](https://weblate.rob006.net/projects/flarum/{$extension->getId()}/{$this->language}/) ";
+			$icon = "![{$this->locale->t('readme.status-table.label-translation-status')}](https://weblate.rob006.net/widgets/{$weblateProject}/{$this->language}/{$extension->getId()}/svg-badge.svg)";
+			$output .= "| [$icon](https://weblate.rob006.net/projects/{$weblateProject}/{$extension->getId()}/{$this->language}/) ";
 			$output .= "|\n";
 		}
 

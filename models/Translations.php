@@ -100,7 +100,7 @@ final class Translations {
 
 	private $_sourcesContents = [];
 
-	public function __construct(string $repository, ?string $branch, array $config) {
+	public function __construct(string $repository, string $branch, array $config) {
 		$this->hash = md5(json_encode($config, JSON_THROW_ON_ERROR));
 		$this->repository = [$repository, $branch, $config['dir']];
 		$this->dir = $config['dir'];

@@ -17,6 +17,7 @@ use app\components\ConsoleController;
 use app\components\extensions\ConfigGenerator;
 use app\components\extensions\exceptions\SoftFailureInterface;
 use app\components\extensions\exceptions\UnprocessableExtensionExceptionInterface;
+use app\helpers\FlarumVersion;
 use app\models\Extension;
 use app\models\ForkRepository;
 use Yii;
@@ -73,18 +74,18 @@ final class JanitorController extends ConsoleController {
 		$repository = new ForkRepository(
 			Yii::$app->params['translationsForkRepository'],
 			Yii::$app->params['translationsRepository'],
-			null,
+			FlarumVersion::branch(),
 			APP_ROOT . '/runtime/translations-fork'
 		);
 		$repository->rebase();
 		$repository->syncBranchesWithRemote();
 
 		$branches = array_filter($repository->getBranches(), static function ($name) {
-			return strncmp($name, 'new/', 4) === 0;
+			return strncmp($name, FlarumVersion::newPrPrefix(), 4) === 0;
 		});
 		$orphanedBranches = array_combine($branches, $branches);
 		foreach ($extensions as $extension) {
-			unset($orphanedBranches["new/{$extension->getId()}"]);
+			unset($orphanedBranches[FlarumVersion::newPrPrefix($extension->getId())]);
 		}
 
 		if (empty($orphanedBranches)) {

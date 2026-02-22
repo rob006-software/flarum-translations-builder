@@ -58,7 +58,7 @@ class Repository {
 
 	private $_branches;
 
-	public function __construct(string $remote, ?string $branch, string $workingCopyDir) {
+	public function __construct(string $remote, string $branch, string $workingCopyDir) {
 		$this->remote = $remote;
 		$this->branch = $branch;
 		$this->workingCopyDir = $workingCopyDir;
@@ -115,7 +115,7 @@ class Repository {
 		return $this->remote;
 	}
 
-	public function getBranch(): ?string {
+	public function getBranch(): string {
 		return $this->branch;
 	}
 

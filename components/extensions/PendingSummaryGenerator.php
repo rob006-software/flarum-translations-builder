@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace app\components\extensions;
 
 use app\components\extensions\exceptions\UnprocessableExtensionExceptionInterface;
+use app\helpers\FlarumVersion;
 use app\models\Extension;
 use app\models\PremiumExtension;
 use app\models\Translations;
@@ -131,13 +132,13 @@ final class PendingSummaryGenerator {
 	private function renderBranchBadge(string $extensionId): string {
 		$output = '';
 		if ($this->translations->hasComponent($extensionId)) {
-			$output .= "![Branch was merged](https://img.shields.io/badge/-!-red)";
+			$output .= '![Branch was merged](https://img.shields.io/badge/-!-red)';
 		}
 
 		$pullRequest = Yii::$app->githubApi->getPullRequestForBranch(
 			Yii::$app->params['translationsRepository'],
 			Yii::$app->params['translationsForkRepository'],
-			"new/{$extensionId}"
+			FlarumVersion::newPrPrefix($extensionId)
 		);
 		if ($pullRequest === null) {
 			return '';
@@ -200,16 +201,16 @@ final class PendingSummaryGenerator {
 		}
 
 		if ($extension->isAbandoned()) {
-			$badge .= " <br /> ![Extension is abandoned](https://img.shields.io/badge/status-abandoned-red)";
+			$badge .= ' <br /> ![Extension is abandoned](https://img.shields.io/badge/status-abandoned-red)';
 		}
 
 		try {
 			if (!$extension->hasTranslationSource() && !$extension->hasBetaTranslationSource()) {
-				$badge .= " <br /> ![Extension does not have translations](https://img.shields.io/badge/status-no_translation-orange)";
+				$badge .= ' <br /> ![Extension does not have translations](https://img.shields.io/badge/status-no_translation-orange)';
 			}
 		} catch (UnprocessableExtensionExceptionInterface $exception) {
 			Yii::warning("Extension not found during pending report generation: {$exception->getMessage()}", __METHOD__);
-			$badge .= " <br /> ![Extension is not found in API](https://img.shields.io/badge/status-404-red)";
+			$badge .= ' <br /> ![Extension is not found in API](https://img.shields.io/badge/status-404-red)';
 		}
 
 		return $badge;

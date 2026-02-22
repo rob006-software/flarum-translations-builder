@@ -16,6 +16,7 @@ declare(strict_types=1);
 
 namespace app\components\extensions;
 
+use app\helpers\FlarumVersion;
 use app\helpers\Language;
 use app\helpers\StringHelper;
 use app\models\Extension;
@@ -88,13 +89,14 @@ final class LanguageStatsGenerator {
 	}
 
 	public function generateCore(): string {
+		$weblateProject = FlarumVersion::weblateProject();
 		return <<<HTML
 			## Flarum core
 			
 			| Component | Status |
 			| --- | --- |
-			| [Core](https://github.com/flarum/core) | [![Translation status](https://weblate.rob006.net/widgets/flarum/{$this->language}/core/svg-badge.svg)](https://weblate.rob006.net/projects/flarum/core/{$this->language}/) |
-			| Validation | [![Translation status](https://weblate.rob006.net/widgets/flarum/{$this->language}/validation/svg-badge.svg)](https://weblate.rob006.net/projects/flarum/validation/{$this->language}/) |
+			| [Core](https://github.com/flarum/core) | [![Translation status](https://weblate.rob006.net/widgets/{$weblateProject}/{$this->language}/core/svg-badge.svg)](https://weblate.rob006.net/projects/{$weblateProject}/core/{$this->language}/) |
+			| Validation | [![Translation status](https://weblate.rob006.net/widgets/{$weblateProject}/{$this->language}/validation/svg-badge.svg)](https://weblate.rob006.net/projects/{$weblateProject}/validation/{$this->language}/) |
 			
 			HTML;
 	}
@@ -300,8 +302,9 @@ final class LanguageStatsGenerator {
 			return $this->image('https://img.shields.io/badge/status-disabled-inactive.svg', 'Translation status');
 		}
 
-		$icon = $this->image("https://weblate.rob006.net/widgets/flarum/{$this->language}/{$extension->getId()}/svg-badge.svg", 'Translation status');
-		return $this->link($icon, "https://weblate.rob006.net/projects/flarum/{$extension->getId()}/{$this->language}/");
+		$weblateProject = FlarumVersion::weblateProject();
+		$icon = $this->image("https://weblate.rob006.net/widgets/{$weblateProject}/{$this->language}/{$extension->getId()}/svg-badge.svg", 'Translation status');
+		return $this->link($icon, "https://weblate.rob006.net/projects/{$weblateProject}/{$extension->getId()}/{$this->language}/");
 	}
 
 	private function truncate(string $string, int $limit = 40): string {

@@ -135,7 +135,7 @@ final class ConfigGenerator {
 			}
 			$result .= $this->renderValue($item, $indent + 1) . ",\n";
 		}
-		$result .= $tabs . "]";
+		$result .= $tabs . ']';
 
 		return $result;
 	}
@@ -159,12 +159,9 @@ final class ConfigGenerator {
 						$extensionConfig[$key] = $extension->getStableTranslationSourceUrl([substr($key, 4)]);
 					}
 				}
-				if (isset($extensionConfig['branch'])) {
-					$extensionConfig['branch'] = $extension->getTranslationSourceUrl();
-				}
 				foreach ($extensionConfig as $key => $url) {
 					if (strncmp($key, 'branch:', 7) === 0) {
-						$extensionConfig[$key] = $extension->getTranslationSourceUrl(substr($key, 4));
+						$extensionConfig[$key] = $extension->getTranslationSourceUrl(substr($key, 7));
 					}
 				}
 				if ($detectBuiltInLanguages && isset($extensionConfig['tag'])) {

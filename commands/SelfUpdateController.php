@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace app\commands;
 
 use app\components\ConsoleController;
+use app\helpers\FlarumVersion;
 use app\models\Repository;
 use Symfony\Component\Process\Process;
 use Yii;
@@ -44,7 +45,11 @@ final class SelfUpdateController extends ConsoleController {
 
 		if ($this->update) {
 			Yii::$app->locks->acquireRepoLock(APP_ROOT . '/translations');
-			$translationsRepository = new Repository(Yii::$app->params['translationsRepository'], 'master', APP_ROOT . '/translations');
+			$translationsRepository = new Repository(
+				Yii::$app->params['translationsRepository'],
+				FlarumVersion::branch(),
+				APP_ROOT . '/translations'
+			);
 			$translationsRepository->update();
 		}
 	}

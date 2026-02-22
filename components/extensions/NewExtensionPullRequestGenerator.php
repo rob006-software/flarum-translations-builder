@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace app\components\extensions;
 
 use app\components\GithubApi;
+use app\helpers\FlarumVersion;
 use app\models\Extension;
 use app\models\ForkRepository;
 use app\models\RegularExtension;
@@ -56,7 +57,7 @@ final class NewExtensionPullRequestGenerator {
 			if ($extension instanceof RegularExtension && $extension->getStableTranslationSourceUrl() === null) {
 				continue;
 			}
-			$branchName = "new/{$extension->getId()}";
+			$branchName = FlarumVersion::newPrPrefix($extension->getId());
 			if ($this->repository->hasBranch($branchName)) {
 				if (!$this->isRateLimited($extension) && $this->updateBranch($branchName, $extension)) {
 					$this->updatePullRequestForNewExtension($branchName);
@@ -64,11 +65,12 @@ final class NewExtensionPullRequestGenerator {
 				continue;
 			}
 
-			$this->repository->checkoutBranch('master');
+			$this->repository->checkoutBranch(FlarumVersion::branch());
 			$this->repository->createBranch($branchName);
 
 			$this->addExtensionToConfig($extension);
-			$this->repository->commit("Add `{$extension->getPackageName()}`.");
+			$flarumVersion = FlarumVersion::lineName();
+			$this->repository->commit("Add `{$extension->getPackageName()}` for Flarum {$flarumVersion}.");
 			$this->repository->push();
 
 			$this->openPullRequestForNewExtension($branchName, $extension);
@@ -100,7 +102,8 @@ final class NewExtensionPullRequestGenerator {
 	private function updateBranch(string $branchName, Extension $extension): bool {
 		$this->repository->checkoutBranch($branchName);
 		$this->addExtensionToConfig($extension);
-		$this->repository->commit("Update config for `{$extension->getPackageName()}`.", $commited);
+		$flarumVersion = FlarumVersion::lineName();
+		$this->repository->commit("Update `{$extension->getPackageName()}` config for Flarum {$flarumVersion}.", $commited);
 		$this->repository->push();
 		$this->bumpRateLimitToken($extension);
 
@@ -114,15 +117,18 @@ final class NewExtensionPullRequestGenerator {
 	}
 
 	private function openPullRequestForNewExtension(string $branchName, Extension $extension): void {
+		$flarumVersion = FlarumVersion::lineName();
 		$this->githubApi->openPullRequest(
 			Yii::$app->params['translationsRepository'],
 			Yii::$app->params['translationsForkRepository'],
 			$branchName,
 			[
-				'title' => "Add `{$extension->getPackageName()}`",
+				'base' => FlarumVersion::branch(),
+				'title' => "[{$flarumVersion}] Add `{$extension->getPackageName()}`",
 				'body' => $this->generatePullRequestBody($extension),
 			]
 		);
+		// @todo add label?
 	}
 
 	private function updatePullRequestForNewExtension(string $branchName): void {

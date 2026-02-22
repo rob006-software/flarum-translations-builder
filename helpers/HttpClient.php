@@ -29,7 +29,7 @@ class HttpClient {
 	public const USER_AGENT = 'flarum-translations-builder (+https://github.com/rob006-software/flarum-translations-builder)';
 
 	/** @var HttpClientInterface[] */
-	static private $client = [];
+	private static $client = [];
 
 	public static function create(array $defaultOptions = []): HttpClientInterface {
 		$defaultOptions['headers']['User-Agent'] = $defaultOptions['headers']['User-Agent'] ?? self::USER_AGENT;

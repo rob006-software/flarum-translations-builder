@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace app\jobs;
 
 use app\components\release\ReleasePullRequestGenerator;
+use app\helpers\FlarumVersion;
 use app\models\Translations;
 use Yii;
 use yii\base\BaseObject;
@@ -31,7 +32,7 @@ class MergeReleasePullRequestJob extends BaseObject implements JobInterface {
 
 	public function execute($queue) {
 		$config = require Yii::getAlias($this->configFile);
-		$translations = new Translations(Yii::$app->params['translationsRepository'], null, $config);
+		$translations = new Translations(Yii::$app->params['translationsRepository'], FlarumVersion::branch(), $config);
 		(new ReleasePullRequestGenerator($translations->getSubsplit($this->subsplit)))->merge();
 	}
 }

@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace app\components;
 
+use app\helpers\FlarumVersion;
 use app\models\Repository;
 use app\models\Translations;
 use Yii;
@@ -62,7 +63,7 @@ abstract class ConsoleController extends Controller {
 
 	protected function getTranslations(string $configFile): Translations {
 		$config = require Yii::getAlias($configFile);
-		$translations = new Translations(Yii::$app->params['translationsRepository'], null, $config);
+		$translations = new Translations(Yii::$app->params['translationsRepository'], FlarumVersion::branch(), $config);
 		if ($this->update) {
 			$output = $translations->getRepository()->update();
 			if ($this->verbose) {

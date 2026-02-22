@@ -20,6 +20,7 @@ use app\components\GitlabApi;
 use app\components\locks\Locker;
 use app\components\queue\QueueCommand;
 use app\components\weblate\WeblateApi;
+use app\helpers\FlarumVersion;
 use yii\caching\ArrayCache;
 use yii\caching\FileCache;
 use yii\db\Connection;
@@ -168,5 +169,6 @@ return [
 		'repository' => 'git@github.com:rob006-software/flarum-translations-builder.git',
 		'translationsRepository' => 'git@github.com:rob006-software/flarum-translations.git',
 		'translationsForkRepository' => 'git@github.com:robbot006/flarum-translations.git',
+		'flarumVersion' => FlarumVersion::V1,
 	],
 ];

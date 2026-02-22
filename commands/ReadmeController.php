@@ -68,8 +68,8 @@ final class ReadmeController extends ConsoleController {
 		$licenses = file_get_contents($translations->getDir() . '/status/licenses.md');
 
 		if (
-			strpos($readme, "<!-- languages-list-start -->") !== false
-			&& strpos($readme, "<!-- languages-list-stop -->") !== false
+			strpos($readme, '<!-- languages-list-start -->') !== false
+			&& strpos($readme, '<!-- languages-list-stop -->') !== false
 		) {
 			$readmeGenerator = new MainReadmeGenerator();
 			$languageSubsplits = [];
@@ -82,8 +82,8 @@ final class ReadmeController extends ConsoleController {
 				}
 			}
 			$readme = $this->replaceBetween(
-				"<!-- languages-list-start -->",
-				"<!-- languages-list-stop -->",
+				'<!-- languages-list-start -->',
+				'<!-- languages-list-stop -->',
 				$readme,
 				$readmeGenerator->generateLanguagesList($languageSubsplits)
 			);

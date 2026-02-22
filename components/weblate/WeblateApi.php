@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace app\components\weblate;
 
+use app\helpers\FlarumVersion;
 use app\helpers\HttpClient;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use yii\base\Component;
@@ -49,7 +50,8 @@ class WeblateApi extends Component {
 	}
 
 	public function updateComponentPriority(string $componentId, int $priority): void {
-		$response = $this->getClient()->request('PATCH', "$this->weblateUrl/api/components/flarum/$componentId/", [
+		$weblateProject = FlarumVersion::weblateProject();
+		$response = $this->getClient()->request('PATCH', "$this->weblateUrl/api/components/{$weblateProject}/{$componentId}/", [
 			'json' => ['priority' => $priority],
 		]);
 		// call this to trigger errors if response is invalid
@@ -57,7 +59,8 @@ class WeblateApi extends Component {
 	}
 
 	public function getUnits(string $componentId, string $language = 'en'): iterable {
-		$url = "$this->weblateUrl/api/translations/flarum/$componentId/$language/units/";
+		$weblateProject = FlarumVersion::weblateProject();
+		$url = "$this->weblateUrl/api/translations/{$weblateProject}/{$componentId}/{$language}/units/";
 		do {
 			$response = $this->getClient()->request('GET', $url);
 			$jsonResponse = $response->toArray();
@@ -67,7 +70,7 @@ class WeblateApi extends Component {
 	}
 
 	public function updateUnit(int $unitId, array $data): void {
-		$response = $this->getClient()->request('PATCH', "$this->weblateUrl/api/units/$unitId/", [
+		$response = $this->getClient()->request('PATCH', "$this->weblateUrl/api/units/{$unitId}/", [
 			'json' => $data,
 		]);
 		// call this to trigger errors if response is invalid

@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace app\components;
 
 use app\components\extensions\exceptions\SoftFailureInterface;
+use app\helpers\FlarumVersion;
 use app\helpers\HttpClient;
 use app\models\extiverse\ApiResult;
 use app\models\extiverse\exceptions\InvalidApiResponseException;
@@ -33,7 +34,7 @@ final class ExtiverseApi extends Component {
 
 	public $authToken;
 	public $apiUrl = 'https://flarum.org/api';
-	public $cacheUrl = 'https://raw.githubusercontent.com/rob006-software/flarum-translations/master/cache/extiverse.json';
+	public $cacheUrl = 'https://raw.githubusercontent.com/rob006-software/flarum-translations/{branch}/cache/extiverse.json';
 
 	/** @var string|array|CacheInterface */
 	public $cache = 'arrayCache';
@@ -47,6 +48,9 @@ final class ExtiverseApi extends Component {
 		parent::init();
 
 		$this->cache = Instance::ensure($this->cache, CacheInterface::class);
+		$this->cacheUrl = strtr($this->cacheUrl, [
+			'{branch}' => FlarumVersion::branch(),
+		]);
 	}
 
 	/**
@@ -55,7 +59,7 @@ final class ExtiverseApi extends Component {
 	 */
 	public function searchExtensions(bool $useCache = true): array {
 		$callback = function () {
-			$response['links']['next'] = $this->apiUrl . '/extensions?filter[is][]=premium&page[limit]=100&filter[compatible-with]=v1.8.12'; // @todo version should be dynamic. maybe we could pass multiple versions
+			$response['links']['next'] = $this->apiUrl . '/extensions?filter[is][]=premium&page[limit]=100&filter[compatible-with]=' . $this->getVersionForFilter();
 
 			$results = [];
 			do {
@@ -82,6 +86,21 @@ final class ExtiverseApi extends Component {
 		$result = $callback();
 		Yii::$app->cache->set(__METHOD__, $result);
 		return $result;
+	}
+
+	private function getVersionForFilter(): string {
+		// @todo hardcode this for now, because there is some delay between tagging release handling it by flarum.org
+		return FlarumVersion::composerConstraint() === '^2.0' ? 'v2.0.0-beta.6' : 'v1.8.13';
+
+//		$result = HttpClient::create()->request('GET', 'https://repo.packagist.org/p2/flarum/core.json')->toArray();
+//		$data = MetadataMinifier::expand($result['packages']['flarum/core']);
+//		$constraint = FlarumVersion::composerConstraint();
+//		foreach (array_column($data, 'version') as $version) {
+//			if (Semver::satisfies($version, $constraint)) {
+//				return $version;
+//			}
+//		}
+//		throw new InvalidApiResponseException("Unable to find flarum/core version matching '{$constraint}' constraint.");
 	}
 
 	public function getCachedExtensions(): array {

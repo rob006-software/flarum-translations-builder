@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace app\components\readme;
 
+use app\helpers\FlarumVersion;
 use app\helpers\Language;
 use app\models\Extension;
 use app\models\LanguageSubsplit;
@@ -34,8 +35,9 @@ final class MainReadmeGenerator extends ReadmeGenerator {
 		});
 
 		$output = "\n\n| Extension ID | Package name |\n| --- | --- |\n";
+		$weblateProject = FlarumVersion::weblateProject();
 		foreach ($extensions as $extension) {
-			$output .= "| [`{$extension->getId()}`](https://weblate.rob006.net/projects/flarum/{$extension->getId()}) ";
+			$output .= "| [`{$extension->getId()}`](https://weblate.rob006.net/projects/{$weblateProject}/{$extension->getId()}) ";
 			$output .= "| [`{$extension->getPackageName()}`]({$extension->getRepositoryUrl()}) ";
 			$output .= "|\n";
 		}
@@ -70,6 +72,7 @@ final class MainReadmeGenerator extends ReadmeGenerator {
 			HTML;
 		foreach ($names as $language => $name) {
 			$subsplit = $subsplits[$language];
+			$weblateProject = FlarumVersion::weblateProject();
 			[$userName, $repoName] = Yii::$app->githubApi->explodeRepoUrl($subsplit->getRepositoryUrl());
 			/* @noinspection HtmlDeprecatedAttribute */
 			$output .= <<<HTML
@@ -78,7 +81,7 @@ final class MainReadmeGenerator extends ReadmeGenerator {
 						<td>{$this->generateMaintainersUrls($subsplit->getMaintainers())}</td>
 						<td align="right">
 							<a href="https://rob006-software.github.io/flarum-translations/status/{$subsplit->getLanguage()}.html" title="Click to see detailed translation status for each extension">
-								<img src="https://weblate.rob006.net/widgets/flarum/{$subsplit->getLanguage()}/svg-badge.svg" alt="detailed translation status" />
+								<img src="https://weblate.rob006.net/widgets/{$weblateProject}/{$subsplit->getLanguage()}/svg-badge.svg" alt="detailed translation status" />
 							</a>
 						</td>
 					</tr>

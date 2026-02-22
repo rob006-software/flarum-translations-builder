@@ -117,7 +117,7 @@ final class RegularExtension extends Extension {
 		return $stableUrl !== $betaUrl;
 	}
 
-	public function getTranslationSourceUrl(?string $branchName = null): string {
+	public function getTranslationSourceUrl(string $branchName): string {
 		return Yii::$app->extensionsRepository->detectTranslationSourceUrl($this->repositoryUrl, $branchName);
 	}
 

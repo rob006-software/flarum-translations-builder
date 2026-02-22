@@ -18,6 +18,7 @@ use app\components\extensions\exceptions\SoftFailureInterface;
 use app\components\extensions\exceptions\UnprocessableExtensionExceptionInterface;
 use app\components\extensions\NewExtensionPullRequestGenerator;
 use app\components\extensions\PendingSummaryGenerator;
+use app\helpers\FlarumVersion;
 use app\models\ForkRepository;
 use app\models\Translations;
 use Yii;
@@ -128,7 +129,7 @@ final class ExtensionsController extends ConsoleController {
 		$repository = new ForkRepository(
 			Yii::$app->params['translationsForkRepository'],
 			Yii::$app->params['translationsRepository'],
-			null,
+			FlarumVersion::branch(),
 			APP_ROOT . '/runtime/translations-fork'
 		);
 		$generator = new NewExtensionPullRequestGenerator($repository);
@@ -150,7 +151,7 @@ final class ExtensionsController extends ConsoleController {
 		$repository = new ForkRepository(
 			Yii::$app->params['translationsForkRepository'],
 			Yii::$app->params['translationsRepository'],
-			null,
+			FlarumVersion::branch(),
 			APP_ROOT . '/runtime/translations-fork'
 		);
 		$repository->rebase();
@@ -163,7 +164,7 @@ final class ExtensionsController extends ConsoleController {
 
 	private function updatePendingExtensionsList(Translations $translations, ForkRepository $repository): void {
 		$branches = array_filter($repository->getBranches(false), static function ($name) {
-			return strncmp($name, 'new/', 4) === 0;
+			return strncmp($name, FlarumVersion::newPrPrefix(), 4) === 0;
 		});
 
 		$generator = new PendingSummaryGenerator($translations);

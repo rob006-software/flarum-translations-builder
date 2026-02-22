@@ -22,7 +22,7 @@ namespace app\models;
  */
 final class ForkRepository extends Repository {
 
-	public function __construct(string $remote, string $upstream, ?string $branch, string $workingCopyDir) {
+	public function __construct(string $remote, string $upstream, string $branch, string $workingCopyDir) {
 		parent::__construct($remote, $branch, $workingCopyDir);
 
 		if (!$this->getWorkingCopy()->hasRemote('upstream')) {

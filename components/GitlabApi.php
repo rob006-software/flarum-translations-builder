@@ -37,31 +37,6 @@ final class GitlabApi extends Component {
 
 	private $_client;
 
-	public function getDefaultBranch(string $repoUrl): ?string {
-		return Yii::$app->cache->getOrSet(__METHOD__ . '#' . $repoUrl, function () use ($repoUrl) {
-			$repoName = urlencode($this->extractRepoName($repoUrl));
-			try {
-				$branches = $this->getClient()
-					->request('GET', "https://gitlab.com/api/v4/projects/$repoName/repository/branches/")
-					->toArray();
-			} catch (HttpExceptionInterface $exception) {
-				throw new GitlabApiException(
-					"Unable to get GitLab API data for https://gitlab.com/api/v4/projects/$repoName/repository/branches/.",
-					$exception->getCode(),
-					$exception
-				);
-			}
-
-			foreach ($branches as $branch) {
-				if (!empty($branch['default'])) {
-					return $branch['name'];
-				}
-			}
-
-			return null;
-		}, 7 * 24 * 3600);
-	}
-
 	public function getTags(string $repoUrl): array {
 		return Yii::$app->arrayCache->getOrSet(__METHOD__ . '#' . $repoUrl, function () use ($repoUrl) {
 			$repoName = urlencode($this->extractRepoName($repoUrl));

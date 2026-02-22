@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace app\controllers;
 
 use app\components\release\ReleasePullRequestGenerator;
+use app\helpers\FlarumVersion;
 use app\jobs\MergeReleasePullRequestJob;
 use app\models\Translations;
 use Yii;
@@ -101,6 +102,6 @@ class GithubController extends Controller {
 
 	private function getTranslations(): Translations {
 		$config = require Yii::getAlias($this->configFile);
-		return new Translations(Yii::$app->params['translationsRepository'], null, $config);
+		return new Translations(Yii::$app->params['translationsRepository'], FlarumVersion::branch(), $config);
 	}
 }
