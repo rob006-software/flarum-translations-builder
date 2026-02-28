@@ -25,6 +25,10 @@ class FlarumVersion {
 	public const V1 = 'v1';
 	public const V2 = 'v2';
 
+	public static function version(): string {
+		return Yii::$app->params['flarumVersion'];
+	}
+
 	public static function branch(): string {
 		switch (Yii::$app->params['flarumVersion']) {
 			case self::V2:

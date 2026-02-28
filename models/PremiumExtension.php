@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace app\models;
 
 use app\components\extensions\ExtensionsRepository;
+use app\helpers\FlarumVersion;
 use Yii;
 use function in_array;
 use function strpos;
@@ -79,6 +80,10 @@ final class PremiumExtension extends Extension {
 
 	private function getCommitHash(): string {
 		// @todo this it temporary hack until https://github.com/rob006-software/flarum-translations-builder/issues/45 gets fixed
+		if (FlarumVersion::version() === FlarumVersion::V2) {
+			return 'main';
+		}
+
 		if (in_array($this->getId(), [
 			'blomstra-realtime',
 			'datitisev-backup',

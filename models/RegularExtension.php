@@ -162,14 +162,14 @@ final class RegularExtension extends Extension {
 
 		$key = __METHOD__ . '#' . $this->getRepositoryUrl() . '#' . $lastRelease['version_normalized'];
 		return Yii::$app->cache->getOrSet($key, function () use ($lastRelease) {
-			$lastRelease = Yii::$app->extensionsRepository->findTagForCommit(
+			$lastVersion = Yii::$app->extensionsRepository->findTagForCommit(
 				$this->getRepositoryUrl(),
 				$lastRelease['source']['reference']
 			);
-			if ($lastRelease === null) {
-				$lastRelease = $lastRelease['version'];
+			if ($lastVersion === null) {
+				$lastVersion = $lastRelease['version'];
 			}
-			return $this->getTranslationSourceUrl($lastRelease);
+			return $this->getTranslationSourceUrl($lastVersion);
 		}, 31 * 24 * 3600, new TagDependency(['tags' => $this->getRepositoryUrl()]));
 	}
 

@@ -18,6 +18,7 @@ use app\components\languages\LanguagePacksSummaryGenerator;
 use app\components\readme\LicenseSummaryGenerator;
 use app\components\readme\MainReadmeGenerator;
 use app\components\readme\SummaryGenerator;
+use app\helpers\FlarumVersion;
 use app\models\Extension;
 use app\models\LanguageSubsplit;
 use app\models\MultiLanguageSubsplit;
@@ -162,7 +163,7 @@ final class ReadmeController extends ConsoleController {
 	public function actionUpdateSubsplits(array $subsplits = [], string $configFile = '@app/translations/config.php') {
 		$translations = $this->getTranslations($configFile);
 		$token = __METHOD__ . '#' . $translations->getTranslationsHash() . $translations->getHash();
-		if ($this->isLimited($token)) {
+		if (FlarumVersion::version() === FlarumVersion::V2 || $this->isLimited($token)) {
 			return;
 		}
 

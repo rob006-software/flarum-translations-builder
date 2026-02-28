@@ -18,11 +18,13 @@ use app\helpers\FlarumVersion;
 use app\helpers\HttpClient;
 use app\models\extiverse\ApiResult;
 use app\models\extiverse\exceptions\InvalidApiResponseException;
+use app\models\Translations;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Yii;
 use yii\base\Component;
 use yii\caching\CacheInterface;
 use yii\di\Instance;
+use function file_get_contents;
 use function json_decode;
 
 /**
@@ -34,7 +36,6 @@ final class ExtiverseApi extends Component {
 
 	public $authToken;
 	public $apiUrl = 'https://flarum.org/api';
-	public $cacheUrl = 'https://raw.githubusercontent.com/rob006-software/flarum-translations/{branch}/cache/extiverse.json';
 
 	/** @var string|array|CacheInterface */
 	public $cache = 'arrayCache';
@@ -48,9 +49,6 @@ final class ExtiverseApi extends Component {
 		parent::init();
 
 		$this->cache = Instance::ensure($this->cache, CacheInterface::class);
-		$this->cacheUrl = strtr($this->cacheUrl, [
-			'{branch}' => FlarumVersion::branch(),
-		]);
 	}
 
 	/**
@@ -105,11 +103,7 @@ final class ExtiverseApi extends Component {
 
 	public function getCachedExtensions(): array {
 		if ($this->_cachedExtensions === null) {
-			// We cannot use toArray() here - raw.githubusercontent.com always returns content-type as
-			// "text/plain; charset=utf-8" while HttpClient expects JSON compatible content-type header.
-			$response = HttpClient::get($this->cacheUrl);
-			/* @noinspection JsonEncodingApiUsageInspection */
-			$this->_cachedExtensions = json_decode($response->getContent(), true);
+			$this->_cachedExtensions = json_decode(file_get_contents(Translations::$instance->getDir() . '/cache/extiverse.json'), true);
 		}
 
 		return $this->_cachedExtensions;

@@ -14,9 +14,10 @@ declare(strict_types=1);
 namespace app\commands;
 
 use app\components\ConsoleController;
-use app\components\inheritors\TranslationsInheritor;
+use app\components\inheritors\InheritorInterface;
 use app\components\release\ReleasePullRequestGenerator;
 use app\components\translations\TranslationsImporter;
+use app\helpers\FlarumVersion;
 use Yii;
 
 /**
@@ -56,7 +57,7 @@ final class TranslationsController extends ConsoleController {
 	public function actionSplit(array $subsplits = [], string $configFile = '@app/translations/config.php') {
 		$translations = $this->getTranslations($configFile);
 		$token = __METHOD__ . '#' . $translations->getTranslationsHash() . $translations->getHash();
-		if ($this->isLimited($token)) {
+		if (FlarumVersion::version() === FlarumVersion::V2 || $this->isLimited($token)) {
 			return;
 		}
 
@@ -101,7 +102,7 @@ final class TranslationsController extends ConsoleController {
 		}
 
 		foreach ($inheritors as $inheritor) {
-			assert($inheritor instanceof TranslationsInheritor);
+			assert($inheritor instanceof InheritorInterface);
 			$inheritorToken = __METHOD__ . '#' . $inheritor->getId() . '#' . $inheritor->getHash();
 			if ($this->isLimited($inheritorToken)) {
 				continue;
@@ -174,6 +175,9 @@ final class TranslationsController extends ConsoleController {
 
 	public function actionCleanupOutdatedSubsplits(string $range = '-1 year', string $configFile = '@app/translations/config.php') {
 		$translations = $this->getTranslations($configFile);
+		if (FlarumVersion::version() === FlarumVersion::V2) {
+			return;
+		}
 		// release lock early, since we're only using config, and these actions can take a while
 		Yii::$app->locks->releaseRepoLock($translations->getRepository()->getPath());
 

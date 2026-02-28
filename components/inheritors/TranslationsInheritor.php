@@ -40,7 +40,7 @@ use const JSON_UNESCAPED_UNICODE;
  *
  * @author Robert Korulczyk <robert@korulczyk.pl>
  */
-class TranslationsInheritor {
+class TranslationsInheritor implements InheritorInterface {
 
 	use DontCall;
 	use DontCallStatic;
@@ -81,7 +81,11 @@ class TranslationsInheritor {
 	}
 
 	public function inherit(): void {
-		$metadata = json_decode(file_get_contents($this->metadataFile), true, 512, JSON_THROW_ON_ERROR);
+		if (file_exists($this->metadataFile)) {
+			$metadata = json_decode(file_get_contents($this->metadataFile), true, 512, JSON_THROW_ON_ERROR);
+		} else {
+			$metadata = [];
+		}
 		$newMetadata = [];
 		foreach (FileHelper::findFiles($this->inheritToTranslations, ['only' => ['*.json']]) as $file) {
 			$fileName = basename($file);
@@ -164,6 +168,7 @@ class TranslationsInheritor {
 			);
 		}
 
+		ksort($newMetadata);
 		return ArrayConverter::expandToTree($newMetadata);
 	}
 

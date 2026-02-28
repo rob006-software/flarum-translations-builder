@@ -15,6 +15,8 @@ namespace app\models;
 
 use app\commands\ConfigController;
 use app\components\extensions\ExtensionsRepository;
+use app\components\inheritors\InheritorInterface;
+use app\components\inheritors\MergeInheritor;
 use app\components\inheritors\SerbianCyrillicToLatinTranslationsInheritor;
 use app\components\inheritors\TranslationsInheritor;
 use app\components\translations\JsonFileDumper;
@@ -282,15 +284,15 @@ final class Translations {
 		return isset($this->inheritors[$id]);
 	}
 
-	public function getInheritor(string $id): TranslationsInheritor {
+	public function getInheritor(string $id): InheritorInterface {
 		if (!isset($this->inheritors[$id])) {
 			throw new InvalidArgumentException('There is no inheritor with ' . readable::value($id) . ' ID.');
 		}
 
-		if (!$this->inheritors[$id] instanceof TranslationsInheritor) {
+		if (!$this->inheritors[$id] instanceof InheritorInterface) {
 			$config = $this->inheritors[$id];
 			$className = $config['class'];
-			assert(is_a($className, TranslationsInheritor::class, true));
+			assert(is_a($className, InheritorInterface::class, true));
 			switch ($config['class']) {
 				case TranslationsInheritor::class:
 					$this->inheritors[$id] = new TranslationsInheritor(
@@ -312,6 +314,19 @@ final class Translations {
 						$config['inheritToSources'],
 						$config['inheritToTranslations'],
 						"{$this->metadataDir}/inheritors/{$id}.json",
+					);
+					break;
+				case MergeInheritor::class:
+					$this->inheritors[$id] = new MergeInheritor(
+						$id,
+						$config['inheritFromLabel'],
+						new Repository(
+							Yii::$app->params['translationsRepository'],
+							$config['inheritFromBranch'],
+							APP_ROOT . "/runtime/inheritors/{$id}",
+						),
+						$this->getRepository(),
+						"{$this->metadataDir}/inheritors/{$id}/{language}.json",
 					);
 					break;
 				default:
