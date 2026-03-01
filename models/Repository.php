@@ -73,6 +73,7 @@ class Repository {
 		if (file_exists($this->workingCopyDir)) {
 			$this->git = $gitWrapper->workingCopy($this->workingCopyDir);
 		} else {
+			$gitWrapper->setTimeout(300);
 			$this->git = $gitWrapper->cloneRepository($remote, $this->workingCopyDir);
 		}
 	}
