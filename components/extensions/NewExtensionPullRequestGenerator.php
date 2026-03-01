@@ -128,7 +128,6 @@ final class NewExtensionPullRequestGenerator {
 				'body' => $this->generatePullRequestBody($extension),
 			]
 		);
-		// @todo add label?
 	}
 
 	private function updatePullRequestForNewExtension(string $branchName): void {

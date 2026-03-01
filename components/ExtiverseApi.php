@@ -88,7 +88,7 @@ final class ExtiverseApi extends Component {
 
 	private function getVersionForFilter(): string {
 		// @todo hardcode this for now, because there is some delay between tagging release handling it by flarum.org
-		return FlarumVersion::composerConstraint() === '^2.0' ? 'v2.0.0-beta.6' : 'v1.8.13';
+		return FlarumVersion::version() === FlarumVersion::V2 ? 'v2.0.0-beta.6' : 'v1.8.13';
 
 //		$result = HttpClient::create()->request('GET', 'https://repo.packagist.org/p2/flarum/core.json')->toArray();
 //		$data = MetadataMinifier::expand($result['packages']['flarum/core']);
