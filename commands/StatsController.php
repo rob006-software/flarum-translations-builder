@@ -16,6 +16,7 @@ namespace app\commands;
 use app\components\ConsoleController;
 use app\components\extensions\LanguageStatsGenerator;
 use app\components\extensions\StatsRepository;
+use app\helpers\FlarumVersion;
 use app\models\Translations;
 use Yii;
 use function array_merge;
@@ -71,7 +72,8 @@ final class StatsController extends ConsoleController {
 		}
 
 		$date = date('Y-m-d');
-		$this->postProcessRepository($repository, "Update translations status as per $date.");
+		$flarumVersion = FlarumVersion::lineName();
+		$this->postProcessRepository($repository, "Update Flarum {$flarumVersion} translations status as per $date.");
 		$this->updateLimit($token);
 	}
 
