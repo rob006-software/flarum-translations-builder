@@ -24,12 +24,12 @@ use GitWrapper\GitWorkingCopy;
 use GitWrapper\GitWrapper;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
-use yii\helpers\Inflector;
 use function file_exists;
 use function in_array;
 use function strncmp;
 use function strpos;
 use function substr;
+use function trim;
 use const APP_ROOT;
 
 /**
@@ -67,7 +67,7 @@ class Repository {
 
 		$log = new Logger('git');
 		$date = date('Y-m-d');
-		$log->pushHandler(new StreamHandler(APP_ROOT . "/runtime/git-logs/{$this->getName()}-$date.log", Logger::INFO));
+		$log->pushHandler(new StreamHandler(APP_ROOT . "/runtime/git-logs/{$this->getLogsFileName()}-$date.log", Logger::INFO));
 		$gitWrapper->addLoggerEventSubscriber(new GitLoggerEventSubscriber($log));
 
 		if (file_exists($this->workingCopyDir)) {
@@ -77,20 +77,74 @@ class Repository {
 		}
 	}
 
-	private function getName(): string {
-		return Inflector::slug($this->remote . '--' . $this->branch);
+	private function getLogsFileName(): string {
+		$path = explode(APP_ROOT, $this->getPath(), 2);
+		$slug = strtr($path[1] ?? $path[0], [
+			'/' => '-',
+		]);
+		$slug = trim($slug, '-');
+		if (strlen($slug) > 100) {
+			$slug = substr($slug, 0, 20) . '...' . substr($slug, -80);
+		}
+
+		return $slug;
 	}
 
-	public function update(bool $switchBranch = true): string {
+	public function fetch(...$args): string {
+		return $this->git->fetch(...$args);
+	}
+
+	public function update(bool $switchBranch = true, bool $reset = false): string {
 		$output = '';
-		if ($switchBranch && $this->branch !== null) {
+
+		// abort merge if in progress
+		$mergeHeadPath = trim($this->git->run('rev-parse', ['--git-path', 'MERGE_HEAD']));
+		if (strncmp($mergeHeadPath, '/', 1) !== 0) {
+			$mergeHeadPath = $this->git->getDirectory() . '/' . $mergeHeadPath;
+		}
+		if (file_exists($mergeHeadPath)) {
+			$output .= $this->git->merge('--abort');
+		}
+
+		// abort rebase if in progress
+		$rebaseMergePath = trim($this->git->run('rev-parse', ['--git-path', 'rebase-merge']));
+		$rebaseApplyPath = trim($this->git->run('rev-parse', ['--git-path', 'rebase-apply']));
+		if (strncmp($rebaseMergePath, '/', 1) !== 0) {
+			$rebaseMergePath = $this->git->getDirectory() . '/' . $rebaseMergePath;
+		}
+		if (strncmp($rebaseApplyPath, '/', 1) !== 0) {
+			$rebaseApplyPath = $this->git->getDirectory() . '/' . $rebaseApplyPath;
+		}
+		if (is_dir($rebaseMergePath) || is_dir($rebaseApplyPath)) {
+			$output .= $this->git->rebase('--abort');
+		}
+
+		// discard ALL tracked changes
+		$output .= $this->git->reset('--hard');
+		// remove ALL untracked files/dirs
+		$output .= $this->git->clean('-fd');
+
+		if ($switchBranch && $this->getCurrentBranch() !== $this->branch) {
 			$output .= $this->git->checkout($this->branch);
 		}
 
-		$output .= $this->git->clean('-fd'); // make sure to clean all uncommitted changes
-		$output .= $this->git->pull();
+		$output .= $this->git->fetchAll(['prune' => true, 'prune-tags' => true]);
+
+		if (!$this->git->isUpToDate()) {
+			if ($reset) {
+				// reset to upstream
+				$upstream = trim($this->git->run('rev-parse', ['--abbrev-ref', '--symbolic-full-name', '@{u}']));
+				$output .= $this->git->reset('--hard', $upstream);
+			} else {
+				$output .= $this->git->pull();
+			}
+		}
 
 		return $output;
+	}
+
+	public function merge(...$args): string {
+		return $this->git->merge(...$args);
 	}
 
 	public function commit(string $message, ?bool &$committed = null): string {
@@ -109,6 +163,14 @@ class Repository {
 
 	public function getPath(): string {
 		return $this->workingCopyDir;
+	}
+
+	public function addRemote(string $name, string $uri): string {
+		if (!$this->git->hasRemote($name)) {
+			return $this->git->addRemote($name, $uri);
+		}
+
+		return '';
 	}
 
 	public function getRemote(): string {
@@ -132,6 +194,10 @@ class Repository {
 
 	public function getShortlog(...$args): string {
 		return $this->git->run('shortlog', $args);
+	}
+
+	public function getCurrentBranch(): string {
+		return trim($this->git->run('rev-parse', ['--abbrev-ref', 'HEAD']));
 	}
 
 	public function getCurrentRevisionHash(): string {
@@ -181,28 +247,28 @@ class Repository {
 
 	public function createBranch(string $name): string {
 		$output = '';
-		$output .= $this->getWorkingCopy()->checkoutNewBranch($name);
-		$output .= $this->getWorkingCopy()->push('--set-upstream', 'origin', $name);
+		$output .= $this->git->checkoutNewBranch($name);
+		$output .= $this->git->push('--set-upstream', 'origin', $name);
 
 		return $output;
 	}
 
 	public function deleteBranch(string $name): string {
 		$output = '';
-		$output .= $this->getWorkingCopy()->branch('--delete', '--force', $name);
-		$output .= $this->getWorkingCopy()->push('origin', '--delete', $name);
+		$output .= $this->git->branch('--delete', '--force', $name);
+		$output .= $this->git->push('origin', '--delete', $name);
 
 		return $output;
 	}
 
 	public function checkoutBranch(string $name): string {
-		return $this->getWorkingCopy()->checkout($name)
-			. $this->getWorkingCopy()->pull();
+		return $this->git->checkout($name)
+			. $this->git->pull();
 	}
 
 	public function getBranches(bool $useCache = true): array {
 		if ($this->_branches === null || !$useCache) {
-			$this->_branches = $this->getWorkingCopy()->getBranches()->all();
+			$this->_branches = $this->git->getBranches()->all();
 		}
 
 		return $this->_branches;
@@ -210,20 +276,20 @@ class Repository {
 
 	public function syncBranchesWithRemote(): string {
 		$output = '';
-		$output .= $this->getWorkingCopy()->fetchAll(['prune' => true, 'prune-tags' => true, 'force' => true]);
-		$branches = $this->getWorkingCopy()->getBranches()->all();
+		$output .= $this->git->fetchAll(['prune' => true, 'prune-tags' => true, 'force' => true]);
+		$branches = $this->git->getBranches()->all();
 		foreach ($branches as $branch) {
 			if (strncmp($branch, 'remotes/origin/', 15) !== 0 && !in_array("remotes/origin/$branch", $branches, true)) {
 				// ignore all other remotes except origin
 				if (strncmp($branch, 'remotes/', 8) !== 0) {
-					$output .= $this->getWorkingCopy()->branch('-D', $branch);
+					$output .= $this->git->branch('-D', $branch);
 				}
 			} elseif (
 				strncmp($branch, 'remotes/origin/', 15) === 0 && strpos($branch, ' -> ') === false
 				&& !in_array(substr($branch, 15), $branches, true)
 			) {
-				$output .= $this->getWorkingCopy()->checkout('-b', substr($branch, 15), '--track', 'origin/' . substr($branch, 15));
-				$output .= $this->getWorkingCopy()->checkout($this->getBranch() ?? 'master');
+				$output .= $this->git->checkout('-b', substr($branch, 15), '--track', 'origin/' . substr($branch, 15));
+				$output .= $this->git->checkout($this->getBranch());
 			}
 		}
 

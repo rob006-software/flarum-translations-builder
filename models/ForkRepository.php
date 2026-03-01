@@ -25,16 +25,12 @@ final class ForkRepository extends Repository {
 	public function __construct(string $remote, string $upstream, string $branch, string $workingCopyDir) {
 		parent::__construct($remote, $branch, $workingCopyDir);
 
-		if (!$this->getWorkingCopy()->hasRemote('upstream')) {
-			$this->getWorkingCopy()->addRemote('upstream', $upstream);
-		}
+		$this->addRemote('upstream', $upstream);
 	}
 
 	public function rebase(): string {
-		$output = '';
-		$output .= $this->getWorkingCopy()->fetchAll(['prune' => true, 'prune-tags' => true]);
-		$output .= $this->getWorkingCopy()->checkout($this->getBranch() ?? 'master');
-		$output .= $this->getWorkingCopy()->pull('upstream', $this->getBranch() ?? 'master');
+		$output = $this->update();
+		$output .= $this->getWorkingCopy()->pull('upstream', $this->getBranch());
 		$output .= $this->getWorkingCopy()->push();
 
 		return $output;

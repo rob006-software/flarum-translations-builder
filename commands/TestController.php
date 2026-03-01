@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace app\commands;
 
 use app\components\ConsoleController;
+use function array_merge;
 
 /**
  * Class TestController.
@@ -29,6 +30,15 @@ class TestController extends ConsoleController {
 	public $push = false;
 	/* @noinspection PropertyInitializationFlawsInspection */
 	public $verbose = false;
+
+	public function options($actionID) {
+		return array_merge(parent::options($actionID), [
+			'update',
+			'commit',
+			'push',
+			'verbose',
+		]);
+	}
 
 	public function actionT(string $configFile = '@app/translations/config.php') {
 		/* @noinspection PhpUnusedLocalVariableInspection */

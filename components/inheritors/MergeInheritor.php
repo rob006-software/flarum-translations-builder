@@ -62,16 +62,19 @@ class MergeInheritor implements InheritorInterface {
 		$this->inheritFromLabel = $inheritFromLabel;
 		$this->inheritFromRepository = $inheritFromRepository;
 		$this->inheritToRepository = $inheritToRepository;
+		$this->inheritToRepository->addRemote("{$id}-upstream", $this->inheritFromRepository->getPath());
 		$this->metadataFileTemplate = $metadataFileTemplate;
 	}
 
 	public function inherit(): void {
 		$this->inheritFromRepository->update();
 
-		// @todo git merge - https://github.com/rob006/flarum-translations/compare/master...rob006-software%3Aflarum-translations%3Amaster
-		// @todo before merge, check if there is anything to merge
-		// @review catch exceptions, make sure interrupted merge is clean up
+		// simulate merge, but with discarding all changes from the merged branch - we will handle fetching related
+		// changes using inheritors
+		$this->inheritToRepository->fetch("{$this->id}-upstream");
+		$this->inheritToRepository->merge('-s', 'ours', "{$this->id}-upstream/{$this->inheritFromRepository->getBranch()}", '--no-commit', '--no-ff');
 
+		// update translations using inheritors
 		$languages = array_map(
 			'basename',
 			FileHelper::findDirectories($this->inheritFromRepository->getPath() . '/translations', ['recursive' => false])

@@ -83,7 +83,13 @@ abstract class Subsplit {
 	}
 
 	public static function generateRepositoryPath(string $subsplitId, string $repositoryUrl): string {
-		$repoDirectory = $subsplitId . '__' . Inflector::slug($repositoryUrl);
+		$repoDirectory = $subsplitId . '__' . strtr($repositoryUrl, [
+				'/' => '-',
+				':' => '-',
+				'.' => '-',
+				'@' => '-',
+				'?' => '-',
+			]);
 		return APP_ROOT . "/runtime/subsplits/$repoDirectory";
 	}
 
