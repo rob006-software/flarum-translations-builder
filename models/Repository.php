@@ -88,6 +88,10 @@ class Repository {
 			$slug = substr($slug, 0, 20) . '...' . substr($slug, -80);
 		}
 
+		if ($slug === '') {
+			return 'root';
+		}
+
 		return $slug;
 	}
 
