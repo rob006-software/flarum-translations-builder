@@ -164,8 +164,8 @@ final class ConfigGenerator {
 						$extensionConfig[$key] = $extension->getTranslationSourceUrl(substr($key, 7));
 					}
 				}
-				if ($detectBuiltInLanguages && isset($extensionConfig['tag'])) {
-					$parsedRepo = Yii::$app->extensionsRepository->parseRawUrl($extensionConfig['tag']);
+				if ($detectBuiltInLanguages && (isset($extensionConfig['tag']) || isset($extensionConfig['beta']))) {
+					$parsedRepo = Yii::$app->extensionsRepository->parseRawUrl($extensionConfig['tag'] ?? $extensionConfig['beta']);
 					if ($parsedRepo !== null) {
 						$builtInLanguages = Yii::$app->extensionsRepository->findBuiltInLanguages(
 							$parsedRepo['repository'],
