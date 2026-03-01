@@ -54,7 +54,11 @@ final class NewExtensionPullRequestGenerator {
 	 */
 	public function generateForNewExtensions(array $extensions, int $limit): void {
 		foreach ($extensions as $extension) {
-			if ($extension instanceof RegularExtension && $extension->getStableTranslationSourceUrl() === null) {
+			if (
+				$extension instanceof RegularExtension
+				&& !$extension->hasTranslationSource()
+				&& !$extension->hasBetaTranslationSource()
+			) {
 				continue;
 			}
 			$branchName = FlarumVersion::newPrPrefix($extension->getId());
