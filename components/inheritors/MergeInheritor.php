@@ -61,6 +61,9 @@ class MergeInheritor implements InheritorInterface {
 		$this->id = $id;
 		$this->inheritFromLabel = $inheritFromLabel;
 		$this->inheritFromRepository = $inheritFromRepository;
+		// need this to ensure that `getHash()` will use up-to-date data
+		// (this uses filesystem repo as a remote, so it should be really fast)
+		$this->inheritFromRepository->update();
 		$this->inheritToRepository = $inheritToRepository;
 		$this->inheritToRepository->addRemote("{$id}-upstream", $this->inheritFromRepository->getPath());
 		$this->metadataFileTemplate = $metadataFileTemplate;
