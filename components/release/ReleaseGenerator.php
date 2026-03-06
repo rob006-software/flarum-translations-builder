@@ -51,6 +51,7 @@ class ReleaseGenerator extends BaseObject {
 	public $fallbackLocalePath;
 
 	public $versionTemplate = '1.Minor.Patch';
+	public $ignoredVersionsConstraints = [];
 
 	private $subsplit;
 	private $repository;
@@ -126,7 +127,7 @@ class ReleaseGenerator extends BaseObject {
 			if ($position === false) {
 				$versionHeader = "$version (XXXX-XX-XX)";
 				$versionUnderline = str_repeat('-', strlen($versionHeader));
-				$newContent .=  "$versionHeader\n$versionUnderline\n\n";
+				$newContent .= "$versionHeader\n$versionUnderline\n\n";
 
 				$old = $versions[array_key_last($versions)];
 				[$userName, $repoName] = Yii::$app->githubApi->explodeRepoUrl($this->subsplit->getRepositoryUrl());
@@ -139,7 +140,6 @@ class ReleaseGenerator extends BaseObject {
 					. $newContent
 					. substr($changelog, $position);
 			}
-
 		} while (!empty ($versions));
 
 		return $changelog;
@@ -277,12 +277,21 @@ class ReleaseGenerator extends BaseObject {
 		if ($this->versions === null) {
 			$parser = new VersionParser();
 			$requiredMajor = explode('.', ltrim($this->versionTemplate, 'v'), 2)[0];
-			$tags = array_filter($this->repository->getTags(), static function ($name) use ($parser, $requiredMajor) {
+			$tags = array_filter($this->repository->getTags(), function ($name) use ($parser, $requiredMajor) {
 				try {
 					// remove non-semver tags
 					$version = $parser->normalize($name);
 					// ignore releases from the newer major line
-					return $requiredMajor >= explode('.', $version, 2)[0];
+					if ($requiredMajor < explode('.', $version, 2)[0]) {
+						return false;
+					}
+					foreach ($this->ignoredVersionsConstraints as $constraint) {
+						if (Semver::satisfies($version, $constraint)) {
+							return false;
+						}
+					}
+
+					return true;
 				} catch (UnexpectedValueException $exception) {
 					return false;
 				}

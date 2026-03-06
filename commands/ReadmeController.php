@@ -26,6 +26,7 @@ use app\models\PremiumExtension;
 use mindplay\readable;
 use Yii;
 use yii\base\InvalidArgumentException;
+use function array_intersect;
 use function file_get_contents;
 use function in_array;
 use function strpos;
@@ -163,7 +164,14 @@ final class ReadmeController extends ConsoleController {
 	public function actionUpdateSubsplits(array $subsplits = [], string $configFile = '@app/translations/config.php') {
 		$translations = $this->getTranslations($configFile);
 		$token = __METHOD__ . '#' . $translations->getTranslationsHash() . $translations->getHash();
-		if (FlarumVersion::version() === FlarumVersion::V2 || $this->isLimited($token)) {
+		// @todo temporary check until all language packs are set up
+		if (FlarumVersion::version() === FlarumVersion::V2) {
+			$subsplits = array_intersect($subsplits, ['pl']);
+			if (empty($subsplits)) {
+				return;
+			}
+		}
+		if ($this->isLimited($token)) {
 			return;
 		}
 

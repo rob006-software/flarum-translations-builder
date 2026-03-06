@@ -19,6 +19,7 @@ use app\components\release\ReleasePullRequestGenerator;
 use app\components\translations\TranslationsImporter;
 use app\helpers\FlarumVersion;
 use Yii;
+use function array_intersect;
 
 /**
  * Class TranslationsController.
@@ -57,7 +58,14 @@ final class TranslationsController extends ConsoleController {
 	public function actionSplit(array $subsplits = [], string $configFile = '@app/translations/config.php') {
 		$translations = $this->getTranslations($configFile);
 		$token = __METHOD__ . '#' . $translations->getTranslationsHash() . $translations->getHash();
-		if (FlarumVersion::version() === FlarumVersion::V2 || $this->isLimited($token)) {
+		// @todo temporary check until all language packs are set up
+		if (FlarumVersion::version() === FlarumVersion::V2) {
+			$subsplits = array_intersect($subsplits, ['pl']);
+			if (empty($subsplits)) {
+				return;
+			}
+		}
+		if ($this->isLimited($token)) {
 			return;
 		}
 
