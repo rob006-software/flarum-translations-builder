@@ -67,9 +67,10 @@ class GithubController extends Controller {
 		}
 
 		$translations = $this->getTranslations();
+		$flarumVersion = FlarumVersion::lineName();
 		$subsplit = $translations->findSubsplitIdForRepository($payload['repository']['ssh_url'], $payload['pull_request']['base']['ref']);
 		if ($subsplit === null) {
-			return $this->generateResponse('Cannot find subsplit - skip.');
+			return $this->generateResponse("Cannot find valid $flarumVersion subsplit - skip.");
 		}
 
 		Yii::$app->queue->push(new MergeReleasePullRequestJob([
@@ -77,7 +78,7 @@ class GithubController extends Controller {
 			'subsplit' => $subsplit,
 		]));
 
-		return $this->generateResponse("Queued MergeReleasePullRequestJob for '$subsplit' subsplit.", 202);
+		return $this->generateResponse("Queued MergeReleasePullRequestJob for $flarumVersion '$subsplit' subsplit.", 202);
 	}
 
 	private function getGithubEvent(): string {
