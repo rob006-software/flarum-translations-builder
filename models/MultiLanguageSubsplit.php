@@ -61,8 +61,6 @@ final class MultiLanguageSubsplit extends Subsplit {
 	}
 
 	public function split(Translations $translations): void {
-		$this->getRepository()->update();
-
 		$fallback = null;
 		foreach ($this->variants as $variant) {
 			if ($fallback === null) {
