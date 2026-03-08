@@ -18,7 +18,6 @@ use app\components\languages\LanguagePacksSummaryGenerator;
 use app\components\readme\LicenseSummaryGenerator;
 use app\components\readme\MainReadmeGenerator;
 use app\components\readme\SummaryGenerator;
-use app\helpers\FlarumVersion;
 use app\models\Extension;
 use app\models\LanguageSubsplit;
 use app\models\MultiLanguageSubsplit;
@@ -26,7 +25,6 @@ use app\models\PremiumExtension;
 use mindplay\readable;
 use Yii;
 use yii\base\InvalidArgumentException;
-use function array_intersect;
 use function file_get_contents;
 use function in_array;
 use function strpos;
@@ -164,13 +162,6 @@ final class ReadmeController extends ConsoleController {
 	public function actionUpdateSubsplits(array $subsplits = [], string $configFile = '@app/translations/config.php') {
 		$translations = $this->getTranslations($configFile);
 		$token = __METHOD__ . '#' . $translations->getTranslationsHash() . $translations->getHash();
-		// @todo temporary check until all language packs are set up
-		if (FlarumVersion::version() === FlarumVersion::V2) {
-			$subsplits = array_intersect($subsplits, ['pl']);
-			if (empty($subsplits)) {
-				return;
-			}
-		}
 		if ($this->isLimited($token)) {
 			return;
 		}

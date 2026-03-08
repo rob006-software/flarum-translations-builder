@@ -19,7 +19,6 @@ use app\components\release\ReleasePullRequestGenerator;
 use app\components\translations\TranslationsImporter;
 use app\helpers\FlarumVersion;
 use Yii;
-use function array_intersect;
 
 /**
  * Class TranslationsController.
@@ -58,13 +57,6 @@ final class TranslationsController extends ConsoleController {
 	public function actionSplit(array $subsplits = [], string $configFile = '@app/translations/config.php') {
 		$translations = $this->getTranslations($configFile);
 		$token = __METHOD__ . '#' . $translations->getTranslationsHash() . $translations->getHash();
-		// @todo temporary check until all language packs are set up
-		if (FlarumVersion::version() === FlarumVersion::V2) {
-			$subsplits = array_intersect($subsplits, ['pl']);
-			if (empty($subsplits)) {
-				return;
-			}
-		}
 		if ($this->isLimited($token)) {
 			return;
 		}
@@ -89,7 +81,8 @@ final class TranslationsController extends ConsoleController {
 				$subsplit->processCommitMessage($translations, 'Sync translations with main repository.')
 			);
 			$subsplit->markAsProcessed($translations);
-			if ($subsplit->hasReleaseGenerator()) {
+			// @todo temporarily disable releases for 2.x
+			if (FlarumVersion::version() === FlarumVersion::V1 && $subsplit->hasReleaseGenerator()) {
 				(new ReleasePullRequestGenerator($subsplit))->generate();
 			}
 			Yii::$app->locks->releaseRepoLock($subsplit->getRepository()->getPath());
@@ -183,9 +176,6 @@ final class TranslationsController extends ConsoleController {
 
 	public function actionCleanupOutdatedSubsplits(string $range = '-1 year', string $configFile = '@app/translations/config.php') {
 		$translations = $this->getTranslations($configFile);
-		if (FlarumVersion::version() === FlarumVersion::V2) {
-			return;
-		}
 		// release lock early, since we're only using config, and these actions can take a while
 		Yii::$app->locks->releaseRepoLock($translations->getRepository()->getPath());
 
