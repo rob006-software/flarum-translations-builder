@@ -22,7 +22,6 @@ use Dont\DontSet;
 use Yii;
 use yii\base\InvalidConfigException;
 use yii\helpers\ArrayHelper;
-use yii\helpers\Inflector;
 use function array_keys;
 use function arsort;
 use function basename;
@@ -181,17 +180,14 @@ abstract class Subsplit {
 
 	private function getAuthorsSinceLastChange(Translations $translations): array {
 		$lastCommit = $this->getLastProcessedHash();
+		if ($lastCommit === null) {
+			return [];
+		}
 
 		$authors = [];
 		foreach ($this->getSourcesPaths($translations) as $path) {
-			if ($lastCommit === null) {
-				$firstCommit = Repository::ZERO_COMMIT_HASH;
-				$response = $translations->getRepository()
-					->getShortlog('-sne', '--no-merges', "$firstCommit..HEAD", '--', $path);
-			} else {
-				$response = $translations->getRepository()
-					->getShortlog('-sne', '--no-merges', "$lastCommit..HEAD", '--', $path);
-			}
+			$response = $translations->getRepository()
+				->getShortlog('-sne', '--no-merges', "$lastCommit..HEAD", '--', $path);
 			$authors = $this->processAuthors($response, $authors);
 		}
 
