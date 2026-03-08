@@ -129,11 +129,11 @@ class Repository {
 		// remove ALL untracked files/dirs
 		$output .= $this->git->clean('-fd');
 
+		$output .= $this->git->fetchAll(['prune' => true, 'prune-tags' => true]);
+
 		if ($switchBranch && $this->getCurrentBranch() !== $this->branch) {
 			$output .= $this->git->checkout($this->branch);
 		}
-
-		$output .= $this->git->fetchAll(['prune' => true, 'prune-tags' => true]);
 
 		if (!$this->git->isUpToDate()) {
 			if ($reset) {
