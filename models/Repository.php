@@ -26,6 +26,7 @@ use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 use function file_exists;
 use function in_array;
+use function is_dir;
 use function strncmp;
 use function strpos;
 use function substr;
@@ -99,7 +100,7 @@ class Repository {
 		return $this->git->fetch(...$args);
 	}
 
-	public function update(bool $switchBranch = true, bool $reset = false): string {
+	public function discardChanges(): string {
 		$output = '';
 
 		// abort merge if in progress
@@ -129,6 +130,12 @@ class Repository {
 		// remove ALL untracked files/dirs
 		$output .= $this->git->clean('-fd');
 
+		return $output;
+	}
+
+	public function update(bool $switchBranch = true, bool $reset = false): string {
+		$output = $this->discardChanges();
+
 		$output .= $this->git->fetchAll(['prune' => true, 'prune-tags' => true]);
 
 		if ($switchBranch && $this->getCurrentBranch() !== $this->branch) {
@@ -152,10 +159,15 @@ class Repository {
 		return $this->git->merge(...$args);
 	}
 
+	public function hasChanges(): bool {
+		return $this->git->hasChanges();
+	}
+
 	public function commit(string $message, ?bool &$committed = null): string {
-		$output = $this->git->add('-A');
+		$output = '';
 		$committed = $this->git->hasChanges();
 		if ($committed) {
+			$output .= $this->git->add('-A');
 			$output .= $this->git->commit($message);
 		}
 

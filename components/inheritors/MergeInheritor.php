@@ -94,6 +94,11 @@ class MergeInheritor implements InheritorInterface {
 			);
 			$inheritor->inherit();
 		}
+
+		if (!$this->inheritToRepository->hasChanges()) {
+			// make sure we abort the ongoing merge if nothing has changed
+			$this->inheritToRepository->discardChanges();
+		}
 	}
 
 	public function getId(): string {
