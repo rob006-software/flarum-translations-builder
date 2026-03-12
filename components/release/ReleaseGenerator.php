@@ -253,13 +253,6 @@ class ReleaseGenerator extends BaseObject {
 		return ltrim($this->getSubsplit()->getComposerJsonContent()['require']['flarum/core'], '~^');
 	}
 
-	public function commit(): string {
-		$output = $this->repository->commit("Update CHANGELOG.md for {$this->getNextVersion()} release.");
-		$output .= $this->repository->push();
-
-		return $output;
-	}
-
 	public function setPreviousVersion(string $value): void {
 		$this->previousVersion = $value;
 	}
