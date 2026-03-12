@@ -76,7 +76,7 @@ class ReleasePullRequestGenerator {
 			$this->repository->update(false);
 
 			file_put_contents($this->generator->getChangelogPath(), $newChangelog);
-			$this->repository->commit('Update changelog.');
+			$this->repository->commit('Update changelog');
 			$this->repository->push();
 
 			$this->updatePullRequest($branchName);
@@ -87,7 +87,7 @@ class ReleasePullRequestGenerator {
 		$this->repository->createBranch($branchName);
 
 		file_put_contents($this->generator->getChangelogPath(), $newChangelog);
-		$this->repository->commit('Update changelog.');
+		$this->repository->commit('Update changelog');
 		$this->repository->push();
 
 		$this->openPullRequest($branchName);
@@ -131,7 +131,7 @@ class ReleasePullRequestGenerator {
 					$newChangelog = substr_replace($newChangelog, date('Y-m-d'), $pos, strlen('XXXX-XX-XX'));
 				}
 				file_put_contents($this->generator->getChangelogPath(), $newChangelog);
-				$this->repository->commit('Update changelog.');
+				$this->repository->commit('Update changelog');
 				$this->repository->push();
 
 				if ($pullRequest['draft']) {
@@ -155,7 +155,7 @@ class ReleasePullRequestGenerator {
 				$this->githubApi->mergePullRequest($this->subsplit->getRepositoryUrl(), $pullRequest['number'], [
 					'sha' => $pullRequest['head']['sha'],
 					'mergeMethod' => 'squash',
-					'message' => "Update CHANGELOG.md for {$this->generator->getNextVersion()} release.",
+					'message' => "Update CHANGELOG.md for {$this->generator->getNextVersion()} release",
 				]);
 				$this->repository->checkoutBranch($this->repository->getBranch());
 				$this->repository->deleteBranch($branchName);

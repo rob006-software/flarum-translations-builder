@@ -18,6 +18,7 @@ use app\components\languages\LanguagePacksSummaryGenerator;
 use app\components\readme\LicenseSummaryGenerator;
 use app\components\readme\MainReadmeGenerator;
 use app\components\readme\SummaryGenerator;
+use app\helpers\FlarumVersion;
 use app\models\Extension;
 use app\models\LanguageSubsplit;
 use app\models\MultiLanguageSubsplit;
@@ -141,7 +142,11 @@ final class ReadmeController extends ConsoleController {
 		file_put_contents($translations->getDir() . '/README.md', $readme);
 		file_put_contents($translations->getDir() . '/status/summary.md', $summary);
 		file_put_contents($translations->getDir() . '/status/licenses.md', $licenses);
-		$this->postProcessRepository($translations->getRepository(), 'Update list of supported extensions.');
+		$flarumVersion = FlarumVersion::lineName();
+		$this->postProcessRepository(
+			$translations->getRepository(),
+			"[{$flarumVersion}] Update list of supported extensions"
+		);
 
 		$languageSubsplits = [];
 		foreach ($translations->getSubsplits() as $subsplit) {
@@ -154,7 +159,11 @@ final class ReadmeController extends ConsoleController {
 		}
 		$languagePacksGenerator = new LanguagePacksSummaryGenerator($languageSubsplits);
 		file_put_contents($translations->getDir() . '/status/language-packs.md', $languagePacksGenerator->generate());
-		$this->postProcessRepository($translations->getRepository(), 'Update list of language packs.');
+		$flarumVersion = FlarumVersion::lineName();
+		$this->postProcessRepository(
+			$translations->getRepository(),
+			"[{$flarumVersion}] Update list of language packs"
+		);
 
 		$this->updateLimit($token);
 	}
@@ -209,7 +218,11 @@ final class ReadmeController extends ConsoleController {
 
 			if ($changed) {
 				file_put_contents($subsplit->getDir() . '/README.md', $readme);
-				$this->postProcessRepository($subsplit->getRepository(), 'Update translations status in README.');
+				$flarumVersion = FlarumVersion::lineName();
+				$this->postProcessRepository(
+					$translations->getRepository(),
+					"[{$flarumVersion}] Update translations status in README"
+				);
 			}
 			$this->updateLimit($subsplitToken);
 		}

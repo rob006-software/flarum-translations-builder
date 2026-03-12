@@ -74,7 +74,7 @@ final class NewExtensionPullRequestGenerator {
 
 			$this->addExtensionToConfig($extension);
 			$flarumVersion = FlarumVersion::lineName();
-			$this->repository->commit("Add `{$extension->getPackageName()}` for Flarum {$flarumVersion}.");
+			$this->repository->commit("[{$flarumVersion}] Add `{$extension->getPackageName()}`");
 			$this->repository->push();
 
 			$this->openPullRequestForNewExtension($branchName, $extension);
@@ -107,7 +107,7 @@ final class NewExtensionPullRequestGenerator {
 		$this->repository->checkoutBranch($branchName);
 		$this->addExtensionToConfig($extension);
 		$flarumVersion = FlarumVersion::lineName();
-		$this->repository->commit("Update `{$extension->getPackageName()}` config for Flarum {$flarumVersion}.", $commited);
+		$this->repository->commit("[{$flarumVersion}] Update config for `{$extension->getPackageName()}`\n\n{$extension->getRepositoryUrl()}", $commited);
 		$this->repository->push();
 		$this->bumpRateLimitToken($extension);
 

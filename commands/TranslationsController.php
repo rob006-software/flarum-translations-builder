@@ -50,7 +50,11 @@ final class TranslationsController extends ConsoleController {
 			$translations->updateComponents($language, $catalogue);
 		}
 
-		$this->postProcessRepository($translations->getRepository(), 'Update sources from extensions.');
+		$flarumVersion = FlarumVersion::lineName();
+		$this->postProcessRepository(
+			$translations->getRepository(),
+			"[{$flarumVersion}] Update sources from extensions"
+		);
 		$this->updateLimit($token);
 	}
 
@@ -78,7 +82,7 @@ final class TranslationsController extends ConsoleController {
 			$subsplit->split($translations);
 			$this->postProcessRepository(
 				$subsplit->getRepository(),
-				$subsplit->processCommitMessage($translations, 'Sync translations with main repository.')
+				$subsplit->processCommitMessage($translations, 'Sync translations with main repository')
 			);
 			$subsplit->markAsProcessed($translations);
 			// @todo temporarily disable releases for 2.x
@@ -111,7 +115,8 @@ final class TranslationsController extends ConsoleController {
 			$inheritor->inherit();
 			$this->postProcessRepository(
 				$translations->getRepository(),
-				strtr('Inherit translations from {sourceLabel}.', [
+				strtr('[{flarumVersion}] Inherit translations from {sourceLabel}', [
+					'{flarumVersion}' => FlarumVersion::lineName(),
 					'{sourceLabel}' => $inheritor->getInheritFromLabel(),
 				])
 			);
@@ -129,7 +134,8 @@ final class TranslationsController extends ConsoleController {
 
 		$this->postProcessRepository(
 			$translations->getRepository(),
-			strtr('Importing "{component}" component from "{source}".', [
+			strtr('[{flarumVersion}] Importing "{component}" component from "{source}"', [
+				'{flarumVersion}' => FlarumVersion::lineName(),
 				'{component}' => $component,
 				'{source}' => $source,
 			])
@@ -142,9 +148,10 @@ final class TranslationsController extends ConsoleController {
 			$translations->updateOutdatedTranslationsMetadata($language);
 		}
 
+		$flarumVersion = FlarumVersion::lineName();
 		$this->postProcessRepository(
 			$translations->getRepository(),
-			'Update outdated translations metadata.'
+			"[{$flarumVersion}] Update outdated translations metadata"
 		);
 	}
 
@@ -154,9 +161,10 @@ final class TranslationsController extends ConsoleController {
 			$translations->cleanupOutdatedTranslations($language, $range);
 		}
 
+		$flarumVersion = FlarumVersion::lineName();
 		$this->postProcessRepository(
 			$translations->getRepository(),
-			'Cleanup outdated translations.'
+			"[{$flarumVersion}] Cleanup outdated translations"
 		);
 	}
 
@@ -168,9 +176,10 @@ final class TranslationsController extends ConsoleController {
 			Yii::$app->locks->releaseRepoLock($subsplit->getRepository()->getPath());
 		}
 
+		$flarumVersion = FlarumVersion::lineName();
 		$this->postProcessRepository(
 			$translations->getRepository(),
-			'Update outdated subsplits metadata.'
+			"[{$flarumVersion}] Update outdated subsplits metadata"
 		);
 	}
 
@@ -183,9 +192,10 @@ final class TranslationsController extends ConsoleController {
 			$subsplit->getRepository()->update();
 			$translations->cleanupOutdatedSubsplit($subsplit, $range);
 
+			$flarumVersion = FlarumVersion::lineName();
 			$this->postProcessRepository(
-				$subsplit->getRepository(),
-				'Cleanup outdated components.'
+				$translations->getRepository(),
+				"[{$flarumVersion}] Cleanup outdated components"
 			);
 
 			Yii::$app->locks->releaseRepoLock($subsplit->getRepository()->getPath());

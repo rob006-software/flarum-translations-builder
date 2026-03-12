@@ -73,7 +73,10 @@ final class StatsController extends ConsoleController {
 
 		$date = date('Y-m-d');
 		$flarumVersion = FlarumVersion::lineName();
-		$this->postProcessRepository($repository, "Update Flarum {$flarumVersion} translations status as per $date.");
+		$this->postProcessRepository(
+			$translations->getRepository(),
+			"[{$flarumVersion}] Update translations status as per $date"
+		);
 		$this->updateLimit($token);
 	}
 

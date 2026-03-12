@@ -174,7 +174,11 @@ final class ExtensionsController extends ConsoleController {
 		}
 
 		file_put_contents($translations->getDir() . '/status/pending.md', $generator->generate());
-		$this->postProcessRepository($translations->getRepository(), 'Update list of pending extensions.');
+		$flarumVersion = FlarumVersion::lineName();
+		$this->postProcessRepository(
+			$translations->getRepository(),
+			"[{$flarumVersion}] Update list of pending extensions"
+		);
 	}
 
 	// Save API response to cache, since API is not publicly available.
@@ -210,7 +214,11 @@ final class ExtensionsController extends ConsoleController {
 			json_encode($result, JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n"
 		);
 
-		$this->postProcessRepository($translations->getRepository(), 'Update cache for premium extensions.');
+		$flarumVersion = FlarumVersion::lineName();
+		$this->postProcessRepository(
+			$translations->getRepository(),
+			"[{$flarumVersion}] Update cache for premium extensions"
+		);
 		$this->updateLimit(__METHOD__);
 	}
 }

@@ -15,6 +15,7 @@ namespace app\commands;
 
 use app\components\ConsoleController;
 use app\components\extensions\ConfigGenerator;
+use app\helpers\FlarumVersion;
 use Yii;
 use function array_merge;
 use function json_encode;
@@ -56,9 +57,10 @@ final class ConfigController extends ConsoleController {
 				continue;
 			}
 			$configGenerator->updateExtension($extension);
+			$flarumVersion = FlarumVersion::lineName();
 			$this->commitRepository(
 				$translations->getRepository(),
-				"Update config for `{$extension->getPackageName()}`.\n\n{$extension->getRepositoryUrl()}"
+				"[{$flarumVersion}] Update config for `{$extension->getPackageName()}`\n\n{$extension->getRepositoryUrl()}"
 			);
 		}
 
