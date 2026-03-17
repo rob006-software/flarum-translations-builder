@@ -178,12 +178,10 @@ final class ExtensionsRepository extends Component {
 			$versionData = $this->getPackagistLastReleaseData($extension->getPackageName());
 			$time = $versionData === null ? 0 : strtotime($versionData['time']);
 			$cacheKey = __CLASS__ . '#outdatedExtensionDetected#' . $extension->getPackageName();
-			if ($time < strtotime('-12 months')) {
-				Yii::$app->cache->set($cacheKey, true, 31 * 24 * 3600);
-			} elseif ($time < strtotime('-6 months')) {
+			if ($time < strtotime('-6 months')) {
 				Yii::$app->cache->set($cacheKey, true, 7 * 24 * 3600);
 			} else {
-				Yii::$app->cache->set($rateLimitKey, true, 7 * 24 * 3600);
+				Yii::$app->cache->set($rateLimitKey, true, 24 * 3600);
 			}
 		}
 	}
