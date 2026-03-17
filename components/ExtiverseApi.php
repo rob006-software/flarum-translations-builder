@@ -56,6 +56,8 @@ final class ExtiverseApi extends Component {
 	 * @return ApiResult[]
 	 */
 	public function searchExtensions(bool $useCache = true): array {
+		// @todo temporary disable until new API endpoint is implemented https://discuss.flarum.org/d/38830-important-news-from-the-flarum-foundation
+		return [];
 		$callback = function () {
 			$response['links']['next'] = $this->apiUrl . '/extensions?filter[is][]=premium&page[limit]=100&filter[compatible-with]=' . $this->getVersionForFilter();
 
