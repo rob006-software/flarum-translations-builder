@@ -42,6 +42,7 @@ use function is_array;
 use function reset;
 use function strlen;
 use function strncasecmp;
+use function strpos;
 use function strtotime;
 
 /**
@@ -414,6 +415,19 @@ final class ExtensionsRepository extends Component {
 			}
 			if (isset($aliases[$normalizedInput])) {
 				return $aliases[$normalizedInput];
+			}
+		}
+
+		$normalizedInput = str_replace('_', '-', strtolower($language));
+		if (strpos($normalizedInput, '-') !== false) {
+			$normalizedInput = explode('-', $normalizedInput)[0];
+			foreach (Translations::$instance->getLanguages() as $supportedLanguage) {
+				if (strcasecmp($normalizedInput, $supportedLanguage) === 0) {
+					return $supportedLanguage;
+				}
+				if (isset($aliases[$normalizedInput])) {
+					return $aliases[$normalizedInput];
+				}
 			}
 		}
 
