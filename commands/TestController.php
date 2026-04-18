@@ -15,6 +15,10 @@ namespace app\commands;
 
 use app\components\ConsoleController;
 use function array_merge;
+use function escapeshellarg;
+use function file_get_contents;
+use function file_put_contents;
+use function preg_replace;
 
 /**
  * Class TestController.
@@ -40,8 +44,43 @@ class TestController extends ConsoleController {
 		]);
 	}
 
-	public function actionT(string $configFile = '@app/translations/config.php') {
-		/* @noinspection PhpUnusedLocalVariableInspection */
+	public function actionT(array $subsplits = [], string $configFile = '@app/translations/config.php') {
 		$translations = $this->getTranslations($configFile);
+
+		if (empty($subsplits)) {
+			$subsplits = $translations->getSubsplits();
+		} else {
+			foreach ($subsplits as $key => $subsplitId) {
+				$subsplits[$key] = $translations->getSubsplit($subsplitId);
+			}
+		}
+
+		foreach ($subsplits as $subsplit) {
+			$subsplit->getRepository()->update();
+			$readme = file_get_contents($subsplit->getDir() . '/README.md');
+
+			$readme = preg_replace([
+				'/composer require (")?flarum-lang\/([a-z-]+)(")?(?![^ \n\r])/',
+				'/composer require (")?flarum-lang\/([a-z-]+):dev-[a-z-]+(")?/',
+				'/([` ])1\.(\d+)(\.\d+)?/',
+			], [
+				'composer require "flarum-lang/$2:*"',
+				'composer require "flarum-lang/$2:@dev"',
+				'${1}2.0.0',
+			], $readme);
+
+			file_put_contents($subsplit->getDir() . '/README.md', $readme);
+
+			$dir = escapeshellarg($subsplit->getDir());
+
+			passthru("cd $dir && git diff");
+
+			if ($this->confirm("Commit?", true)) {
+				$this->postProcessRepository(
+					$subsplit->getRepository(),
+					$subsplit->processCommitMessage($translations, 'Update README.md')
+				);
+			}
+		}
 	}
 }
