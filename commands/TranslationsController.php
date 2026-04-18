@@ -85,8 +85,7 @@ final class TranslationsController extends ConsoleController {
 				$subsplit->processCommitMessage($translations, 'Sync translations with main repository')
 			);
 			$subsplit->markAsProcessed($translations);
-			// @todo temporarily disable releases for 2.x
-			if (FlarumVersion::version() === FlarumVersion::V1 && $subsplit->hasReleaseGenerator()) {
+			if ($subsplit->hasReleaseGenerator()) {
 				(new ReleasePullRequestGenerator($subsplit))->generate();
 			}
 			Yii::$app->locks->releaseRepoLock($subsplit->getRepository()->getPath());
