@@ -60,13 +60,15 @@ class TestController extends ConsoleController {
 			$readme = file_get_contents($subsplit->getDir() . '/README.md');
 
 			$readme = preg_replace([
-				'/composer require (")?flarum-lang\/([a-z-]+)(")?(?![^ \n\r])/',
-				'/composer require (")?flarum-lang\/([a-z-]+):dev-[a-z-]+(")?/',
-				'/([` ])1\.(\d+)(\.\d+)?/',
+				//'/composer require (")?flarum-lang\/([a-z-]+)(")?(?![^ \n\r])/',
+				//'/composer require (")?flarum-lang\/([a-z-]+):dev-[a-z-]+(")?/',
+				//'/([` ])1\.(\d+)(\.\d+)?/',
+				'/(weblate\.rob006\.net\/[a-zA-Z0-9\/]*)\/flarum\//'
 			], [
-				'composer require "flarum-lang/$2:*"',
-				'composer require "flarum-lang/$2:@dev"',
-				'${1}2.0.0',
+				//'composer require "flarum-lang/$2:*"',
+				//'composer require "flarum-lang/$2:@dev"',
+				//'${1}2.0.0',
+				'$1/flarum2/'
 			], $readme);
 
 			file_put_contents($subsplit->getDir() . '/README.md', $readme);
