@@ -193,7 +193,7 @@ final class TranslationsController extends ConsoleController {
 
 			$flarumVersion = FlarumVersion::lineName();
 			$this->postProcessRepository(
-				$translations->getRepository(),
+				$subsplit->getRepository(),
 				"[{$flarumVersion}] Cleanup outdated components"
 			);
 
