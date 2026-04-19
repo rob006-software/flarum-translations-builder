@@ -77,7 +77,7 @@ class TestController extends ConsoleController {
 
 			passthru("cd $dir && git diff");
 
-			if ($this->confirm("Commit?", true)) {
+			if ($this->confirm('Commit?', true)) {
 				$this->postProcessRepository(
 					$subsplit->getRepository(),
 					$subsplit->processCommitMessage($translations, 'Update README.md')

@@ -218,10 +218,9 @@ final class ReadmeController extends ConsoleController {
 
 			if ($changed) {
 				file_put_contents($subsplit->getDir() . '/README.md', $readme);
-				$flarumVersion = FlarumVersion::lineName();
 				$this->postProcessRepository(
 					$subsplit->getRepository(),
-					"[{$flarumVersion}] Update translations status in README"
+					'Update translations status in README'
 				);
 			}
 			$this->updateLimit($subsplitToken);

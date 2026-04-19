@@ -191,10 +191,9 @@ final class TranslationsController extends ConsoleController {
 			$subsplit->getRepository()->update();
 			$translations->cleanupOutdatedSubsplit($subsplit, $range);
 
-			$flarumVersion = FlarumVersion::lineName();
 			$this->postProcessRepository(
 				$subsplit->getRepository(),
-				"[{$flarumVersion}] Cleanup outdated components"
+				'Cleanup outdated components'
 			);
 
 			Yii::$app->locks->releaseRepoLock($subsplit->getRepository()->getPath());
