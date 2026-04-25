@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace app\components\release;
 
+use app\helpers\FlarumVersion;
 use app\models\Repository;
 use app\models\Subsplit;
 use Composer\Semver\Semver;
@@ -410,8 +411,9 @@ class ReleaseGenerator extends BaseObject {
 		$warning = $this->isMinorUpdate() ? "\n\n**{$this->t('announcement.major-warning')}**\n\n" : '';
 		$changes = trim($this->getChangelogEntryContent());
 
+		$flarumVersion = FlarumVersion::lineName();
 		return <<<MD
-			## {$this->t('announcement.version', ['{version}' => "[`{$this->getNextVersion()}`](https://github.com/$userName/$repoName/releases/tag/{$this->getNextVersion()})"])}
+			## {$this->t('announcement.version', ['{version}' => "[`{$this->getNextVersion()}`](https://github.com/$userName/$repoName/releases/tag/{$this->getNextVersion()})"])} (Flarum {$flarumVersion})
 			
 			{$changes}
 			
