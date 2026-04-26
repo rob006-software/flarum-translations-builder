@@ -74,6 +74,7 @@ final class LanguagePacksSummaryGenerator {
 			HTML;
 		foreach ($names as $language => $name) {
 			$weblateProject = FlarumVersion::weblateProject();
+			$branchName = FlarumVersion::branch();
 			$subsplit = $this->subsplits[$language];
 			$name = Language::name($subsplit->getLanguage());
 			$packageName = $subsplit->getPackageName();
@@ -107,7 +108,7 @@ final class LanguagePacksSummaryGenerator {
 							</a>
 						</td>
 						<td align="right">
-							<a href="https://rob006-software.github.io/flarum-translations/status/{$subsplit->getLanguage()}.html" title="Click to see detailed translation status for each extension">
+							<a href="https://rob006-software.github.io/flarum-translations/{$branchName}/status/{$subsplit->getLanguage()}.html" title="Click to see detailed translation status for each extension">
 								<img src="https://weblate.rob006.net/widgets/{$weblateProject}/{$subsplit->getLanguage()}/svg-badge.svg" alt="detailed translation status" />
 							</a>
 						</td>

@@ -73,6 +73,7 @@ final class MainReadmeGenerator extends ReadmeGenerator {
 		foreach ($names as $language => $name) {
 			$subsplit = $subsplits[$language];
 			$weblateProject = FlarumVersion::weblateProject();
+			$branchName = FlarumVersion::branch();
 			[$userName, $repoName] = Yii::$app->githubApi->explodeRepoUrl($subsplit->getRepositoryUrl());
 			/* @noinspection HtmlDeprecatedAttribute */
 			$output .= <<<HTML
@@ -80,7 +81,7 @@ final class MainReadmeGenerator extends ReadmeGenerator {
 						<td><a href="https://github.com/$userName/$repoName">$name</a></td>
 						<td>{$this->generateMaintainersUrls($subsplit->getMaintainers())}</td>
 						<td align="right">
-							<a href="https://rob006-software.github.io/flarum-translations/status/{$subsplit->getLanguage()}.html" title="Click to see detailed translation status for each extension">
+							<a href="https://rob006-software.github.io/flarum-translations/{$branchName}/status/{$subsplit->getLanguage()}.html" title="Click to see detailed translation status for each extension">
 								<img src="https://weblate.rob006.net/widgets/{$weblateProject}/{$subsplit->getLanguage()}/svg-badge.svg" alt="detailed translation status" />
 							</a>
 						</td>
