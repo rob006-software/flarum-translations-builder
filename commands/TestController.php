@@ -63,7 +63,7 @@ class TestController extends ConsoleController {
 				//'/composer require (")?flarum-lang\/([a-z-]+)(")?(?![^ \n\r])/',
 				//'/composer require (")?flarum-lang\/([a-z-]+):dev-[a-z-]+(")?/',
 				//'/([` ])1\.(\d+)(\.\d+)?/',
-				'/(weblate\.rob006\.net\/[a-zA-Z0-9\/]*)\/flarum\//'
+				'/(weblate\.rob006\.net\/[a-zA-Z0-9_\-\/]*)\/flarum\//'
 			], [
 				//'composer require "flarum-lang/$2:*"',
 				//'composer require "flarum-lang/$2:@dev"',
@@ -77,7 +77,7 @@ class TestController extends ConsoleController {
 
 			passthru("cd $dir && git diff");
 
-			if ($this->confirm('Commit?', true)) {
+			if ($subsplit->getRepository()->hasChanges() && $this->confirm('Commit?', true)) {
 				$this->postProcessRepository(
 					$subsplit->getRepository(),
 					$subsplit->processCommitMessage($translations, 'Update README.md')
