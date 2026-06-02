@@ -126,7 +126,7 @@ final class RegularExtension extends Extension {
 	}
 
 	public function getBetaTranslationSourceUrl(?array $prefixes = null): ?string {
-		return $this->getTranslationSourceUrlForStability($prefixes, ['stable', 'beta']);
+		return $this->getTranslationSourceUrlForStability($prefixes, ['stable', 'RC', 'beta']);
 	}
 
 	private function getTranslationSourceUrlForStability(?array $prefixes, array $stabilities): ?string {
