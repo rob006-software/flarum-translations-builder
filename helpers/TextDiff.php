@@ -18,17 +18,18 @@ use function array_merge;
 use function array_reverse;
 use function array_slice;
 use function count;
+use function explode;
 use function max;
 use function preg_split;
 use const PREG_SPLIT_DELIM_CAPTURE;
 use const PREG_SPLIT_NO_EMPTY;
 
 /**
- * Word-level diff between two strings, based on the longest common subsequence of words.
+ * Diff between two strings, based on the longest common subsequence of words or lines.
  *
  * @author Robert Korulczyk <robert@korulczyk.pl>
  */
-class WordDiff {
+class TextDiff {
 
 	public const KEEP = 'keep';
 	public const DELETE = 'delete';
@@ -41,63 +42,79 @@ class WordDiff {
 	private const MAX_MATRIX_SIZE = 250000;
 
 	/**
-	 * Compare two strings word by word.
+	 * Compare two strings word by word. Adjacent words with the same type are merged into a single chunk.
 	 *
 	 * Concatenation of all returned chunks gives `$from` (for `KEEP` and `DELETE` chunks) and `$to` (for `KEEP` and
 	 * `INSERT` chunks), so no part of the compared strings is lost.
 	 *
 	 * @return array[] List of `[$type, $string]` chunks, where `$type` is one of `KEEP`, `DELETE` or `INSERT`.
 	 */
-	public static function compare(string $from, string $to): array {
-		$fromWords = self::tokenize($from);
-		$toWords = self::tokenize($to);
+	public static function compareWords(string $from, string $to): array {
+		return self::mergeChunks(self::compareTokens(self::tokenize($from), self::tokenize($to)));
+	}
 
+	/**
+	 * Compare two strings line by line.
+	 *
+	 * @return array[] List of `[$type, $line]` chunks - a single chunk for each line of both strings, where `$type`
+	 * is one of `KEEP`, `DELETE` or `INSERT`.
+	 */
+	public static function compareLines(string $from, string $to): array {
+		return self::compareTokens(explode("\n", $from), explode("\n", $to));
+	}
+
+	/**
+	 * @param string[] $fromTokens
+	 * @param string[] $toTokens
+	 * @return array[]
+	 */
+	private static function compareTokens(array $fromTokens, array $toTokens): array {
 		// strip the common prefix and suffix - this makes the LCS matrix much smaller for typical translations,
 		// which differ only in a few words
 		$prefix = [];
 		$fromIndex = 0;
 		$toIndex = 0;
 		while (
-			$fromIndex < count($fromWords)
-			&& $toIndex < count($toWords)
-			&& $fromWords[$fromIndex] === $toWords[$toIndex]
+			$fromIndex < count($fromTokens)
+			&& $toIndex < count($toTokens)
+			&& $fromTokens[$fromIndex] === $toTokens[$toIndex]
 		) {
-			$prefix[] = [self::KEEP, $fromWords[$fromIndex]];
+			$prefix[] = [self::KEEP, $fromTokens[$fromIndex]];
 			$fromIndex++;
 			$toIndex++;
 		}
 
 		$suffix = [];
-		$fromLastIndex = count($fromWords) - 1;
-		$toLastIndex = count($toWords) - 1;
+		$fromLastIndex = count($fromTokens) - 1;
+		$toLastIndex = count($toTokens) - 1;
 		while (
 			$fromLastIndex >= $fromIndex
 			&& $toLastIndex >= $toIndex
-			&& $fromWords[$fromLastIndex] === $toWords[$toLastIndex]
+			&& $fromTokens[$fromLastIndex] === $toTokens[$toLastIndex]
 		) {
-			$suffix[] = [self::KEEP, $fromWords[$fromLastIndex]];
+			$suffix[] = [self::KEEP, $fromTokens[$fromLastIndex]];
 			$fromLastIndex--;
 			$toLastIndex--;
 		}
 
-		$chunks = array_merge(
+		return array_merge(
 			$prefix,
-			self::compareWords(
-				array_slice($fromWords, $fromIndex, $fromLastIndex - $fromIndex + 1),
-				array_slice($toWords, $toIndex, $toLastIndex - $toIndex + 1)
+			self::findChanges(
+				array_slice($fromTokens, $fromIndex, $fromLastIndex - $fromIndex + 1),
+				array_slice($toTokens, $toIndex, $toLastIndex - $toIndex + 1)
 			),
 			array_reverse($suffix)
 		);
-
-		return self::mergeChunks($chunks);
 	}
 
 	/**
+	 * Find changes between two sequences of tokens, using the longest common subsequence of them.
+	 *
 	 * @param string[] $fromWords
 	 * @param string[] $toWords
 	 * @return array[]
 	 */
-	private static function compareWords(array $fromWords, array $toWords): array {
+	private static function findChanges(array $fromWords, array $toWords): array {
 		$fromCount = count($fromWords);
 		$toCount = count($toWords);
 		if ($fromCount === 0 || $toCount === 0 || $fromCount * $toCount > self::MAX_MATRIX_SIZE) {

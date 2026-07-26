@@ -15,7 +15,7 @@ namespace app\components\inheritors;
 
 use app\helpers\FlarumVersion;
 use app\helpers\Language;
-use app\helpers\WordDiff;
+use app\helpers\TextDiff;
 use Dont\DontCall;
 use Dont\DontCallStatic;
 use Dont\DontGet;
@@ -211,16 +211,36 @@ final class InheritorDiffGenerator {
 	}
 
 	/**
-	 * @param string|null $from Content of removed lines or `null` if there is nothing to remove.
+	 * Generate a code block with a line by line diff of both translations. Lines which are the same in both
+	 * translations are kept as a context for changed lines.
+	 *
+	 * @param string|null $from Removed translation or `null` if there is nothing to remove.
 	 */
 	private function diffBlock(?string $from, string $to): string {
+		if ($from === null) {
+			$chunks = [];
+			foreach (explode("\n", $to) as $line) {
+				$chunks[] = [TextDiff::INSERT, $line];
+			}
+		} else {
+			$chunks = TextDiff::compareLines($from, $to);
+		}
+
 		$lines = [];
-		foreach ($from === null ? [] : explode("\n", $from) as $line) {
-			$lines[] = "-$line";
+		foreach ($chunks as [$type, $line]) {
+			switch ($type) {
+				case TextDiff::DELETE:
+					$lines[] = "-$line";
+					break;
+				case TextDiff::INSERT:
+					$lines[] = "+$line";
+					break;
+				default:
+					// context lines are prefixed with a space, just like in a regular unified diff
+					$lines[] = $line === '' ? '' : " $line";
+			}
 		}
-		foreach (explode("\n", $to) as $line) {
-			$lines[] = "+$line";
-		}
+
 		$content = implode("\n", $lines);
 		// make sure that backticks inside translations will not break the code block
 		$fence = str_repeat('`', max(3, $this->getLongestBacktickSequence($content) + 1));
@@ -235,13 +255,13 @@ final class InheritorDiffGenerator {
 	private function highlight(string $from, string $to): ?string {
 		$output = '';
 		$hasCommonPart = false;
-		foreach (WordDiff::compare($from, $to) as [$type, $string]) {
+		foreach (TextDiff::compareWords($from, $to) as [$type, $string]) {
 			$string = $this->escapeMarkdown($string);
 			switch ($type) {
-				case WordDiff::DELETE:
+				case TextDiff::DELETE:
 					$output .= "<del>$string</del>";
 					break;
-				case WordDiff::INSERT:
+				case TextDiff::INSERT:
 					$output .= "<ins>$string</ins>";
 					break;
 				default:
