@@ -87,17 +87,7 @@ class TranslationsInheritor implements InheritorInterface {
 			$metadata = [];
 		}
 		$newMetadata = [];
-		foreach (FileHelper::findFiles($this->inheritToTranslations, ['only' => ['*.json']]) as $file) {
-			$fileName = basename($file);
-			if (
-				!file_exists("{$this->inheritFromSources}/$fileName")
-				|| !file_exists("{$this->inheritFromTranslations}/$fileName")
-				|| !file_exists("{$this->inheritToSources}/$fileName")
-				|| !file_exists("{$this->inheritToTranslations}/$fileName")
-			) {
-				continue;
-			}
-
+		foreach ($this->getComparableFiles() as $fileName) {
 			$newMetadata[$fileName] = $this->handleComponentInheritance($fileName, $metadata[$fileName] ?? []);
 		}
 
@@ -106,12 +96,103 @@ class TranslationsInheritor implements InheritorInterface {
 		file_put_contents($this->metadataFile, json_encode($newMetadata, JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n");
 	}
 
+	/**
+	 * Compare translations from both languages for all strings which have the same source string.
+	 */
+	public function compare(): InheritorComparison {
+		$differences = [];
+		$missingTranslations = [];
+		foreach ($this->getComparableFiles() as $fileName) {
+			[$componentDifferences, $componentMissingTranslations] = $this->compareComponent($fileName);
+			if (!empty($componentDifferences)) {
+				$differences[$fileName] = $componentDifferences;
+			}
+			if (!empty($componentMissingTranslations)) {
+				$missingTranslations[$fileName] = $componentMissingTranslations;
+			}
+		}
+
+		ksort($differences);
+		ksort($missingTranslations);
+
+		return new InheritorComparison($differences, $missingTranslations);
+	}
+
+	/**
+	 * @return array[] Pair of differences and missing translations for a single component.
+	 */
+	private function compareComponent(string $fileName): array {
+		$fromSources = $this->loadFile($this->inheritFromSources, $fileName);
+		$fromTranslations = $this->loadFile($this->inheritFromTranslations, $fileName);
+		$toSources = $this->loadFile($this->inheritToSources, $fileName);
+		$toTranslations = $this->loadFile($this->inheritToTranslations, $fileName);
+
+		$differences = [];
+		$missingTranslations = [];
+		foreach ($toTranslations as $key => $toTranslation) {
+			$fromSource = $fromSources[$key] ?? '';
+			$toSource = $toSources[$key] ?? '';
+			if ($fromSource === '' || $toSource === '' || $fromSource !== $toSource) {
+				// phrase is outdated (empty source) or has a different source - there is nothing to compare
+				continue;
+			}
+			if ($toTranslation === '') {
+				// phrase is not translated in the inheriting language - there is nothing to compare
+				continue;
+			}
+
+			$fromTranslation = $this->processFromTranslation($fromTranslations[$key] ?? '');
+			if ($fromTranslation === '') {
+				// phrase is translated only in the inheriting language, so there is nothing to inherit
+				$missingTranslations[$key] = [
+					'source' => $toSource,
+					'to' => $toTranslation,
+				];
+			} elseif ($fromTranslation !== $toTranslation) {
+				$differences[$key] = [
+					'source' => $toSource,
+					'from' => $fromTranslation,
+					'to' => $toTranslation,
+				];
+			}
+		}
+
+		ksort($differences);
+		ksort($missingTranslations);
+
+		return [$differences, $missingTranslations];
+	}
+
+	/**
+	 * @return string[] Names of component files which exist in all sources and translations directories.
+	 */
+	private function getComparableFiles(): array {
+		$fileNames = [];
+		foreach (FileHelper::findFiles($this->inheritToTranslations, ['only' => ['*.json']]) as $file) {
+			$fileName = basename($file);
+			if (
+				file_exists("{$this->inheritFromSources}/$fileName")
+				&& file_exists("{$this->inheritFromTranslations}/$fileName")
+				&& file_exists("{$this->inheritToSources}/$fileName")
+				&& file_exists("{$this->inheritToTranslations}/$fileName")
+			) {
+				$fileNames[] = $fileName;
+			}
+		}
+
+		return $fileNames;
+	}
+
+	private function loadFile(string $directory, string $fileName): array {
+		return ArrayHelper::flatten(json_decode(file_get_contents("$directory/$fileName"), true, 512, JSON_THROW_ON_ERROR));
+	}
+
 	private function handleComponentInheritance(string $fileName, array $metadata): array {
 		$metadata = ArrayHelper::flatten($metadata);
-		$fromSources = ArrayHelper::flatten(json_decode(file_get_contents("{$this->inheritFromSources}/$fileName"), true, 512, JSON_THROW_ON_ERROR));
-		$fromTranslations = ArrayHelper::flatten(json_decode(file_get_contents("{$this->inheritFromTranslations}/$fileName"), true, 512, JSON_THROW_ON_ERROR));
-		$toSources = ArrayHelper::flatten(json_decode(file_get_contents("{$this->inheritToSources}/$fileName"), true, 512, JSON_THROW_ON_ERROR));
-		$toTranslations = ArrayHelper::flatten(json_decode(file_get_contents("{$this->inheritToTranslations}/$fileName"), true, 512, JSON_THROW_ON_ERROR));
+		$fromSources = $this->loadFile($this->inheritFromSources, $fileName);
+		$fromTranslations = $this->loadFile($this->inheritFromTranslations, $fileName);
+		$toSources = $this->loadFile($this->inheritToSources, $fileName);
+		$toTranslations = $this->loadFile($this->inheritToTranslations, $fileName);
 
 		$newMetadata = [];
 		$newTranslations = $toTranslations;
@@ -195,5 +276,16 @@ class TranslationsInheritor implements InheritorInterface {
 
 	public function getInheritFromLabel(): string {
 		return $this->inheritFromLabel;
+	}
+
+	/**
+	 * @return string Language of the inheriting translations.
+	 */
+	public function getLanguage(): string {
+		return basename($this->inheritToTranslations);
+	}
+
+	public function getComparableInheritors(): array {
+		return [$this];
 	}
 }

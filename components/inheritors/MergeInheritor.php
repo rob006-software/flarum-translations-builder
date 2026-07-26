@@ -25,6 +25,8 @@ use function json_encode;
 use function ksort;
 use function md5;
 use function md5_file;
+use function sort;
+use function strtr;
 use const JSON_THROW_ON_ERROR;
 
 /**
@@ -78,20 +80,7 @@ class MergeInheritor implements InheritorInterface {
 		$this->inheritToRepository->merge('-s', 'ours', "{$this->id}-upstream/{$this->inheritFromRepository->getBranch()}", '--no-commit', '--no-ff');
 
 		// update translations using inheritors
-		$languages = array_map(
-			'basename',
-			FileHelper::findDirectories($this->inheritFromRepository->getPath() . '/translations', ['recursive' => false])
-		);
-		foreach ($languages as $language) {
-			$inheritor = new TranslationsInheritor(
-				$language,
-				'',
-				$this->inheritFromRepository->getPath() . '/sources',
-				$this->inheritFromRepository->getPath() . '/translations/' . $language,
-				$this->inheritToRepository->getPath() . '/sources',
-				$this->inheritToRepository->getPath() . '/translations/' . $language,
-				strtr($this->metadataFileTemplate, ['{language}' => $language]),
-			);
+		foreach ($this->getComparableInheritors() as $inheritor) {
 			$inheritor->inherit();
 		}
 
@@ -130,5 +119,28 @@ class MergeInheritor implements InheritorInterface {
 
 	public function getInheritFromLabel(): string {
 		return $this->inheritFromLabel;
+	}
+
+	public function getComparableInheritors(): array {
+		$languages = array_map(
+			'basename',
+			FileHelper::findDirectories($this->inheritFromRepository->getPath() . '/translations', ['recursive' => false])
+		);
+		sort($languages);
+
+		$inheritors = [];
+		foreach ($languages as $language) {
+			$inheritors[] = new TranslationsInheritor(
+				$language,
+				$this->inheritFromLabel,
+				$this->inheritFromRepository->getPath() . '/sources',
+				$this->inheritFromRepository->getPath() . '/translations/' . $language,
+				$this->inheritToRepository->getPath() . '/sources',
+				$this->inheritToRepository->getPath() . '/translations/' . $language,
+				strtr($this->metadataFileTemplate, ['{language}' => $language]),
+			);
+		}
+
+		return $inheritors;
 	}
 }

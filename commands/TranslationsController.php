@@ -15,10 +15,12 @@ namespace app\commands;
 
 use app\components\ConsoleController;
 use app\components\inheritors\InheritorInterface;
+use app\components\inheritors\InheritorsStatusGenerator;
 use app\components\release\ReleasePullRequestGenerator;
 use app\components\translations\TranslationsImporter;
 use app\helpers\FlarumVersion;
 use Yii;
+use function array_merge;
 
 /**
  * Class TranslationsController.
@@ -124,6 +126,30 @@ final class TranslationsController extends ConsoleController {
 			$inheritorToken = __METHOD__ . '#' . $inheritor->getId() . '#' . $inheritor->getHash();
 			$this->updateLimit($inheritorToken);
 		}
+	}
+
+	public function actionUpdateInheritorsStatus(string $configFile = '@app/translations/config.php') {
+		$translations = $this->getTranslations($configFile);
+
+		$token = __METHOD__ . '#' . $translations->getHash() . '#' . $translations->getSourcesHash();
+		$inheritors = [];
+		foreach ($translations->getInheritors() as $inheritor) {
+			$inheritors[] = $inheritor;
+			$token .= '#' . $inheritor->getHash();
+		}
+		if ($this->isLimited($token)) {
+			return;
+		}
+
+		$generator = new InheritorsStatusGenerator($translations->getRepository()->getPath() . '/status/inheritors');
+		$generator->generate($inheritors);
+
+		$flarumVersion = FlarumVersion::lineName();
+		$this->postProcessRepository(
+			$translations->getRepository(),
+			"[{$flarumVersion}] Update inherited translations status"
+		);
+		$this->updateLimit($token);
 	}
 
 	public function actionImport(string $source, string $component, string $language, string $configFile = '@app/translations/config.php') {

@@ -27,4 +27,10 @@ interface InheritorInterface {
 	public function getHash(): string;
 
 	public function getInheritFromLabel(): string;
+
+	/**
+	 * @return TranslationsInheritor[] Inheritors handling a single language, which can be compared string by string.
+	 * An inheritor which handles a single language on its own should return itself.
+	 */
+	public function getComparableInheritors(): array;
 }
