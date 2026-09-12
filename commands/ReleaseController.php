@@ -92,6 +92,9 @@ final class ReleaseController extends ConsoleController {
 	/**
 	 * Fallback for lost jobs - verifies state of release branches and pull requests for all subsplits. Orphaned
 	 * release branches are removed and stale pull requests are queued for automatic merge.
+	 *
+	 * This action is intended to be run by cron, so it is silent unless something goes wrong - use `--verbose` to see
+	 * what is going on, or `--dryRun` to see what would be done without doing it.
 	 */
 	public function actionCheckPullRequests(array $subsplits = [], string $configFile = '@app/translations/config.php') {
 		$translations = $this->getTranslations($configFile);
@@ -188,7 +191,7 @@ final class ReleaseController extends ConsoleController {
 			'subsplit' => $subsplit->getId(),
 			'pullRequestNumber' => $pullRequest['number'],
 		]));
-		echo "{$subsplit->getId()}: PR #{$pullRequest['number']} queued for automatic merge.\n";
+		$this->log($subsplit, "PR #{$pullRequest['number']} queued for automatic merge.");
 	}
 
 	private function deleteBranch(Subsplit $subsplit, string $branchName, string $reason): void {
@@ -204,7 +207,7 @@ final class ReleaseController extends ConsoleController {
 			$repository->checkoutBranch($repository->getBranch());
 		}
 		$repository->deleteBranch($branchName);
-		echo "{$subsplit->getId()}: $branchName branch deleted - $reason.\n";
+		$this->log($subsplit, "$branchName branch deleted - $reason.");
 	}
 
 	private function reportError(Subsplit $subsplit, Throwable $exception): void {

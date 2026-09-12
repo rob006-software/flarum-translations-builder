@@ -45,7 +45,7 @@ class ReleasePullRequestGenerator {
 	use DontSet;
 
 	/** Label which marks pull request as queued for automatic merge. */
-	public const AUTO_MERGE_LABEL = 'ci-merge-queue';
+	public const AUTO_MERGE_LABEL = 'ci-merge-queued';
 	/** Delay for job which queues pull request for automatic merge. */
 	public const AUTO_MERGE_QUEUE_DELAY = 6 * 24 * 60 * 60;
 	/** @todo automatic merge is tested only on single language pack for now */
