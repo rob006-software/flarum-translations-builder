@@ -237,6 +237,13 @@ class Repository {
 	}
 
 	/**
+	 * @return int Timestamp of the last commit in given reference.
+	 */
+	public function getLastCommitDate(string $reference = 'HEAD'): int {
+		return (int) trim($this->git->run('log', ['-1', '--format=%ct', $reference]));
+	}
+
+	/**
 	 * @return string[] Change types (M, A or D) indexed by files paths.
 	 */
 	public function getChangesFrom(?string $reference): array {

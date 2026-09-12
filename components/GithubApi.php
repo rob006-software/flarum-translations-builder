@@ -155,13 +155,41 @@ final class GithubApi extends Component {
 	public function addPullRequestAssignees(string $targetRepository, int $number, array $assignees): array {
 		[$targetUserName, $targetRepoName] = $this->explodeRepoUrl($targetRepository);
 		return $this->githubApiClient->issues()->assignees()
-			->add($targetUserName, $targetRepoName, $number, ['assignees' => $assignees]);
+			->add($targetUserName, $targetRepoName, (string) $number, ['assignees' => $assignees]);
 	}
 
 	public function createRelease(string $repository, string $tagName, array $settings): array {
 		[$username, $repositoryName] = $this->explodeRepoUrl($repository);
 		return $this->githubApiClient->repos()->releases()
 			->create($username, $repositoryName, ['tag_name' => $tagName] + $settings);
+	}
+
+	public function addPullRequestLabels(string $targetRepository, int $number, array $labels): array {
+		[$targetUserName, $targetRepoName] = $this->explodeRepoUrl($targetRepository);
+		try {
+			return $this->githubApiClient->issues()->labels()
+				->add($targetUserName, $targetRepoName, $number, $labels);
+		} catch (GithubRuntimeException $exception) {
+			// labels which do not exist in repository may be rejected - create them and try again
+			foreach ($labels as $label) {
+				$this->createLabelIfNotExist($targetRepository, $label);
+			}
+
+			return $this->githubApiClient->issues()->labels()
+				->add($targetUserName, $targetRepoName, $number, $labels);
+		}
+	}
+
+	private function createLabelIfNotExist(string $repository, string $label): void {
+		[$userName, $repoName] = $this->explodeRepoUrl($repository);
+		try {
+			$this->githubApiClient->issues()->labels()->show($userName, $repoName, $label);
+		} catch (GithubRuntimeException $exception) {
+			$this->githubApiClient->issues()->labels()->create($userName, $repoName, [
+				'name' => $label,
+				'color' => 'ededed',
+			]);
+		}
 	}
 
 	public function addPullRequestComment(string $targetRepository, int $number, array $settings): array {

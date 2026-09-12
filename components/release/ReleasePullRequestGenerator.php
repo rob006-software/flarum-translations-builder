@@ -16,6 +16,7 @@ namespace app\components\release;
 use app\components\GithubApi;
 use app\components\release\exceptions\PullRequestMergeException;
 use app\helpers\StringHelper;
+use app\jobs\QueueMergeReleasePullRequestJob;
 use app\models\Subsplit;
 use Dont\DontCall;
 use Dont\DontCallStatic;
@@ -24,9 +25,11 @@ use Dont\DontSet;
 use Github\Exception\RuntimeException;
 use Yii;
 use yii\base\InvalidArgumentException;
+use function array_column;
 use function date;
 use function file_get_contents;
 use function file_put_contents;
+use function in_array;
 use function sleep;
 
 /**
@@ -40,6 +43,13 @@ class ReleasePullRequestGenerator {
 	use DontCallStatic;
 	use DontGet;
 	use DontSet;
+
+	/** Label which marks pull request as queued for automatic merge. */
+	public const AUTO_MERGE_LABEL = 'ci-merge-queue';
+	/** Delay for job which queues pull request for automatic merge. */
+	public const AUTO_MERGE_QUEUE_DELAY = 6 * 24 * 60 * 60;
+	/** @todo automatic merge is tested only on single language pack for now */
+	public const AUTO_MERGE_SUBSPLITS = ['pl'];
 
 	public const MAINTAINER_ASSOCIATIONS = [
 		'OWNER',
@@ -108,6 +118,51 @@ class ReleasePullRequestGenerator {
 			return;
 		}
 
+		$reviews = $this->githubApi->getReviewsForPullRequest($this->subsplit->getRepositoryUrl(), $pullRequest['number']);
+		foreach ($reviews as $review) {
+			if (in_array($review['author_association'], self::MAINTAINER_ASSOCIATIONS, true) && $review['state'] === 'APPROVED') {
+				$this->mergePullRequest($pullRequest, $branchName);
+
+				return;
+			}
+		}
+	}
+
+	/**
+	 * Merges release pull request without maintainer approval. This is a fallback for situations when maintainer is
+	 * not available - pull request is merged only if it was marked as queued for automatic merge (and maintainer did
+	 * not disable it by removing label from pull request).
+	 */
+	public function autoMerge(int $pullRequestNumber): void {
+		$branchName = "release/{$this->repository->getBranch()}";
+		$pullRequest = $this->githubApi->getPullRequest($this->subsplit->getRepositoryUrl(), $pullRequestNumber);
+		if ($pullRequest === null) {
+			throw new PullRequestMergeException("There is no PR #$pullRequestNumber in {$this->subsplit->getRepositoryUrl()}.");
+		}
+		if ($pullRequest['state'] !== 'open') {
+			// pull request was already closed - nothing to do
+			return;
+		}
+		if ($pullRequest['head']['ref'] !== $branchName) {
+			// make sure that we're not touching pull request from other Flarum version line
+			throw new PullRequestMergeException("PR #$pullRequestNumber is not a release PR for branch $branchName.");
+		}
+		if (!self::hasAutoMergeLabel($pullRequest)) {
+			// automatic merge was disabled by maintainer
+			return;
+		}
+
+		$this->mergePullRequest($pullRequest, $branchName);
+	}
+
+	public static function hasAutoMergeLabel(array $pullRequest): bool {
+		return in_array(self::AUTO_MERGE_LABEL, array_column($pullRequest['labels'] ?? [], 'name'), true);
+	}
+
+	/**
+	 * Updates changelog with release date, merges pull request and releases a new version.
+	 */
+	private function mergePullRequest(array $pullRequest, string $branchName): void {
 		$version = StringHelper::getBetween($pullRequest['title'], '`', '`');
 		if ($version === null) {
 			throw new PullRequestMergeException("PR #{$pullRequest['number']} does not have version in title.");
@@ -118,61 +173,55 @@ class ReleasePullRequestGenerator {
 			throw new PullRequestMergeException("PR #{$pullRequest['number']} does not have release notes in body.");
 		}
 		$this->generator->setChangelogEntryContent($changes);
-		$reviews = Yii::$app->githubApi->getReviewsForPullRequest($this->subsplit->getRepositoryUrl(), $pullRequest['number']);
-		foreach ($reviews as $review) {
-			if (in_array($review['author_association'], self::MAINTAINER_ASSOCIATIONS, true) && $review['state'] === 'APPROVED') {
-				$this->repository->syncBranchesWithRemote();
-				$this->repository->checkoutBranch($branchName);
-				$this->repository->update(false);
 
-				$newChangelog = file_get_contents($this->generator->getChangelogPath());
-				$pos = strpos($newChangelog, 'XXXX-XX-XX');
-				if ($pos !== false) {
-					$newChangelog = substr_replace($newChangelog, date('Y-m-d'), $pos, strlen('XXXX-XX-XX'));
-				}
-				file_put_contents($this->generator->getChangelogPath(), $newChangelog);
-				$this->repository->commit('Update changelog');
-				$this->repository->push();
+		$this->repository->syncBranchesWithRemote();
+		$this->repository->checkoutBranch($branchName);
+		$this->repository->update(false);
 
-				if ($pullRequest['draft']) {
-					$this->githubApi->markPullRequestAsReadyForReview($pullRequest['node_id']);
-				}
-
-				$mergeableTries = 0;
-				$lastCommitHash = $this->repository->getLastCommitHash();
-				do {
-					if ($mergeableTries > 24) {
-						throw new PullRequestMergeException("PR #{$pullRequest['number']} is not mergeable.");
-					}
-					if ($mergeableTries > 0) {
-						sleep(5);
-					}
-					$mergeableTries++;
-
-					$pullRequest = $this->githubApi->getPullRequest($this->subsplit->getRepositoryUrl(), $pullRequest['number']);
-				} while ($pullRequest['mergeable'] !== true || $pullRequest['head']['sha'] !== $lastCommitHash);
-
-				$this->githubApi->mergePullRequest($this->subsplit->getRepositoryUrl(), $pullRequest['number'], [
-					'sha' => $pullRequest['head']['sha'],
-					'mergeMethod' => 'squash',
-					'message' => "Update CHANGELOG.md for {$this->generator->getNextVersion()} release",
-				]);
-				$this->repository->checkoutBranch($this->repository->getBranch());
-				$this->repository->deleteBranch($branchName);
-
-				$this->generator->release();
-
-				$this->githubApi->addPullRequestComment(
-					$this->subsplit->getRepositoryUrl(),
-					$pullRequest['number'],
-					[
-						'body' => $this->generateAfterMergeComment(),
-					]
-				);
-
-				return;
-			}
+		$newChangelog = file_get_contents($this->generator->getChangelogPath());
+		$pos = strpos($newChangelog, 'XXXX-XX-XX');
+		if ($pos !== false) {
+			$newChangelog = substr_replace($newChangelog, date('Y-m-d'), $pos, strlen('XXXX-XX-XX'));
 		}
+		file_put_contents($this->generator->getChangelogPath(), $newChangelog);
+		$this->repository->commit('Update changelog');
+		$this->repository->push();
+
+		if ($pullRequest['draft']) {
+			$this->githubApi->markPullRequestAsReadyForReview($pullRequest['node_id']);
+		}
+
+		$mergeableTries = 0;
+		$lastCommitHash = $this->repository->getLastCommitHash();
+		do {
+			if ($mergeableTries > 24) {
+				throw new PullRequestMergeException("PR #{$pullRequest['number']} is not mergeable.");
+			}
+			if ($mergeableTries > 0) {
+				sleep(5);
+			}
+			$mergeableTries++;
+
+			$pullRequest = $this->githubApi->getPullRequest($this->subsplit->getRepositoryUrl(), $pullRequest['number']);
+		} while ($pullRequest['mergeable'] !== true || $pullRequest['head']['sha'] !== $lastCommitHash);
+
+		$this->githubApi->mergePullRequest($this->subsplit->getRepositoryUrl(), $pullRequest['number'], [
+			'sha' => $pullRequest['head']['sha'],
+			'mergeMethod' => 'squash',
+			'message' => "Update CHANGELOG.md for {$this->generator->getNextVersion()} release",
+		]);
+		$this->repository->checkoutBranch($this->repository->getBranch());
+		$this->repository->deleteBranch($branchName);
+
+		$this->generator->release();
+
+		$this->githubApi->addPullRequestComment(
+			$this->subsplit->getRepositoryUrl(),
+			$pullRequest['number'],
+			[
+				'body' => $this->generateAfterMergeComment(),
+			]
+		);
 	}
 
 	private function openPullRequest(string $branchName): void {
@@ -187,6 +236,12 @@ class ReleasePullRequestGenerator {
 				'draft' => true,
 			]
 		);
+		if (in_array($this->subsplit->getId(), self::AUTO_MERGE_SUBSPLITS, true)) {
+			Yii::$app->queue->delay(self::AUTO_MERGE_QUEUE_DELAY)->push(new QueueMergeReleasePullRequestJob([
+				'subsplit' => $this->subsplit->getId(),
+				'pullRequestNumber' => $pullRequest['number'],
+			]));
+		}
 		if (!empty($this->subsplit->getMaintainers())) {
 			try {
 				$this->githubApi->addPullRequestAssignees($this->subsplit->getRepositoryUrl(), $pullRequest['number'], $this->subsplit->getMaintainers());
@@ -222,7 +277,7 @@ class ReleasePullRequestGenerator {
 	}
 
 	private function generatePullRequestBody(): string {
-		[$userName, $repoName] = Yii::$app->githubApi->explodeRepoUrl($this->subsplit->getRepositoryUrl());
+		[$userName, $repoName] = $this->githubApi->explodeRepoUrl($this->subsplit->getRepositoryUrl());
 		$approvePrUrl = 'https://github.com/rob006-software/flarum-translations/wiki/How-to-approve-release-pull-request';
 		return <<<MD
 			This is a draft of changelog for the `{$this->generator->getNextVersion()}` release.
