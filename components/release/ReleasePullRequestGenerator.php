@@ -16,6 +16,7 @@ namespace app\components\release;
 use app\components\GithubApi;
 use app\components\release\exceptions\PullRequestMergeException;
 use app\helpers\StringHelper;
+use app\jobs\AnnounceReleaseOnForumJob;
 use app\jobs\QueueMergeReleasePullRequestJob;
 use app\models\Subsplit;
 use Dont\DontCall;
@@ -215,13 +216,21 @@ class ReleasePullRequestGenerator {
 
 		$this->generator->release();
 
-		$this->githubApi->addPullRequestComment(
-			$this->subsplit->getRepositoryUrl(),
-			$pullRequest['number'],
-			[
-				'body' => $this->generateAfterMergeComment(),
-			]
-		);
+		if ($this->subsplit->getDiscussThreadId() !== null) {
+			Yii::$app->queue->push(new AnnounceReleaseOnForumJob([
+				'subsplit' => $this->subsplit->getId(),
+				'pullRequestNumber' => $pullRequest['number'],
+				'announcement' => $this->generator->getAnnouncement(),
+			]));
+		} else {
+			$this->githubApi->addPullRequestComment(
+				$this->subsplit->getRepositoryUrl(),
+				$pullRequest['number'],
+				[
+					'body' => $this->generateAfterMergeComment(),
+				]
+			);
+		}
 	}
 
 	private function openPullRequest(string $branchName): void {

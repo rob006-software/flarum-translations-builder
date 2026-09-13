@@ -210,7 +210,8 @@ final class Translations {
 						$config['components'] ?? null,
 						$config['releaseGenerator'] ?? null,
 						($config['locale'] ?? []) + $defaultLocaleConfig,
-						$config['maintainers'] ?? []
+						$config['maintainers'] ?? [],
+						isset($config['discussThreadId']) ? (int) $config['discussThreadId'] : null
 					);
 					break;
 				case MultiLanguageSubsplit::TYPE:
@@ -246,7 +247,8 @@ final class Translations {
 						$config['components'] ?? null,
 						$config['releaseGenerator'] ?? null,
 						($config['locale'] ?? []) + $defaultLocaleConfig,
-						$config['maintainers'] ?? []
+						$config['maintainers'] ?? [],
+						isset($config['discussThreadId']) ? (int) $config['discussThreadId'] : null
 					);
 					break;
 				default:

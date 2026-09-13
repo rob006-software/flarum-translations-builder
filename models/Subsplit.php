@@ -52,6 +52,7 @@ abstract class Subsplit {
 	private $repositoryUrl;
 	private $locale;
 	private $maintainers;
+	private $discussThreadId;
 
 	public function __construct(
 		string $id,
@@ -61,7 +62,8 @@ abstract class Subsplit {
 		?array $components,
 		/*?array*/ $releaseGenerator, // no type because of BC - old configs contains only class name as string
 		array $localeConfig,
-		array $maintainers
+		array $maintainers,
+		?int $discussThreadId = null
 	) {
 		$this->id = $id;
 		$this->path = $path;
@@ -79,6 +81,7 @@ abstract class Subsplit {
 		}
 		$this->locale = [$localeConfig['path'] ?? null, $localeConfig['fallbackPath']];
 		$this->maintainers = $maintainers;
+		$this->discussThreadId = $discussThreadId;
 	}
 
 	public static function generateRepositoryPath(string $subsplitId, string $repositoryUrl): string {
@@ -130,6 +133,13 @@ abstract class Subsplit {
 
 	public function getMaintainers(): array {
 		return $this->maintainers;
+	}
+
+	/**
+	 * ID of discussion on Flarum forum, where releases of this language pack are announced.
+	 */
+	public function getDiscussThreadId(): ?int {
+		return $this->discussThreadId;
 	}
 
 	public function isValidForComponent(Component $component): bool {

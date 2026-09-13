@@ -18,6 +18,7 @@ declare(strict_types=1);
 use app\components\extensions\ExtensionsRepository;
 use app\components\extensions\StatsRepository;
 use app\components\ExtiverseApi;
+use app\components\FlarumApi;
 use app\components\FrequencyLimiter;
 use app\components\GithubApi;
 use app\components\GitlabApi;
@@ -54,6 +55,8 @@ abstract class BaseApplication extends \yii\base\Application {
 	public $extiverseApi;
 	/** @var WeblateApi */
 	public $weblateApi;
+	/** @var FlarumApi */
+	public $flarumApi;
 	/** @var FileMutex */
 	public $mutex;
 	/** @var FileQueue */

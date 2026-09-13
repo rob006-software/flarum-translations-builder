@@ -29,6 +29,9 @@ $localConfig = ArrayHelper::merge($localConfig, [
 		'weblateApi' => [
 			//'authToken' => null, // @todo fill me
 		],
+		'flarumApi' => [
+			//'authToken' => null, // @todo fill me
+		],
 	],
 ]);
 

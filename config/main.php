@@ -14,6 +14,7 @@ declare(strict_types=1);
 use app\components\extensions\ExtensionsRepository;
 use app\components\extensions\StatsRepository;
 use app\components\ExtiverseApi;
+use app\components\FlarumApi;
 use app\components\FrequencyLimiter;
 use app\components\GithubApi;
 use app\components\GitlabApi;
@@ -156,6 +157,9 @@ return [
 		],
 		'weblateApi' => [
 			'class' => WeblateApi::class,
+		],
+		'flarumApi' => [
+			'class' => FlarumApi::class,
 		],
 		'stats' => [
 			'class' => StatsRepository::class,
