@@ -16,6 +16,7 @@ namespace app\commands;
 use app\components\ConsoleController;
 use app\components\extensions\ConfigGenerator;
 use app\helpers\FlarumVersion;
+use app\models\Translations;
 use Yii;
 use function array_merge;
 use function json_encode;
@@ -43,7 +44,7 @@ final class ConfigController extends ConsoleController {
 
 	public function actionUpdate(string $configFile = '@app/translations/config.php') {
 		$translations = $this->getTranslations($configFile);
-		$token = __METHOD__ . '#' . json_encode($translations->getSupportedVersions(), JSON_THROW_ON_ERROR);
+		$token = self::getFrequencyLimitToken($translations);
 		if ($this->isLimited($token)) {
 			return;
 		}
@@ -83,7 +84,11 @@ final class ConfigController extends ConsoleController {
 		}
 	}
 
-	public static function resetFrequencyLimit(): void {
-		Yii::$app->cache->delete(__CLASS__ . '::actionUpdate');
+	private static function getFrequencyLimitToken(Translations $translations): string {
+		return __CLASS__ . '::actionUpdate#' . json_encode($translations->getSupportedVersions(), JSON_THROW_ON_ERROR);
+	}
+
+	public static function resetFrequencyLimit(Translations $translations): void {
+		Yii::$app->cache->delete(self::getFrequencyLimitToken($translations));
 	}
 }

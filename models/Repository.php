@@ -273,6 +273,7 @@ class Repository {
 		$output = '';
 		$output .= $this->git->checkoutNewBranch($name);
 		$output .= $this->git->push('--set-upstream', 'origin', $name);
+		$this->invalidateBranchesCache();
 
 		return $output;
 	}
@@ -281,6 +282,7 @@ class Repository {
 		$output = '';
 		$output .= $this->git->branch('--delete', '--force', $name);
 		$output .= $this->git->push('origin', '--delete', $name);
+		$this->invalidateBranchesCache();
 
 		return $output;
 	}
@@ -296,6 +298,10 @@ class Repository {
 		}
 
 		return $this->_branches;
+	}
+
+	private function invalidateBranchesCache(): void {
+		$this->_branches = null;
 	}
 
 	public function syncBranchesWithRemote(): string {
@@ -316,6 +322,7 @@ class Repository {
 				$output .= $this->git->checkout($this->getBranch());
 			}
 		}
+		$this->invalidateBranchesCache();
 
 		return $output;
 	}

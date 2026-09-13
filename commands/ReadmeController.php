@@ -23,9 +23,13 @@ use app\models\Extension;
 use app\models\LanguageSubsplit;
 use app\models\MultiLanguageSubsplit;
 use app\models\PremiumExtension;
+use app\models\Subsplit;
+use app\models\Translations;
 use mindplay\readable;
+use Throwable;
 use Yii;
 use yii\base\InvalidArgumentException;
+use yii\helpers\Console;
 use function file_get_contents;
 use function in_array;
 use function strpos;
@@ -183,49 +187,83 @@ final class ReadmeController extends ConsoleController {
 			}
 		}
 
+		$hasErrors = false;
 		foreach ($subsplits as $subsplit) {
 			$subsplitToken = __METHOD__ . '#' . $subsplit->getId() . '#' . $subsplit->getTranslationsHash($translations);
 			if ($this->isLimited($subsplitToken)) {
 				continue;
 			}
-			$subsplit->getRepository()->update();
-			$readme = file_get_contents($subsplit->getDir() . '/README.md');
-			$changed = false;
-			foreach (self::GROUPS as $group) {
-				if (
-					strpos($readme, "<!-- {$group}-extensions-list-start -->") !== false
-					&& strpos($readme, "<!-- {$group}-extensions-list-stop -->") !== false
-				) {
-					$generator = $subsplit->createReadmeGenerator($translations);
-					foreach ($translations->getExtensionsComponents() as $component) {
-						if ($subsplit->isValidForComponent($component) && $subsplit->hasTranslationForComponent($component)) {
-							$extension = Yii::$app->extensionsRepository->getExtension($component->getId());
-							if ($extension !== null && $this->isValidForGroup($extension, $group)) {
-								$generator->addExtension($extension);
-							}
-						}
-					}
 
-					$changed = true;
-					$readme = $this->replaceBetween(
-						"<!-- {$group}-extensions-list-start -->",
-						"<!-- {$group}-extensions-list-stop -->",
-						$readme,
-						$generator->generate()
-					);
-				}
+			try {
+				// acquire repository lock outside of try/finally below - there is nothing to release if this fails
+				$repository = $subsplit->getRepository();
+			} catch (Throwable $exception) {
+				$hasErrors = true;
+				$this->reportError($subsplit, $exception);
+				continue;
 			}
 
-			if ($changed) {
-				file_put_contents($subsplit->getDir() . '/README.md', $readme);
-				$this->postProcessRepository(
-					$subsplit->getRepository(),
-					'Update translations status in README'
-				);
+			try {
+				$this->updateSubsplitReadme($translations, $subsplit);
+			} catch (Throwable $exception) {
+				$hasErrors = true;
+				$this->reportError($subsplit, $exception);
+				continue;
+			} finally {
+				Yii::$app->locks->releaseRepoLock($repository->getPath());
 			}
+
 			$this->updateLimit($subsplitToken);
 		}
-		$this->updateLimit($token);
+
+		// do not mark the whole run as done if some subsplits failed - they should be retried on the next run
+		if (!$hasErrors) {
+			$this->updateLimit($token);
+		}
+	}
+
+	private function updateSubsplitReadme(Translations $translations, Subsplit $subsplit): void {
+		$subsplit->getRepository()->update();
+		$readme = file_get_contents($subsplit->getDir() . '/README.md');
+		$changed = false;
+		foreach (self::GROUPS as $group) {
+			if (
+				strpos($readme, "<!-- {$group}-extensions-list-start -->") !== false
+				&& strpos($readme, "<!-- {$group}-extensions-list-stop -->") !== false
+			) {
+				$generator = $subsplit->createReadmeGenerator($translations);
+				foreach ($translations->getExtensionsComponents() as $component) {
+					if ($subsplit->isValidForComponent($component) && $subsplit->hasTranslationForComponent($component)) {
+						$extension = Yii::$app->extensionsRepository->getExtension($component->getId());
+						if ($extension !== null && $this->isValidForGroup($extension, $group)) {
+							$generator->addExtension($extension);
+						}
+					}
+				}
+
+				$changed = true;
+				$readme = $this->replaceBetween(
+					"<!-- {$group}-extensions-list-start -->",
+					"<!-- {$group}-extensions-list-stop -->",
+					$readme,
+					$generator->generate()
+				);
+			}
+		}
+
+		if ($changed) {
+			file_put_contents($subsplit->getDir() . '/README.md', $readme);
+			$this->postProcessRepository(
+				$subsplit->getRepository(),
+				'Update translations status in README'
+			);
+		}
+	}
+
+	private function reportError(Subsplit $subsplit, Throwable $exception): void {
+		Yii::warning("An error occurred while updating README for {$subsplit->getId()} subsplit: {$exception->getMessage()}");
+		Yii::error($exception);
+		echo Console::renderColoredString("%r{$subsplit->getId()}: {$exception->getMessage()}%n"), "\n";
 	}
 
 	private function replaceBetween(string $begin, string $end, string $string, string $replacement): string {

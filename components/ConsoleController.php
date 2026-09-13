@@ -37,7 +37,7 @@ abstract class ConsoleController extends Controller {
 
 	public function beforeAction($action) {
 		// make sure we don't run the same actions concurrently
-		if (!Yii::$app->mutex->acquire(__CLASS__ . '#' . $action->id, 900)) {
+		if (!Yii::$app->mutex->acquire(static::class . '#' . $action->id, 900)) {
 			throw new Exception("Cannot acquire lock for {$action->getUniqueId()} action.");
 		}
 

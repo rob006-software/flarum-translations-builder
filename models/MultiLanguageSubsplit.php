@@ -95,6 +95,7 @@ final class MultiLanguageSubsplit extends Subsplit {
 			foreach ($this->variants as $variant) {
 				$variant->setRepository($repository);
 			}
+			$this->_variantsRepositoriesInitialised = true;
 
 			return $repository;
 		}

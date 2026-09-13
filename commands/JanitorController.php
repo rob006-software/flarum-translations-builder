@@ -32,6 +32,8 @@ use function array_merge;
 use function file_exists;
 use function filemtime;
 use function rename;
+use function strlen;
+use function strncmp;
 use function strtotime;
 use function unlink;
 
@@ -80,8 +82,9 @@ final class JanitorController extends ConsoleController {
 		$repository->rebase();
 		$repository->syncBranchesWithRemote();
 
-		$branches = array_filter($repository->getBranches(), static function ($name) {
-			return strncmp($name, FlarumVersion::newPrPrefix(), 4) === 0;
+		$branchPrefix = FlarumVersion::newPrPrefix();
+		$branches = array_filter($repository->getBranches(), static function ($name) use ($branchPrefix) {
+			return strncmp($name, $branchPrefix, strlen($branchPrefix)) === 0;
 		});
 		$orphanedBranches = array_combine($branches, $branches);
 		foreach ($extensions as $extension) {
@@ -150,7 +153,7 @@ final class JanitorController extends ConsoleController {
 			$translationPath = $translations->getComponentTranslationPath($extensionId, $language);
 			if (file_exists($translationPath)) {
 				unlink($translationPath);
-				echo "Removed $sourcePath translation.\n";
+				echo "Removed $translationPath translation.\n";
 			}
 		}
 	}

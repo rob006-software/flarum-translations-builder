@@ -19,6 +19,7 @@ use Github\AuthMethod;
 use Github\Client;
 use Github\Exception\RuntimeException as GithubRuntimeException;
 use Github\HttpClient\Builder;
+use Github\ResultPager;
 use Http\Client\Common\Plugin\HeaderSetPlugin;
 use mindplay\readable;
 use Symfony\Component\HttpClient\HttplugClient;
@@ -239,22 +240,19 @@ final class GithubApi extends Component {
 	public function getLabelAddDate(string $repository, int $number, string $label): ?int {
 		[$userName, $repoName] = $this->explodeRepoUrl($repository);
 		$date = null;
-		$page = 1;
-		do {
-			// events are returned from the oldest to the newest one, so the last one wins
-			$events = $this->githubApiClient->issues()->events()->all($userName, $repoName, $number, $page);
-			foreach ($events as $event) {
-				if (($event['label']['name'] ?? null) !== $label) {
-					continue;
-				}
-				if ($event['event'] === 'labeled') {
-					$date = strtotime($event['created_at']) ?: null;
-				} elseif ($event['event'] === 'unlabeled') {
-					$date = null;
-				}
+		$paginator = new ResultPager($this->githubApiClient);
+		$events = $paginator->fetchAllLazy($this->githubApiClient->issues()->events(), 'all', [$userName, $repoName, $number]);
+		// events are returned from the oldest to the newest one, so the last one wins
+		foreach ($events as $event) {
+			if (($event['label']['name'] ?? null) !== $label) {
+				continue;
 			}
-			$page++;
-		} while (count($events) > 0);
+			if ($event['event'] === 'labeled') {
+				$date = strtotime($event['created_at']) ?: null;
+			} elseif ($event['event'] === 'unlabeled') {
+				$date = null;
+			}
+		}
 
 		return $date;
 	}

@@ -19,7 +19,10 @@ use app\components\inheritors\InheritorsStatusGenerator;
 use app\components\release\ReleasePullRequestGenerator;
 use app\components\translations\TranslationsImporter;
 use app\helpers\FlarumVersion;
+use app\models\Subsplit;
+use Throwable;
 use Yii;
+use yii\helpers\Console;
 use function array_merge;
 
 /**
@@ -75,25 +78,48 @@ final class TranslationsController extends ConsoleController {
 			}
 		}
 
+		$hasErrors = false;
 		foreach ($subsplits as $subsplit) {
 			$subsplitToken = __METHOD__ . '#' . $subsplit->getId() . '#' . $subsplit->getTranslationsHash($translations);
 			if ($this->isLimited($subsplitToken)) {
 				continue;
 			}
-			$subsplit->getRepository()->update();
-			$subsplit->split($translations);
-			$this->postProcessRepository(
-				$subsplit->getRepository(),
-				$subsplit->processCommitMessage($translations, 'Sync translations with main repository')
-			);
-			$subsplit->markAsProcessed($translations);
-			if ($subsplit->hasReleaseGenerator()) {
-				(new ReleasePullRequestGenerator($subsplit))->generate();
+
+			try {
+				// acquire repository lock outside of try/finally below - there is nothing to release if this fails
+				$repository = $subsplit->getRepository();
+			} catch (Throwable $exception) {
+				$hasErrors = true;
+				$this->reportError($subsplit, $exception);
+				continue;
 			}
-			Yii::$app->locks->releaseRepoLock($subsplit->getRepository()->getPath());
+
+			try {
+				$repository->update();
+				$subsplit->split($translations);
+				$this->postProcessRepository(
+					$repository,
+					$subsplit->processCommitMessage($translations, 'Sync translations with main repository')
+				);
+				$subsplit->markAsProcessed($translations);
+				if ($subsplit->hasReleaseGenerator()) {
+					(new ReleasePullRequestGenerator($subsplit))->generate();
+				}
+			} catch (Throwable $exception) {
+				$hasErrors = true;
+				$this->reportError($subsplit, $exception);
+				continue;
+			} finally {
+				Yii::$app->locks->releaseRepoLock($repository->getPath());
+			}
+
 			$this->updateLimit($subsplitToken);
 		}
-		$this->updateLimit($token);
+
+		// do not mark the whole run as done if some subsplits failed - they should be retried on the next run
+		if (!$hasErrors) {
+			$this->updateLimit($token);
+		}
 	}
 
 	public function actionInherit(array $inheritors = [], string $configFile = '@app/translations/config.php') {
@@ -196,9 +222,21 @@ final class TranslationsController extends ConsoleController {
 	public function actionUpdateOutdatedSubsplitsMetadata(string $configFile = '@app/translations/config.php') {
 		$translations = $this->getTranslations($configFile);
 		foreach ($translations->getSubsplits() as $subsplit) {
-			$subsplit->getRepository()->update();
-			$translations->updateOutdatedSubsplitMetadata($subsplit);
-			Yii::$app->locks->releaseRepoLock($subsplit->getRepository()->getPath());
+			try {
+				$repository = $subsplit->getRepository();
+			} catch (Throwable $exception) {
+				$this->reportError($subsplit, $exception);
+				continue;
+			}
+
+			try {
+				$repository->update();
+				$translations->updateOutdatedSubsplitMetadata($subsplit);
+			} catch (Throwable $exception) {
+				$this->reportError($subsplit, $exception);
+			} finally {
+				Yii::$app->locks->releaseRepoLock($repository->getPath());
+			}
 		}
 
 		$flarumVersion = FlarumVersion::lineName();
@@ -214,15 +252,32 @@ final class TranslationsController extends ConsoleController {
 		Yii::$app->locks->releaseRepoLock($translations->getRepository()->getPath());
 
 		foreach ($translations->getSubsplits() as $subsplit) {
-			$subsplit->getRepository()->update();
-			$translations->cleanupOutdatedSubsplit($subsplit, $range);
+			try {
+				$repository = $subsplit->getRepository();
+			} catch (Throwable $exception) {
+				$this->reportError($subsplit, $exception);
+				continue;
+			}
 
-			$this->postProcessRepository(
-				$subsplit->getRepository(),
-				'Cleanup outdated components'
-			);
+			try {
+				$repository->update();
+				$translations->cleanupOutdatedSubsplit($subsplit, $range);
 
-			Yii::$app->locks->releaseRepoLock($subsplit->getRepository()->getPath());
+				$this->postProcessRepository(
+					$repository,
+					'Cleanup outdated components'
+				);
+			} catch (Throwable $exception) {
+				$this->reportError($subsplit, $exception);
+			} finally {
+				Yii::$app->locks->releaseRepoLock($repository->getPath());
+			}
 		}
+	}
+
+	private function reportError(Subsplit $subsplit, Throwable $exception): void {
+		Yii::warning("An error occurred while processing {$subsplit->getId()} subsplit: {$exception->getMessage()}");
+		Yii::error($exception);
+		echo Console::renderColoredString("%r{$subsplit->getId()}: {$exception->getMessage()}%n"), "\n";
 	}
 }

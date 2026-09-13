@@ -495,7 +495,7 @@ final class Translations {
 			}
 			if (in_array($response->getStatusCode(), [404, 403], true)) {
 				// it should be done by queue, but there is no queue support at the moment, so this must be enough for now
-				ConfigController::resetFrequencyLimit();
+				ConfigController::resetFrequencyLimit($this);
 				$extension = Yii::$app->extensionsRepository->getExtension($componentId);
 				if ($extension !== null) {
 					TagDependency::invalidate(Yii::$app->cache, $extension->getRepositoryUrl());

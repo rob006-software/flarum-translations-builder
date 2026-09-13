@@ -130,11 +130,13 @@ class ReleaseGenerator extends BaseObject {
 				$versionUnderline = str_repeat('-', strlen($versionHeader));
 				$newContent .= "$versionHeader\n$versionUnderline\n\n";
 
-				$old = $versions[array_key_last($versions)];
-				[$userName, $repoName] = Yii::$app->githubApi->explodeRepoUrl($this->subsplit->getRepositoryUrl());
-				$newContent .= $this->t('changelog.all-changes', [
-					'{link}' => "[{$old}...{$new}](https://github.com/$userName/$repoName/compare/{$old}...{$new})",
-				]);
+				$old = empty($versions) ? null : $versions[array_key_last($versions)];
+				if ($old !== null) {
+					[$userName, $repoName] = Yii::$app->githubApi->explodeRepoUrl($this->subsplit->getRepositoryUrl());
+					$newContent .= $this->t('changelog.all-changes', [
+						'{link}' => "[{$old}...{$new}](https://github.com/$userName/$repoName/compare/{$old}...{$new})",
+					]);
+				}
 				$newContent .= "\n\n\n";
 			} else {
 				return substr($changelog, 0, $position)

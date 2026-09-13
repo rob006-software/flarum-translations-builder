@@ -48,7 +48,7 @@ final class JsonFileLoader extends BaseJsonFileLoader {
 				}
 			} elseif (is_array($item)) {
 				$data[$i] = $this->removeEmpty($item);
-				if (empty($item)) {
+				if (empty($data[$i])) {
 					unset($data[$i]);
 				}
 			} else {

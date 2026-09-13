@@ -32,6 +32,7 @@ use function file_put_contents;
 use function json_decode;
 use function json_encode;
 use function ksort;
+use function strlen;
 use function strncmp;
 use const APP_ROOT;
 use const JSON_PRETTY_PRINT;
@@ -163,8 +164,9 @@ final class ExtensionsController extends ConsoleController {
 	}
 
 	private function updatePendingExtensionsList(Translations $translations, ForkRepository $repository): void {
-		$branches = array_filter($repository->getBranches(false), static function ($name) {
-			return strncmp($name, FlarumVersion::newPrPrefix(), 4) === 0;
+		$branchPrefix = FlarumVersion::newPrPrefix();
+		$branches = array_filter($repository->getBranches(false), static function ($name) use ($branchPrefix) {
+			return strncmp($name, $branchPrefix, strlen($branchPrefix)) === 0;
 		});
 
 		$generator = new PendingSummaryGenerator($translations);

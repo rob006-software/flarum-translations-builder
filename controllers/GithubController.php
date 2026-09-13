@@ -25,6 +25,10 @@ use yii\web\Response;
 /**
  * Class GithubController.
  *
+ * @todo Verify the `X-Hub-Signature-256` header against the webhook secret. Right now anyone who knows the URL
+ *       can push a forged payload here. It cannot cause a bogus merge (`ReleasePullRequestGenerator::merge()`
+ *       re-checks the real reviews through the API), but it can enqueue arbitrary amounts of jobs.
+ *
  * @property Response $response
  *
  * @author Robert Korulczyk <robert@korulczyk.pl>
