@@ -77,20 +77,11 @@ final class ReadmeController extends ConsoleController {
 			&& strpos($readme, '<!-- languages-list-stop -->') !== false
 		) {
 			$readmeGenerator = new MainReadmeGenerator();
-			$languageSubsplits = [];
-			foreach ($translations->getSubsplits() as $subsplit) {
-				if ($subsplit instanceof MultiLanguageSubsplit) {
-					$subsplit = $subsplit->getMainVariant();
-				}
-				if ($subsplit instanceof LanguageSubsplit) {
-					$languageSubsplits[$subsplit->getLanguage()] = $subsplit;
-				}
-			}
 			$readme = $this->replaceBetween(
 				'<!-- languages-list-start -->',
 				'<!-- languages-list-stop -->',
 				$readme,
-				$readmeGenerator->generateLanguagesList($languageSubsplits)
+				$readmeGenerator->generateLanguagesList($this->getLanguageSubsplits($translations))
 			);
 		}
 
@@ -152,16 +143,7 @@ final class ReadmeController extends ConsoleController {
 			"[{$flarumVersion}] Update list of supported extensions"
 		);
 
-		$languageSubsplits = [];
-		foreach ($translations->getSubsplits() as $subsplit) {
-			if ($subsplit instanceof MultiLanguageSubsplit) {
-				$subsplit = $subsplit->getMainVariant();
-			}
-			if ($subsplit instanceof LanguageSubsplit) {
-				$languageSubsplits[$subsplit->getLanguage()] = $subsplit;
-			}
-		}
-		$languagePacksGenerator = new LanguagePacksSummaryGenerator($languageSubsplits);
+		$languagePacksGenerator = new LanguagePacksSummaryGenerator($this->getLanguageSubsplits($translations));
 		file_put_contents($translations->getDir() . '/status/language-packs.md', $languagePacksGenerator->generate());
 		$flarumVersion = FlarumVersion::lineName();
 		$this->postProcessRepository(
@@ -258,6 +240,23 @@ final class ReadmeController extends ConsoleController {
 				'Update translations status in README'
 			);
 		}
+	}
+
+	/**
+	 * @return LanguageSubsplit[] Language subsplits (main variants for multi-language ones), indexed by language.
+	 */
+	private function getLanguageSubsplits(Translations $translations): array {
+		$languageSubsplits = [];
+		foreach ($translations->getSubsplits() as $subsplit) {
+			if ($subsplit instanceof MultiLanguageSubsplit) {
+				$subsplit = $subsplit->getMainVariant();
+			}
+			if ($subsplit instanceof LanguageSubsplit) {
+				$languageSubsplits[$subsplit->getLanguage()] = $subsplit;
+			}
+		}
+
+		return $languageSubsplits;
 	}
 
 	private function reportError(Subsplit $subsplit, Throwable $exception): void {

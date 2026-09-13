@@ -52,7 +52,6 @@ use function dir;
 use function file_exists;
 use function file_get_contents;
 use function getenv;
-use function implode;
 use function in_array;
 use function is_array;
 use function is_dir;
@@ -388,16 +387,21 @@ final class Translations {
 		while (($file = $dir->read()) !== false) {
 			if (!in_array($file, ['.', '..'], true)) {
 				if (is_dir($directory . '/' . $file)) {
-					$hashes[] = $this->getDirectoryHash("$directory/$file", $extension);
+					$hashes[$file] = $this->getDirectoryHash("$directory/$file", $extension);
 				} elseif (pathinfo($file, PATHINFO_EXTENSION) === $extension) {
-					$hashes[] = md5_file("$directory/$file");
+					$hashes[$file] = md5_file("$directory/$file");
 				}
 			}
 		}
 
 		$dir->close();
 
-		return md5(implode(':', $hashes));
+		// `dir()->read()` returns entries in filesystem order, which is not guaranteed to be stable, so they need
+		// to be sorted to always get the same hash for the same content. Names are a part of the hash too - without
+		// them renaming a file would not be detected as a change.
+		ksort($hashes);
+
+		return md5(json_encode($hashes, JSON_THROW_ON_ERROR));
 	}
 
 	public function getIgnoredExtensions(): array {
