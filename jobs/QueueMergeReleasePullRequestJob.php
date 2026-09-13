@@ -30,8 +30,13 @@ use yii\queue\JobInterface;
  */
 class QueueMergeReleasePullRequestJob extends BaseObject implements JobInterface {
 
-	/** Delay for auto-merge job - maintainer should have about 24 hours to react on comment about planned merge. */
-	public const AUTO_MERGE_DELAY = 23 * 60 * 60;
+	/**
+	 * Delay for auto-merge job - maintainer should have 24 hours to react on comment about planned merge. The actual
+	 * deadline is enforced by `ReleasePullRequestGenerator::MIN_AUTO_MERGE_LABEL_AGE`, so this delay only needs to be
+	 * a bit longer than that - otherwise the job would be executed exactly on the boundary and the label could still
+	 * be considered too fresh.
+	 */
+	public const AUTO_MERGE_DELAY = ReleasePullRequestGenerator::MIN_AUTO_MERGE_LABEL_AGE + 60 * 60;
 
 	public $configFile = '@app/translations/config.php';
 	public $subsplit;

@@ -25,7 +25,10 @@ use Symfony\Component\HttpClient\HttplugClient;
 use Yii;
 use yii\base\Component;
 use yii\base\InvalidArgumentException;
+use function array_merge;
+use function count;
 use function strncmp;
+use function strtotime;
 
 /**
  * Class GithubApi.
@@ -223,9 +226,37 @@ final class GithubApi extends Component {
 			$response = $this->githubApiClient->pullRequests()->reviews()
 				->all($targetUserName, $targetRepoName, $number, ['per_page' => 100, 'page' => $page]);
 			$result = array_merge($result, $response);
+			$page++;
 		} while (count($response) === 100);
 
 		return $result;
+	}
+
+	/**
+	 * Returns timestamp of the last time when given label was added to the pull request. Returns `null` if the label
+	 * is not present on the pull request, or if we're not able to determine when it was added.
+	 */
+	public function getLabelAddDate(string $repository, int $number, string $label): ?int {
+		[$userName, $repoName] = $this->explodeRepoUrl($repository);
+		$date = null;
+		$page = 1;
+		do {
+			// events are returned from the oldest to the newest one, so the last one wins
+			$events = $this->githubApiClient->issues()->events()->all($userName, $repoName, $number, $page);
+			foreach ($events as $event) {
+				if (($event['label']['name'] ?? null) !== $label) {
+					continue;
+				}
+				if ($event['event'] === 'labeled') {
+					$date = strtotime($event['created_at']) ?: null;
+				} elseif ($event['event'] === 'unlabeled') {
+					$date = null;
+				}
+			}
+			$page++;
+		} while (count($events) > 0);
+
+		return $date;
 	}
 
 	public function createIssueIfNotExist(string $repository, string $title, array $settings = []): ?array {

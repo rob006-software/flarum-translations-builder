@@ -32,6 +32,7 @@ use function file_get_contents;
 use function file_put_contents;
 use function in_array;
 use function sleep;
+use function time;
 
 /**
  * Class ReleasePullRequestGenerator.
@@ -47,6 +48,12 @@ class ReleasePullRequestGenerator {
 
 	/** Label which marks pull request as queued for automatic merge. */
 	public const AUTO_MERGE_LABEL = 'ci-merge-queued';
+	/**
+	 * How long the auto-merge label must be present on the pull request before we're allowed to merge it. Removing
+	 * the label always postpones automatic merge by at least this amount of time, even if the label is added again
+	 * right away by `release/check-pull-requests`.
+	 */
+	public const MIN_AUTO_MERGE_LABEL_AGE = 24 * 60 * 60;
 	/** Delay for job which queues pull request for automatic merge. */
 	public const AUTO_MERGE_QUEUE_DELAY = 6 * 24 * 60 * 60;
 	/** @todo automatic merge is tested only on single language pack for now */
@@ -132,7 +139,7 @@ class ReleasePullRequestGenerator {
 	/**
 	 * Merges release pull request without maintainer approval. This is a fallback for situations when maintainer is
 	 * not available - pull request is merged only if it was marked as queued for automatic merge (and maintainer did
-	 * not disable it by removing label from pull request).
+	 * not disable it by removing label from pull request) for at least `MIN_AUTO_MERGE_LABEL_AGE`.
 	 */
 	public function autoMerge(int $pullRequestNumber): void {
 		$branchName = "release/{$this->repository->getBranch()}";
@@ -150,6 +157,18 @@ class ReleasePullRequestGenerator {
 		}
 		if (!self::hasAutoMergeLabel($pullRequest)) {
 			// automatic merge was disabled by maintainer
+			return;
+		}
+		$labelAddDate = $this->githubApi->getLabelAddDate(
+			$this->subsplit->getRepositoryUrl(),
+			$pullRequestNumber,
+			self::AUTO_MERGE_LABEL
+		);
+		if ($labelAddDate !== null && $labelAddDate > time() - self::MIN_AUTO_MERGE_LABEL_AGE) {
+			// label was added recently - most likely maintainer removed it to postpone the merge and it was added
+			// again by `release/check-pull-requests`. Maintainer should get the full amount of time to react, counted
+			// from the last time when the label was added, so skip the merge - it will be queued again by
+			// `release/check-pull-requests`.
 			return;
 		}
 
