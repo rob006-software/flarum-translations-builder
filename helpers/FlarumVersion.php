@@ -25,6 +25,8 @@ class FlarumVersion {
 	public const V1 = 'v1';
 	public const V2 = 'v2';
 
+	public const LATEST = self::V2;
+
 	public static function version(): string {
 		return Yii::$app->params['flarumVersion'];
 	}

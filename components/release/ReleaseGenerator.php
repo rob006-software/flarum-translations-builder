@@ -404,6 +404,8 @@ class ReleaseGenerator extends BaseObject {
 			'name' => $this->getNextVersion(),
 			'body' => trim($this->getChangelogEntryContent()),
 			'target_commitish' => $this->repository->getBranch(),
+			// the same repository holds releases for both Flarum lines - only the newest line should be marked as latest
+			'make_latest' => FlarumVersion::version() === FlarumVersion::LATEST ? 'true' : 'false',
 		]);
 	}
 
