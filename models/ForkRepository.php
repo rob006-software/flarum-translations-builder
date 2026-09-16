@@ -31,7 +31,7 @@ final class ForkRepository extends Repository {
 	public function rebase(): string {
 		$output = $this->update();
 		$output .= $this->getWorkingCopy()->pull('upstream', $this->getBranch());
-		$output .= $this->getWorkingCopy()->push();
+		$output .= $this->push();
 
 		return $output;
 	}

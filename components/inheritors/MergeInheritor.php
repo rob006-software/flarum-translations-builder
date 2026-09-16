@@ -65,14 +65,14 @@ class MergeInheritor implements InheritorInterface {
 		$this->inheritFromRepository = $inheritFromRepository;
 		// need this to ensure that `getHash()` will use up-to-date data
 		// (this uses filesystem repo as a remote, so it should be really fast)
-		$this->inheritFromRepository->update();
+		$this->inheritFromRepository->update(true, true);
 		$this->inheritToRepository = $inheritToRepository;
 		$this->inheritToRepository->addRemote("{$id}-upstream", $this->inheritFromRepository->getPath());
 		$this->metadataFileTemplate = $metadataFileTemplate;
 	}
 
 	public function inherit(): void {
-		$this->inheritFromRepository->update();
+		$this->inheritFromRepository->update(true, true);
 
 		// simulate merge, but with discarding all changes from the merged branch - we will handle fetching related
 		// changes using inheritors

@@ -20,6 +20,7 @@ use Dont\DontCallStatic;
 use Dont\DontGet;
 use Dont\DontSet;
 use GitWrapper\EventSubscriber\GitLoggerEventSubscriber;
+use GitWrapper\Exception\GitException;
 use GitWrapper\GitWorkingCopy;
 use GitWrapper\GitWrapper;
 use Monolog\Handler\StreamHandler;
@@ -175,7 +176,34 @@ class Repository {
 	}
 
 	public function push(): string {
-		return $this->git->push();
+		if ($this->git->isTracking() && !$this->hasUnpushedCommits()) {
+			return '';
+		}
+
+		try {
+			return $this->git->push();
+		} catch (GitException $exception) {
+			// remote branch was updated in the meantime - integrate remote changes and try again
+			if (strpos($exception->getMessage(), '[rejected]') === false) {
+				throw $exception;
+			}
+		}
+
+		try {
+			$output = $this->git->pull();
+		} catch (GitException $exception) {
+			// do not leave repository with broken merge (e.g. on conflicts) and drop local commits that cannot be
+			// pushed - otherwise every next update() would fail on the same conflict
+			$this->discardChanges();
+			$this->git->reset('--hard', '@{u}');
+			throw $exception;
+		}
+
+		return $output . $this->git->push();
+	}
+
+	private function hasUnpushedCommits(): bool {
+		return trim($this->git->run('rev-list', ['--count', '@{u}..HEAD'])) !== '0';
 	}
 
 	public function getPath(): string {
