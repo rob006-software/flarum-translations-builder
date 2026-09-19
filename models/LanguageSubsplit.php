@@ -23,9 +23,11 @@ use Symfony\Component\Translation\MessageCatalogue;
 use Symfony\Component\Translation\Translator;
 use function assert;
 use function basename;
+use function file_exists;
 use function json_encode;
 use function ksort;
 use function md5;
+use function unlink;
 use const JSON_THROW_ON_ERROR;
 
 /**
@@ -135,11 +137,20 @@ final class LanguageSubsplit extends Subsplit {
 		$dumper->setRelativePathTemplate('%domain%.%extension%');
 		$catalogue = $translator->getCatalogue('en');
 		assert($catalogue instanceof MessageCatalogue);
+		$path = $this->getDir() . $this->getPath();
 		$dumper->dump($catalogue, [
-			'path' => $this->getDir() . $this->getPath(),
+			'path' => $path,
 			'as_tree' => true,
 			'inline' => 10,
 		]);
+
+		// dumper skips components without translations - remove files which may be left after all translations were removed
+		foreach ($components as $component) {
+			$file = "$path/{$component->getId()}.yml";
+			if (empty($catalogue->all($component->getId())) && file_exists($file)) {
+				unlink($file);
+			}
+		}
 	}
 
 	public function getLanguage(): string {
