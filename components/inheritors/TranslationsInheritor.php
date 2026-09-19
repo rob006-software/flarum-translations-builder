@@ -232,8 +232,9 @@ class TranslationsInheritor implements InheritorInterface {
 				}
 			} else {
 				$meta = explode(' ', $metadata[$key]);
-				// translation has been inherited before - we need to check if a current phrase is inherited
-				if ($meta[1] === md5($toTranslation) && $meta[0] === $meta[1]) {
+				// translation has been inherited before, or is not translated at all - we need to check if a current
+				//  phrase is inherited (empty translation is never treated as an override)
+				if ($toTranslation === '' || ($meta[1] === md5($toTranslation) && $meta[0] === $meta[1])) {
 					$newTranslations[$key] = $fromTranslation;
 				}
 			}
