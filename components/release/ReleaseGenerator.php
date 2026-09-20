@@ -13,46 +13,71 @@ declare(strict_types=1);
 
 namespace app\components\release;
 
+use app\components\translations\YamlLoader;
 use app\helpers\FlarumVersion;
+use app\models\MultiLanguageSubsplit;
 use app\models\Repository;
 use app\models\Subsplit;
+use app\models\SubsplitLocale;
 use Composer\Semver\Semver;
 use Composer\Semver\VersionParser;
+use Dont\DontCall;
+use Dont\DontCallStatic;
+use Dont\DontGet;
+use Dont\DontSet;
 use RuntimeException;
+use Symfony\Component\Yaml\Yaml;
 use UnexpectedValueException;
 use Yii;
-use yii\base\BaseObject;
+use yii\helpers\ArrayHelper;
+use function array_diff_key;
 use function array_filter;
+use function array_intersect_key;
 use function array_key_last;
 use function array_pop;
 use function basename;
+use function count;
 use function date;
 use function end;
 use function explode;
 use function file_exists;
 use function file_get_contents;
-use function in_array;
+use function implode;
+use function is_array;
+use function is_file;
+use function ksort;
 use function ltrim;
 use function str_repeat;
 use function strlen;
 use function strncmp;
 use function strpos;
-use function strtr;
 use function substr;
 use function trim;
 
 /**
  * Class ReleaseGenerator.
  *
+ * Release notes in `CHANGELOG.md` and GitHub releases are always in English, only forum announcement is localized.
+ *
  * @author Robert Korulczyk <robert@korulczyk.pl>
  */
-class ReleaseGenerator extends BaseObject {
+final class ReleaseGenerator {
 
-	public $localePath;
-	public $fallbackLocalePath;
+	use DontCall;
+	use DontCallStatic;
+	use DontGet;
+	use DontSet;
 
-	public $versionTemplate = '1.Minor.Patch';
-	public $ignoredVersionsConstraints = [];
+	/** Translation files which are not related to extensions, with labels used in release notes. */
+	private const CORE_FILES = [
+		'core.yml' => 'changelog.updated-core',
+		'validation.yml' => 'changelog.updated-validation',
+	];
+	/** Other files included in release notes, with labels used in release notes. */
+	private const OTHER_FILES = [
+		'config.js' => 'changelog.updated-config-js',
+		'config.css' => 'changelog.updated-config-css',
+	];
 
 	private $subsplit;
 	private $repository;
@@ -63,17 +88,12 @@ class ReleaseGenerator extends BaseObject {
 	private $changelogEntryContent;
 
 	private $_changes;
+	private $_translationsChanges;
 
-	public function __construct(Subsplit $subsplit, array $config = []) {
+	public function __construct(Subsplit $subsplit) {
 		$this->subsplit = $subsplit;
 		$this->repository = $subsplit->getRepository();
 		$this->repository->update();
-
-		parent::__construct($config);
-	}
-
-	protected function t(string $key, array $params = []): string {
-		return $this->getSubsplit()->getLocale()->t($key, $params);
 	}
 
 	public function getRepository(): Repository {
@@ -118,7 +138,7 @@ class ReleaseGenerator extends BaseObject {
 			. substr($oldChangelog, $position);
 	}
 
-	protected function fillOldVersionsInChangelog(string $changelog): string {
+	private function fillOldVersionsInChangelog(string $changelog): string {
 		$versions = $this->getVersions();
 		$newContent = '';
 		do {
@@ -132,10 +152,7 @@ class ReleaseGenerator extends BaseObject {
 
 				$old = empty($versions) ? null : $versions[array_key_last($versions)];
 				if ($old !== null) {
-					[$userName, $repoName] = Yii::$app->githubApi->explodeRepoUrl($this->subsplit->getRepositoryUrl());
-					$newContent .= $this->t('changelog.all-changes', [
-						'{link}' => "[{$old}...{$new}](https://github.com/$userName/$repoName/compare/{$old}...{$new})",
-					]);
+					$newContent .= $this->renderAllChangesLink($this->subsplit->getDefaultLocale(), $old, $new);
 				}
 				$newContent .= "\n\n\n";
 			} else {
@@ -152,108 +169,100 @@ class ReleaseGenerator extends BaseObject {
 		$this->changelogEntryContent = $content;
 	}
 
+	/**
+	 * @return string Release notes for `CHANGELOG.md` and GitHub release (always in English).
+	 */
 	public function getChangelogEntryContent(): string {
-		if ($this->changelogEntryContent !== null) {
-			return $this->changelogEntryContent;
-		}
-		$added = [];
-		$changed = [];
-		$removed = [];
-		foreach ($this->getChangedExtensions() as $extensionId => $changeType) {
-			if ($changeType === Repository::CHANGE_ADDED) {
-				$added[$extensionId] = Yii::$app->extensionsRepository->getExtension($extensionId, false);
-			} elseif ($changeType === Repository::CHANGE_MODIFIED) {
-				$changed[$extensionId] = Yii::$app->extensionsRepository->getExtension($extensionId, false);
-			} elseif ($changeType === Repository::CHANGE_DELETED) {
-				$removed[$extensionId] = Yii::$app->extensionsRepository->getExtension($extensionId, false);
-			}
+		if ($this->changelogEntryContent === null) {
+			$this->changelogEntryContent = $this->renderReleaseNotes($this->subsplit->getDefaultLocale());
 		}
 
-		$content = '';
-
-		if (!empty($this->getCoreChanges())) {
-			$content .= "**{$this->t('changelog.general-changes')}**:\n\n";
-			foreach ($this->getCoreChanges() as $file => $changeType) {
-				$label = $this->getCoreChangesLabels()[$file] ?? $this->t('changelog.updated-file', ['{file}' => $file]);
-				$content .= "* $label.\n";
-			}
-			$content .= "\n\n";
-		}
-
-		if (!empty($added)) {
-			$content .= "**{$this->t('changelog.extensions-added')}**:\n\n";
-			foreach ($added as $id => $extension) {
-				if ($extension === null) {
-					$content .= "* `$id`\n";
-				} else {
-					$content .= "* [`{$extension->getPackageName()}`]({$extension->getRepositoryUrl()})\n";
-				}
-			}
-			$content .= "\n\n";
-		}
-		if (!empty($changed)) {
-			$content .= $this->isMinorUpdate()
-				? "**{$this->t('changelog.extensions-cleaned')}**:\n\n"
-				: "**{$this->t('changelog.extensions-updated')}**:\n\n";
-			foreach ($changed as $id => $extension) {
-				if ($extension === null) {
-					$content .= "* `$id`\n";
-				} else {
-					$content .= "* [`{$extension->getPackageName()}`]({$extension->getRepositoryUrl()})\n";
-				}
-			}
-			$content .= "\n\n";
-		}
-		if (!empty($removed)) {
-			$content .= "**{$this->t('changelog.extensions-removed')}**:\n\n";
-			foreach ($removed as $id => $extension) {
-				if ($extension === null) {
-					$content .= "* `$id`\n";
-				} else {
-					$content .= "* [`{$extension->getPackageName()}`]({$extension->getRepositoryUrl()})\n";
-				}
-			}
-			$content .= "\n\n";
-		}
-
-		$old = $this->getPreviousVersion();
-		$new = $this->getNextVersion();
-		[$userName, $repoName] = Yii::$app->githubApi->explodeRepoUrl($this->subsplit->getRepositoryUrl());
-		/* @noinspection PhpStatementHasEmptyBodyInspection */
-		/* @noinspection MissingOrEmptyGroupStatementInspection */
-		if ($old === null) {
-			// this does not work - GitHub does not handle such compares
-			// $oldReference = Repository::ZERO_COMMIT_HASH;
-			//$content .= $this->t('changelog.all-changes', [
-			//	'{link}' => "[{$new}](https://github.com/rob006-software/flarum-lang-polish/compare/{$oldReference}...{$new})"
-			//]);
-			//$content .= "\n\n\n";
-		} else {
-			$content .= $this->t('changelog.all-changes', [
-				'{link}' => "[{$old}...{$new}](https://github.com/$userName/$repoName/compare/{$old}...{$new})",
-			]);
-			$content .= "\n\n\n";
-		}
-
-		$this->changelogEntryContent = $content;
 		return $this->changelogEntryContent;
 	}
 
-	private function getCoreChangesLabels(): array {
-		return [
-			'core.yml' => $this->isMinorUpdate()
-				? $this->t('changelog.cleaned-core', ['{version}' => $this->getSupportedFlarumVersion()])
-				: $this->t('changelog.updated-core'),
-			'validation.yml' => $this->isMinorUpdate()
-				? $this->t('changelog.cleaned-validation', ['{version}' => $this->getSupportedFlarumVersion()])
-				: $this->t('changelog.updated-validation'),
-			'config.js' => $this->t('changelog.updated-config-js'),
-			'config.css' => $this->t('changelog.updated-config-css'),
-		];
+	private function renderReleaseNotes(SubsplitLocale $locale): string {
+		$content = '';
+
+		$generalChanges = [];
+		foreach (self::CORE_FILES as $file => $labelKey) {
+			$changes = $this->getTranslationsChanges()[substr($file, 0, -4)] ?? null;
+			if ($changes !== null && $this->hasPhrasesChanges($changes)) {
+				$generalChanges[] = "{$locale->t($labelKey)} ({$this->renderPhrasesChanges($locale, $changes)})";
+			}
+		}
+		foreach (self::OTHER_FILES as $file => $labelKey) {
+			if (isset($this->getOtherFilesChanges()[$file])) {
+				$generalChanges[] = $locale->t($labelKey);
+			}
+		}
+		if (!empty($generalChanges)) {
+			$content .= "**{$locale->t('changelog.general-changes')}**:\n\n";
+			foreach ($generalChanges as $change) {
+				$content .= "* $change.\n";
+			}
+			$content .= "\n\n";
+		}
+
+		$added = [];
+		$updated = [];
+		$removed = [];
+		foreach ($this->getExtensionsChanges() as $extensionId => $changes) {
+			if (!$changes['existedBefore']) {
+				$added[] = $this->renderExtensionName($extensionId);
+			} elseif (!$changes['existsNow']) {
+				$removed[] = $this->renderExtensionName($extensionId);
+			} else {
+				$updated[] = "{$this->renderExtensionName($extensionId)} ({$this->renderPhrasesChanges($locale, $changes)})";
+			}
+		}
+		foreach (['changelog.extensions-added' => $added, 'changelog.extensions-updated' => $updated, 'changelog.extensions-removed' => $removed] as $labelKey => $extensions) {
+			if (!empty($extensions)) {
+				$content .= "**{$locale->t($labelKey)}**:\n\n";
+				foreach ($extensions as $extension) {
+					$content .= "* $extension\n";
+				}
+				$content .= "\n\n";
+			}
+		}
+
+		$old = $this->getPreviousVersion();
+		if ($old !== null) {
+			$content .= $this->renderAllChangesLink($locale, $old, $this->getNextVersion());
+			$content .= "\n\n\n";
+		}
+
+		return $content;
 	}
 
-	private function getSupportedFlarumVersion(): string {
-		return ltrim($this->getSubsplit()->getComposerJsonContent()['require']['flarum/core'], '~^');
+	private function renderAllChangesLink(SubsplitLocale $locale, string $old, string $new): string {
+		[$userName, $repoName] = Yii::$app->githubApi->explodeRepoUrl($this->subsplit->getRepositoryUrl());
+		return $locale->t('changelog.all-changes', [
+			'{link}' => "[{$old}...{$new}](https://github.com/$userName/$repoName/compare/{$old}...{$new})",
+		]);
+	}
+
+	private function renderExtensionName(string $extensionId): string {
+		$extension = Yii::$app->extensionsRepository->getExtension($extensionId, false);
+		if ($extension === null) {
+			return "`$extensionId`";
+		}
+
+		return "[`{$extension->getPackageName()}`]({$extension->getRepositoryUrl()})";
+	}
+
+	private function renderPhrasesChanges(SubsplitLocale $locale, array $changes): string {
+		$parts = [];
+		foreach (['added', 'changed', 'removed'] as $type) {
+			if ($changes[$type] > 0) {
+				$parts[] = $locale->t("changelog.count-$type", ['{count}' => $changes[$type]]);
+			}
+		}
+
+		return implode(', ', $parts);
+	}
+
+	private function hasPhrasesChanges(array $changes): bool {
+		return $changes['added'] > 0 || $changes['changed'] > 0 || $changes['removed'] > 0;
 	}
 
 	public function setPreviousVersion(string $value): void {
@@ -269,28 +278,24 @@ class ReleaseGenerator extends BaseObject {
 		return $this->previousVersion;
 	}
 
+	/**
+	 * Returns sorted list of releases of this subsplit. Only tags reachable from subsplit branch are taken into
+	 * account, so releases from other Flarum version lines (which share the same repository) are ignored.
+	 */
 	public function getVersions(): array {
 		if ($this->versions === null) {
 			$parser = new VersionParser();
-			$requiredMajor = explode('.', ltrim($this->versionTemplate, 'v'), 2)[0];
-			$tags = array_filter($this->repository->getTags(), function ($name) use ($parser, $requiredMajor) {
+			$current = $this->tokenizeVersion($this->subsplit->getReleaseVersion());
+			$tags = array_filter($this->repository->getTags($this->repository->getBranch()), function ($name) use ($parser, $current) {
 				try {
 					// remove non-semver tags
-					$version = $parser->normalize($name);
-					// ignore releases from the newer major line
-					if ($requiredMajor < explode('.', $version, 2)[0]) {
-						return false;
-					}
-					foreach ($this->ignoredVersionsConstraints as $constraint) {
-						if (Semver::satisfies($version, $constraint)) {
-							return false;
-						}
-					}
-
-					return true;
+					$parser->normalize($name);
 				} catch (UnexpectedValueException $exception) {
 					return false;
 				}
+				// ignore releases newer than the configured version
+				$version = $this->tokenizeVersion($name);
+				return [$version['Major'], $version['Minor']] <= [$current['Major'], $current['Minor']];
 			});
 
 			$this->versions = Semver::sort($tags);
@@ -299,45 +304,14 @@ class ReleaseGenerator extends BaseObject {
 		return $this->versions;
 	}
 
-	public function setNextVersion(string $value): void {
-		$this->nextVersion = $value;
-	}
-
-	public function getNextVersion(): string {
-		if ($this->nextVersion === null) {
-			$previous = $this->getPreviousVersion();
-			if ($previous === null) {
-				$parts = $this->tokenizeVersion(strtr($this->versionTemplate, [
-					'Minor' => 0,
-					'Patch' => 0,
-				]));
-			} else {
-				$parts = $this->tokenizeVersion($previous);
-				$requiredMajor = explode('.', ltrim($this->versionTemplate, 'v'), 2)[0];
-				if ($parts['Major'] < $requiredMajor) {
-					$parts['Minor'] = 0;
-					$parts['Patch'] = 0;
-				} elseif ($this->isMinorUpdate()) {
-					$parts['Minor']++;
-					$parts['Patch'] = 0;
-				} else {
-					$parts['Patch']++;
-				}
-			}
-
-			$this->nextVersion = strtr($this->versionTemplate, $parts);
-		}
-
-		return $this->nextVersion;
-	}
-
-	protected function isMinorUpdate(): bool {
-		// @todo improve this detection - this should also return true if we remove some old translations lines without
-		//       removing the whole files. There are more things that we should consider and what may help:
-		//       1. we should update the flarum version in `composer.json` - we could detect this change.
-		//       2. Flarum version may need to be updated in README.md
-		foreach ($this->getChangedExtensions() as $changeType) {
-			if ($changeType === Repository::CHANGE_DELETED) {
+	/**
+	 * @return bool Whether there was at least one release with the currently configured major and minor version.
+	 */
+	public function isCurrentVersionReleased(): bool {
+		$current = $this->tokenizeVersion($this->subsplit->getReleaseVersion());
+		foreach ($this->getVersions() as $version) {
+			$version = $this->tokenizeVersion($version);
+			if ($version['Major'] === $current['Major'] && $version['Minor'] === $current['Minor']) {
 				return true;
 			}
 		}
@@ -345,7 +319,44 @@ class ReleaseGenerator extends BaseObject {
 		return false;
 	}
 
-	protected function tokenizeVersion(string $version): array {
+	public function setNextVersion(string $value): void {
+		$this->nextVersion = $value;
+	}
+
+	public function getNextVersion(): string {
+		if ($this->nextVersion === null) {
+			$current = $this->tokenizeVersion($this->subsplit->getReleaseVersion());
+			$previous = $this->getPreviousVersion();
+			$patch = 0;
+			if ($previous !== null) {
+				$previous = $this->tokenizeVersion($previous);
+				if ($previous['Major'] === $current['Major'] && $previous['Minor'] === $current['Minor']) {
+					$patch = $previous['Patch'] + 1;
+				}
+			}
+
+			$this->nextVersion = "{$current['Major']}.{$current['Minor']}.$patch";
+		}
+
+		return $this->nextVersion;
+	}
+
+	/**
+	 * @return bool Whether this release starts a new minor (or major) version. Such releases may remove translations
+	 * for older versions of Flarum and extensions.
+	 */
+	private function isMinorUpdate(): bool {
+		$previous = $this->getPreviousVersion();
+		if ($previous === null) {
+			return false;
+		}
+		$previous = $this->tokenizeVersion($previous);
+		$next = $this->tokenizeVersion($this->getNextVersion());
+
+		return [$previous['Major'], $previous['Minor']] !== [$next['Major'], $next['Minor']];
+	}
+
+	private function tokenizeVersion(string $version): array {
 		$parts = explode('.', ltrim($version, 'v'), 3);
 		return [
 			'Major' => (int) $parts[0],
@@ -354,45 +365,137 @@ class ReleaseGenerator extends BaseObject {
 		];
 	}
 
-	protected function getChangedExtensions(): array {
-		$changedExtensions = [];
-		$prefix = trim($this->subsplit->getPath(), '/') . '/';
-		foreach ($this->getChangedFiles() as $file => $changeType) {
-			if (strncmp($file, $prefix, strlen($prefix)) !== 0) {
-				continue;
-			}
-			$file = basename($file);
-			if (substr($file, -4) === '.yml' && !in_array($file, ['core.yml', 'validation.yml'], true)) {
-				$changedExtensions[substr($file, 0, -4)] = $changeType;
-			}
+	/**
+	 * @return array[] Changes in extensions translations, indexed by extension ID.
+	 * @see getTranslationsChanges()
+	 */
+	private function getExtensionsChanges(): array {
+		$changes = $this->getTranslationsChanges();
+		foreach (self::CORE_FILES as $file => $_) {
+			unset($changes[substr($file, 0, -4)]);
 		}
 
-		return $changedExtensions;
+		return array_filter($changes, function (array $changes) {
+			return $changes['existedBefore'] !== $changes['existsNow'] || $this->hasPhrasesChanges($changes);
+		});
 	}
 
-	protected function getCoreChanges(): array {
-		$coreChanges = [];
-		$prefix = trim($this->subsplit->getPath(), '/') . '/';
-		foreach ($this->getChangedFiles() as $file => $changeType) {
-			if (strncmp($file, $prefix, strlen($prefix)) !== 0) {
+	/**
+	 * Compares translations from previous release with the current state of subsplit. Translations from all
+	 * variants of multi-language subsplit are summed up.
+	 *
+	 * @return array[] Changes indexed by file name without extension (like `flarum-tags` or `core`). Each item
+	 * contains number of `added`, `changed` and `removed` phrases, and flags whether translation file existed in the
+	 * previous release (`existedBefore`) and exists now (`existsNow`).
+	 */
+	private function getTranslationsChanges(): array {
+		if ($this->_translationsChanges !== null) {
+			return $this->_translationsChanges;
+		}
+
+		$changes = [];
+		foreach ($this->getSubsplitChangedFiles() as $file => $changeType) {
+			if (substr($file, -4) !== '.yml') {
 				continue;
 			}
-			$file = basename($file);
-			if (in_array($file, ['core.yml', 'validation.yml', 'config.js', 'config.css'], true)) {
-				$coreChanges[$file] = $changeType;
+			$id = basename($file, '.yml');
+			$old = $changeType === Repository::CHANGE_ADDED
+				? null
+				: $this->loadMessages($this->repository->getFileContent($this->getPreviousVersion(), $file));
+			$new = $changeType === Repository::CHANGE_DELETED
+				? null
+				: $this->loadMessages(file_get_contents("{$this->repository->getPath()}/$file"));
+
+			$changes[$id] = $changes[$id] ?? [
+				'added' => 0,
+				'changed' => 0,
+				'removed' => 0,
+				// file may be unchanged in other variants - it existed before and exists now
+				'existedBefore' => $this->hasUnchangedTranslationFile($id),
+				'existsNow' => $this->hasUnchangedTranslationFile($id),
+			];
+			$changes[$id]['added'] += count(array_diff_key($new ?? [], $old ?? []));
+			$changes[$id]['removed'] += count(array_diff_key($old ?? [], $new ?? []));
+			foreach (array_intersect_key($new ?? [], $old ?? []) as $key => $value) {
+				if ($old[$key] !== $value) {
+					$changes[$id]['changed']++;
+				}
+			}
+			$changes[$id]['existedBefore'] = $changes[$id]['existedBefore'] || $old !== null;
+			$changes[$id]['existsNow'] = $changes[$id]['existsNow'] || $new !== null;
+		}
+
+		ksort($changes);
+		$this->_translationsChanges = $changes;
+		return $this->_translationsChanges;
+	}
+
+	private function hasUnchangedTranslationFile(string $id): bool {
+		$changedFiles = $this->getSubsplitChangedFiles();
+		foreach ($this->getTranslationsDirectories() as $directory) {
+			$file = ltrim("$directory/$id.yml", '/');
+			if (!isset($changedFiles[$file]) && is_file("{$this->repository->getPath()}/$file")) {
+				return true;
 			}
 		}
 
-		return $coreChanges;
+		return false;
+	}
+
+	/**
+	 * @return string[] Directories (relative to repository root) with translation files, including directories of
+	 * variants for multi-language subsplit.
+	 */
+	private function getTranslationsDirectories(): array {
+		$subsplits = $this->subsplit instanceof MultiLanguageSubsplit ? $this->subsplit->getVariants() : [$this->subsplit];
+		$directories = [];
+		foreach ($subsplits as $subsplit) {
+			$directories[] = trim($subsplit->getPath(), '/');
+		}
+
+		return $directories;
+	}
+
+	private function loadMessages(string $content): array {
+		$messages = YamlLoader::filter(Yaml::parse($content));
+		return is_array($messages) ? ArrayHelper::flatten($messages) : [];
+	}
+
+	private function getOtherFilesChanges(): array {
+		$changes = [];
+		foreach ($this->getSubsplitChangedFiles() as $file => $changeType) {
+			if (isset(self::OTHER_FILES[basename($file)])) {
+				$changes[basename($file)] = $changeType;
+			}
+		}
+
+		return $changes;
 	}
 
 	public function hasChanges(): bool {
-		return !empty($this->getChangedExtensions()) || !empty($this->getCoreChanges());
+		foreach (self::CORE_FILES as $file => $_) {
+			$changes = $this->getTranslationsChanges()[substr($file, 0, -4)] ?? null;
+			if ($changes !== null && $this->hasPhrasesChanges($changes)) {
+				return true;
+			}
+		}
+
+		return !empty($this->getExtensionsChanges()) || !empty($this->getOtherFilesChanges());
 	}
 
-	protected function getChangedFiles(): array {
+	/**
+	 * @return string[] Files inside of subsplit path (relative to repository root) changed since previous release,
+	 * with change type as value.
+	 */
+	private function getSubsplitChangedFiles(): array {
 		if ($this->_changes === null) {
-			$this->_changes = $this->repository->getChangesFrom($this->getPreviousVersion());
+			$this->_changes = [];
+			$prefix = trim($this->subsplit->getPath(), '/') . '/';
+			foreach ($this->repository->getChangesFrom($this->getPreviousVersion()) as $file => $changeType) {
+				if (strncmp($file, $prefix, strlen($prefix)) === 0) {
+					$this->_changes[$file] = $changeType;
+				}
+			}
 		}
 
 		return $this->_changes;
@@ -409,20 +512,24 @@ class ReleaseGenerator extends BaseObject {
 		]);
 	}
 
+	/**
+	 * @return string Release announcement for forum, localized to subsplit language.
+	 */
 	public function getAnnouncement(): string {
+		$locale = $this->subsplit->getLocale();
 		[$userName, $repoName] = Yii::$app->githubApi->explodeRepoUrl($this->subsplit->getRepositoryUrl());
 		$command = 'update';
-		$warning = $this->isMinorUpdate() ? "\n\n**{$this->t('announcement.major-warning')}**\n\n" : '';
-		$changes = trim($this->getChangelogEntryContent());
+		$warning = $this->isMinorUpdate() ? "\n\n**{$locale->t('announcement.major-warning')}**\n\n" : '';
+		$changes = trim($this->renderReleaseNotes($locale));
 
 		$flarumVersion = FlarumVersion::lineName();
 		return <<<MD
-			## {$this->t('announcement.version', ['{version}' => "[`{$this->getNextVersion()}`](https://github.com/$userName/$repoName/releases/tag/{$this->getNextVersion()})"])} (Flarum {$flarumVersion})
-			
+			## {$locale->t('announcement.version', ['{version}' => "[`{$this->getNextVersion()}`](https://github.com/$userName/$repoName/releases/tag/{$this->getNextVersion()})"])} (Flarum {$flarumVersion})
+
 			{$changes}
-			
-			{$this->t('announcement.to-update')}
-			
+
+			{$locale->t('announcement.to-update')}
+
 			```console
 			composer $command {$this->getSubsplit()->getPackageName()}
 			php flarum cache:clear

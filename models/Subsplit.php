@@ -48,9 +48,10 @@ abstract class Subsplit {
 	private $repository;
 	private $path;
 	private $components;
-	private $releaseGenerator;
+	private $releaseVersion;
 	private $repositoryUrl;
 	private $locale;
+	private $defaultLocale;
 	private $maintainers;
 	private $discussThreadId;
 
@@ -60,7 +61,7 @@ abstract class Subsplit {
 		string $branch,
 		string $path,
 		?array $components,
-		/*?array*/ $releaseGenerator, // no type because of BC - old configs contains only class name as string
+		?string $releaseVersion,
 		array $localeConfig,
 		array $maintainers,
 		?int $discussThreadId = null
@@ -68,7 +69,7 @@ abstract class Subsplit {
 		$this->id = $id;
 		$this->path = $path;
 		$this->components = $components;
-		$this->releaseGenerator = $releaseGenerator;
+		$this->releaseVersion = $releaseVersion;
 		if (is_array($repository)) {
 			$this->repositoryUrl = $repository[0];
 			$this->repository = $repository;
@@ -80,6 +81,7 @@ abstract class Subsplit {
 			$this->repository = [$repository, $branch, static::generateRepositoryPath($id, $repository)];
 		}
 		$this->locale = [$localeConfig['path'] ?? null, $localeConfig['fallbackPath']];
+		$this->defaultLocale = [null, $localeConfig['fallbackPath']];
 		$this->maintainers = $maintainers;
 		$this->discussThreadId = $discussThreadId;
 	}
@@ -115,8 +117,17 @@ abstract class Subsplit {
 		if (is_array($this->locale)) {
 			$this->locale = new SubsplitLocale(...$this->locale);
 		}
-		/* @noinspection PhpIncompatibleReturnTypeInspection */
 		return $this->locale;
+	}
+
+	/**
+	 * Locale with default (English) phrases, ignoring subsplit-specific translations.
+	 */
+	public function getDefaultLocale(): SubsplitLocale {
+		if (is_array($this->defaultLocale)) {
+			$this->defaultLocale = new SubsplitLocale(...$this->defaultLocale);
+		}
+		return $this->defaultLocale;
 	}
 
 	public function getId(): string {
@@ -153,16 +164,24 @@ abstract class Subsplit {
 	abstract public function createReadmeGenerator(Translations $translations): ReadmeGenerator;
 
 	public function hasReleaseGenerator(): bool {
-		return $this->releaseGenerator !== null;
+		return $this->releaseVersion !== null;
+	}
+
+	/**
+	 * @return string|null Major and minor version (like `1.4`) used for new releases, or `null` if releases are not
+	 * enabled for this subsplit.
+	 * @see Translations::getReleaseVersion()
+	 */
+	public function getReleaseVersion(): ?string {
+		return $this->releaseVersion;
 	}
 
 	public function createReleaseGenerator(): ReleaseGenerator {
-		if ($this->releaseGenerator === null) {
-			throw new InvalidConfigException('$releaseGenerator is not configured for this subsplit.');
+		if ($this->releaseVersion === null) {
+			throw new InvalidConfigException('Release version is not configured for this subsplit.');
 		}
 
-		/* @noinspection PhpIncompatibleReturnTypeInspection */
-		return Yii::createObject($this->releaseGenerator, [$this]);
+		return new ReleaseGenerator($this);
 	}
 
 	/**

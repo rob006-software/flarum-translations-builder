@@ -275,6 +275,56 @@ final class TranslationsController extends ConsoleController {
 		}
 	}
 
+	// @todo add bumping flarum version (could be required parameter or maybe we could fetch it from `config.php`)
+	/**
+	 * Removes outdated translations and outdated components from subsplits, and bumps minor version used for new
+	 * releases, so these removals will be released as a new minor version. Minor version is bumped only if there
+	 * was already a release with the current version - otherwise the next release will use the current version anyway.
+	 *
+	 * This action is intended to be run once a year.
+	 */
+	public function actionCleanupOutdated(string $range = '-1 year', string $configFile = '@app/translations/config.php') {
+		$translations = $this->getTranslations($configFile);
+		foreach ($translations->getLanguages() as $language) {
+			$translations->cleanupOutdatedTranslations($language, $range);
+		}
+
+		foreach ($translations->getSubsplits() as $subsplit) {
+			try {
+				$repository = $subsplit->getRepository();
+			} catch (Throwable $exception) {
+				$this->reportError($subsplit, $exception);
+				continue;
+			}
+
+			try {
+				$repository->update();
+				$translations->cleanupOutdatedSubsplit($subsplit, $range);
+				$this->postProcessRepository(
+					$repository,
+					'Cleanup outdated components'
+				);
+				if ($subsplit->hasReleaseGenerator() && $subsplit->createReleaseGenerator()->isCurrentVersionReleased()) {
+					$version = $translations->bumpReleaseMinorVersion($subsplit->getId());
+					if ($this->verbose) {
+						echo "{$subsplit->getId()}: release version bumped to $version.\n";
+					}
+				}
+			} catch (Throwable $exception) {
+				$this->reportError($subsplit, $exception);
+			} finally {
+				Yii::$app->locks->releaseRepoLock($repository->getPath());
+			}
+		}
+		$translations->saveReleaseVersions();
+
+		$flarumVersion = FlarumVersion::lineName();
+		$this->postProcessRepository(
+			$translations->getRepository(),
+			"[{$flarumVersion}] Cleanup outdated translations and bump release versions"
+		);
+	}
+
 	private function reportError(Subsplit $subsplit, Throwable $exception): void {
 		Yii::warning("An error occurred while processing {$subsplit->getId()} subsplit: {$exception->getMessage()}");
 		Yii::error($exception);

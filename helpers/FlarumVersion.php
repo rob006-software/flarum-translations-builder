@@ -67,6 +67,19 @@ class FlarumVersion {
 		}
 	}
 
+	/**
+	 * @return string Major and minor version used for the first release of a new language pack.
+	 * @see Translations::getReleaseVersion()
+	 */
+	public static function defaultReleaseVersion(): string {
+		switch (Yii::$app->params['flarumVersion']) {
+			case self::V2:
+				return '2.0';
+			case self::V1:
+				return '1.0';
+		}
+	}
+
 	public static function composerConstraint(): string {
 		switch (Yii::$app->params['flarumVersion']) {
 			case self::V2:

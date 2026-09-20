@@ -22,6 +22,7 @@ use app\components\inheritors\TranslationsInheritor;
 use app\components\translations\JsonFileDumper;
 use app\components\translations\JsonFileLoader;
 use app\components\translations\YamlLoader;
+use app\helpers\FlarumVersion;
 use app\helpers\HttpClient;
 use Composer\Semver\Semver;
 use Dont\DontCall;
@@ -42,6 +43,7 @@ use yii\caching\TagDependency;
 use yii\helpers\ArrayHelper;
 use yii\helpers\FileHelper;
 use function array_diff;
+use function array_key_exists;
 use function array_diff_key;
 use function array_filter;
 use function array_reverse;
@@ -49,8 +51,10 @@ use function assert;
 use function count;
 use function date;
 use function dir;
+use function explode;
 use function file_exists;
 use function file_get_contents;
+use function file_put_contents;
 use function getenv;
 use function in_array;
 use function is_array;
@@ -91,6 +95,7 @@ final class Translations {
 	private $metadataDir;
 	private $components = [];
 	private $subsplits;
+	private $releaseVersions;
 	private $inheritors;
 	private $ignoredExtensions;
 	private $languages;
@@ -102,12 +107,18 @@ final class Translations {
 	private $_sourcesContents = [];
 
 	public function __construct(string $repository, string $branch, array $config) {
-		$this->hash = md5(json_encode($config, JSON_THROW_ON_ERROR));
 		$this->repository = [$repository, $branch, $config['dir']];
 		$this->dir = $config['dir'];
 		$this->sourcesDir = $config['sourcesDir'];
 		$this->translationsDir = $config['translationsDir'];
 		$this->metadataDir = $config['metadataDir'] ?? ($config['sourcesDir'] . '/metadata');
+		if (file_exists($this->getReleaseVersionsPath())) {
+			$this->releaseVersions = json_decode(file_get_contents($this->getReleaseVersionsPath()), true, 512, JSON_THROW_ON_ERROR);
+		} else {
+			// old versions of translations repository do not have this metadata - releases are not supported there
+			$this->releaseVersions = null;
+		}
+		$this->hash = md5(json_encode([$config, $this->releaseVersions], JSON_THROW_ON_ERROR));
 		$this->languages = array_keys($config['languages']);
 		$this->ignoredExtensions = $config['ignoredExtensions'] ?? [];
 		$this->subsplits = $config['subsplits'];
@@ -207,7 +218,7 @@ final class Translations {
 						$config['branch'],
 						$config['path'],
 						$config['components'] ?? null,
-						$config['releaseGenerator'] ?? null,
+						$this->getReleaseVersion($id),
 						($config['locale'] ?? []) + $defaultLocaleConfig,
 						$config['maintainers'] ?? [],
 						isset($config['discussThreadId']) ? (int) $config['discussThreadId'] : null
@@ -244,7 +255,7 @@ final class Translations {
 						$config['branch'],
 						$config['path'],
 						$config['components'] ?? null,
-						$config['releaseGenerator'] ?? null,
+						$this->getReleaseVersion($id),
 						($config['locale'] ?? []) + $defaultLocaleConfig,
 						$config['maintainers'] ?? [],
 						isset($config['discussThreadId']) ? (int) $config['discussThreadId'] : null
@@ -256,6 +267,53 @@ final class Translations {
 		}
 
 		return $this->subsplits[$id];
+	}
+
+	private function getReleaseVersionsPath(): string {
+		return "{$this->metadataDir}/versions.json";
+	}
+
+	/**
+	 * @return string|null Major and minor version (like `1.4`) used for new releases of given subsplit. A newly added
+	 * subsplit does not have an entry in metadata and falls back to the first version for the current Flarum line.
+	 * Explicit `null` in metadata disables releases for the subsplit, and so does a missing metadata file - releases
+	 * are not supported for old versions of translations repository, which do not have this metadata yet.
+	 */
+	public function getReleaseVersion(string $subsplitId): ?string {
+		if ($this->releaseVersions === null) {
+			return null;
+		}
+		if (!array_key_exists($subsplitId, $this->releaseVersions)) {
+			return FlarumVersion::defaultReleaseVersion();
+		}
+
+		return $this->releaseVersions[$subsplitId];
+	}
+
+	/**
+	 * Bumps minor version used for new releases of given subsplit. Call {@link saveReleaseVersions()} to persist
+	 * the change.
+	 */
+	public function bumpReleaseMinorVersion(string $subsplitId): string {
+		$version = $this->getReleaseVersion($subsplitId);
+		if ($version === null) {
+			throw new InvalidArgumentException('Releases are disabled for ' . readable::value($subsplitId) . ' subsplit.');
+		}
+		[$major, $minor] = explode('.', $version, 2);
+		$this->releaseVersions[$subsplitId] = $major . '.' . ((int) $minor + 1);
+
+		return $this->releaseVersions[$subsplitId];
+	}
+
+	public function saveReleaseVersions(): void {
+		if ($this->releaseVersions === null) {
+			throw new InvalidConfigException('There is no ' . readable::value($this->getReleaseVersionsPath()) . ' file.');
+		}
+		ksort($this->releaseVersions);
+		file_put_contents(
+			$this->getReleaseVersionsPath(),
+			json_encode($this->releaseVersions, JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n"
+		);
 	}
 
 	public function findSubsplitIdForRepository(string $gitUrl, string $branch): ?string {

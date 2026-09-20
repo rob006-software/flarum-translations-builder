@@ -25,6 +25,10 @@ use GitWrapper\GitWorkingCopy;
 use GitWrapper\GitWrapper;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
+use function array_filter;
+use function array_map;
+use function array_values;
+use function explode;
 use function file_exists;
 use function in_array;
 use function is_dir;
@@ -226,11 +230,22 @@ class Repository {
 		return $this->branch;
 	}
 
-	public function getTags(): array {
-		$tags = $this->git->tags()->all();
-		return array_filter($tags, static function (string $tag) {
+	/**
+	 * @param string|null $mergedInto If set, only tags reachable from this reference are returned.
+	 */
+	public function getTags(?string $mergedInto = null): array {
+		if ($mergedInto === null) {
+			$tags = $this->git->tags()->all();
+		} else {
+			$tags = explode("\n", $this->git->run('tag', ['--merged', $mergedInto]));
+		}
+		return array_values(array_filter(array_map('trim', $tags), static function (string $tag) {
 			return $tag !== '';
-		});
+		}));
+	}
+
+	public function getFileContent(string $reference, string $path): string {
+		return $this->git->run('show', ["$reference:$path"]);
 	}
 
 	public function getDiff(): string {
