@@ -21,6 +21,7 @@ use Symfony\Component\Translation\Util\ArrayConverter;
 use yii\helpers\ArrayHelper;
 use yii\helpers\FileHelper;
 use function basename;
+use function explode;
 use function file_exists;
 use function file_get_contents;
 use function file_put_contents;
@@ -213,6 +214,16 @@ class TranslationsInheritor implements InheritorInterface {
 			if ($fromTranslation === '') {
 				// phrase is not translated in origin...
 				if ($toTranslation !== '') {
+					if ($fromSource === $toSource && isset($metadata[$key])) {
+						$meta = explode(' ', $metadata[$key]);
+						if ($meta[0] === $meta[1] && $meta[1] === md5($toTranslation)) {
+							// ...and the translation in target is an unmodified inherited copy - the origin translation
+							//  has been removed, so the inherited one should be removed as well
+							$newTranslations[$key] = '';
+							unset($newMetadata[$key]);
+							continue;
+						}
+					}
 					// ...but it is translated in target - save metadata to prevent inheritance in the future
 					$newMetadata[$key] = implode(' ', [md5($fromTranslation), md5($newTranslations[$key])]);
 				}
