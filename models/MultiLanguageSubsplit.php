@@ -16,6 +16,7 @@ namespace app\models;
 use app\components\readme\MultiLanguageSubsplitReadmeGenerator;
 use app\components\readme\ReadmeGenerator;
 use function json_encode;
+use function reset;
 
 /**
  * Class MultiLanguageSubsplit.
@@ -78,6 +79,13 @@ final class MultiLanguageSubsplit extends Subsplit {
 			$variants[$variant->getLanguage()] = $this->variantsLabels[$variantId];
 		}
 		return new MultiLanguageSubsplitReadmeGenerator($variants, $this->getLocale());
+	}
+
+	/**
+	 * First variant is also used as fallback for other variants, so it is treated as the main language.
+	 */
+	protected function getLocaleLanguage(): string {
+		return reset($this->variants)->getLanguage();
 	}
 
 	protected function getSourcesPaths(Translations $translations): array {

@@ -112,7 +112,7 @@ abstract class Subsplit {
 
 	public function getLocale(): SubsplitLocale {
 		if ($this->locale === null) {
-			$this->locale = new SubsplitLocale(self::getLocalePath($this->id), self::getLocalePath('en'));
+			$this->locale = new SubsplitLocale($this->getLocaleLanguage(), self::getLocalePath($this->id), self::getLocalePath('en'));
 		}
 		return $this->locale;
 	}
@@ -122,10 +122,15 @@ abstract class Subsplit {
 	 */
 	public function getDefaultLocale(): SubsplitLocale {
 		if ($this->defaultLocale === null) {
-			$this->defaultLocale = new SubsplitLocale(null, self::getLocalePath('en'));
+			$this->defaultLocale = new SubsplitLocale('en', null, self::getLocalePath('en'));
 		}
 		return $this->defaultLocale;
 	}
+
+	/**
+	 * @return string Language code used for formatting localized phrases (plural rules etc.).
+	 */
+	abstract protected function getLocaleLanguage(): string;
 
 	private static function getLocalePath(string $id): string {
 		return APP_ROOT . "/resources/locale/subsplits/$id.json";

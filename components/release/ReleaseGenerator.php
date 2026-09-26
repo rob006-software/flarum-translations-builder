@@ -248,7 +248,7 @@ final class ReleaseGenerator {
 	private function renderAllChangesLink(SubsplitLocale $locale, string $old, string $new): string {
 		[$userName, $repoName] = Yii::$app->githubApi->explodeRepoUrl($this->subsplit->getRepositoryUrl());
 		return $locale->t('changelog.all-changes', [
-			'{link}' => "[{$old}...{$new}](https://github.com/$userName/$repoName/compare/{$old}...{$new})",
+			'link' => "[{$old}...{$new}](https://github.com/$userName/$repoName/compare/{$old}...{$new})",
 		]);
 	}
 
@@ -265,7 +265,7 @@ final class ReleaseGenerator {
 		$parts = [];
 		foreach (['added', 'changed', 'removed'] as $type) {
 			if ($changes[$type] > 0) {
-				$parts[] = $locale->t("changelog.count-$type", ['{count}' => $changes[$type]]);
+				$parts[] = $locale->t("changelog.count-$type", ['count' => $changes[$type]]);
 			}
 		}
 
@@ -278,7 +278,7 @@ final class ReleaseGenerator {
 			return null;
 		}
 
-		return $locale->t('changelog.completion', ['{percent}' => $completion]);
+		return $locale->t('changelog.completion', ['percent' => $completion]);
 	}
 
 	/**
@@ -600,7 +600,7 @@ final class ReleaseGenerator {
 
 		$flarumVersion = FlarumVersion::lineName();
 		return <<<MD
-			## {$locale->t('announcement.version', ['{version}' => "[`{$this->getNextVersion()}`](https://github.com/$userName/$repoName/releases/tag/{$this->getNextVersion()})"])} (Flarum {$flarumVersion})
+			## {$locale->t('announcement.version', ['version' => "[`{$this->getNextVersion()}`](https://github.com/$userName/$repoName/releases/tag/{$this->getNextVersion()})"])} (Flarum {$flarumVersion})
 
 			{$changes}
 
