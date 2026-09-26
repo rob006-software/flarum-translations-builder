@@ -37,7 +37,7 @@ class AutoMergeReleasePullRequestJob extends BaseObject implements JobInterface 
 	public function execute($queue) {
 		$config = require Yii::getAlias($this->configFile);
 		$translations = new Translations(Yii::$app->params['translationsRepository'], FlarumVersion::branch(), $config);
-		(new ReleasePullRequestGenerator($translations->getSubsplit($this->subsplit)))
+		(new ReleasePullRequestGenerator($translations->getSubsplit($this->subsplit), $translations))
 			->autoMerge((int) $this->pullRequestNumber);
 	}
 }

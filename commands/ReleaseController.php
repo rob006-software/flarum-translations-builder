@@ -74,7 +74,7 @@ final class ReleaseController extends ConsoleController {
 
 	public function actionPr(string $subsplit, string $configFile = '@app/translations/config.php') {
 		$translations = $this->getTranslations($configFile);
-		$prGenerator = (new ReleasePullRequestGenerator($translations->getSubsplit($subsplit)));
+		$prGenerator = (new ReleasePullRequestGenerator($translations->getSubsplit($subsplit), $translations));
 		if ($this->previousVersion !== '') {
 			$prGenerator->getGenerator()->setPreviousVersion($this->previousVersion);
 		}
@@ -86,7 +86,7 @@ final class ReleaseController extends ConsoleController {
 
 	public function actionMerge(string $subsplit, string $configFile = '@app/translations/config.php') {
 		$translations = $this->getTranslations($configFile);
-		(new ReleasePullRequestGenerator($translations->getSubsplit($subsplit)))->merge();
+		(new ReleasePullRequestGenerator($translations->getSubsplit($subsplit), $translations))->merge();
 	}
 
 	/**

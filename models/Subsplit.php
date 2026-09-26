@@ -177,12 +177,12 @@ abstract class Subsplit {
 		return $this->releaseVersion;
 	}
 
-	public function createReleaseGenerator(): ReleaseGenerator {
+	public function createReleaseGenerator(Translations $translations): ReleaseGenerator {
 		if ($this->releaseVersion === null) {
 			throw new InvalidConfigException('Release version is not configured for this subsplit.');
 		}
 
-		return new ReleaseGenerator($this);
+		return new ReleaseGenerator($this, $translations);
 	}
 
 	/**

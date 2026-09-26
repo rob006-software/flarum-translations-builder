@@ -15,10 +15,12 @@ namespace app\components\release;
 
 use app\components\translations\YamlLoader;
 use app\helpers\FlarumVersion;
+use app\models\LanguageSubsplit;
 use app\models\MultiLanguageSubsplit;
 use app\models\Repository;
 use app\models\Subsplit;
 use app\models\SubsplitLocale;
+use app\models\Translations;
 use Composer\Semver\Semver;
 use Composer\Semver\VersionParser;
 use Dont\DontCall;
@@ -33,6 +35,7 @@ use yii\helpers\ArrayHelper;
 use function array_diff_key;
 use function array_filter;
 use function array_intersect_key;
+use function array_key_exists;
 use function array_key_last;
 use function array_pop;
 use function basename;
@@ -40,11 +43,13 @@ use function count;
 use function date;
 use function end;
 use function explode;
+use function floor;
 use function file_exists;
 use function file_get_contents;
 use function implode;
 use function is_array;
 use function is_file;
+use function json_decode;
 use function ksort;
 use function ltrim;
 use function str_repeat;
@@ -53,6 +58,7 @@ use function strncmp;
 use function strpos;
 use function substr;
 use function trim;
+use const JSON_THROW_ON_ERROR;
 
 /**
  * Class ReleaseGenerator.
@@ -80,6 +86,7 @@ final class ReleaseGenerator {
 	];
 
 	private $subsplit;
+	private $translations;
 	private $repository;
 
 	private $versions;
@@ -89,9 +96,11 @@ final class ReleaseGenerator {
 
 	private $_changes;
 	private $_translationsChanges;
+	private $_completions = [];
 
-	public function __construct(Subsplit $subsplit) {
+	public function __construct(Subsplit $subsplit, Translations $translations) {
 		$this->subsplit = $subsplit;
+		$this->translations = $translations;
 		$this->repository = $subsplit->getRepository();
 		$this->repository->update();
 	}
@@ -208,11 +217,13 @@ final class ReleaseGenerator {
 		$removed = [];
 		foreach ($this->getExtensionsChanges() as $extensionId => $changes) {
 			if (!$changes['existedBefore']) {
-				$added[] = $this->renderExtensionName($extensionId);
+				$added[] = $this->renderExtensionName($extensionId)
+					. $this->renderDetails([$this->renderCompletion($locale, $extensionId)]);
 			} elseif (!$changes['existsNow']) {
 				$removed[] = $this->renderExtensionName($extensionId);
 			} else {
-				$updated[] = "{$this->renderExtensionName($extensionId)} ({$this->renderPhrasesChanges($locale, $changes)})";
+				$updated[] = $this->renderExtensionName($extensionId)
+					. $this->renderDetails([$this->renderPhrasesChanges($locale, $changes), $this->renderCompletion($locale, $extensionId)]);
 			}
 		}
 		foreach (['changelog.extensions-added' => $added, 'changelog.extensions-updated' => $updated, 'changelog.extensions-removed' => $removed] as $labelKey => $extensions) {
@@ -259,6 +270,23 @@ final class ReleaseGenerator {
 		}
 
 		return implode(', ', $parts);
+	}
+
+	private function renderCompletion(SubsplitLocale $locale, string $componentId): ?string {
+		$completion = $this->getCompletion($componentId);
+		if ($completion === null) {
+			return null;
+		}
+
+		return $locale->t('changelog.completion', ['{percent}' => $completion]);
+	}
+
+	/**
+	 * @param string[]|null[] $parts
+	 */
+	private function renderDetails(array $parts): string {
+		$parts = array_filter($parts);
+		return empty($parts) ? '' : ' (' . implode(', ', $parts) . ')';
 	}
 
 	private function hasPhrasesChanges(array $changes): bool {
@@ -430,6 +458,48 @@ final class ReleaseGenerator {
 		return $this->_translationsChanges;
 	}
 
+	/**
+	 * Calculates translation completion based on JSON files from translations repository - YAML files in subsplit
+	 * do not contain untranslated phrases. Only phrases which still exist in English source are taken into account.
+	 * Phrases from all variants of multi-language subsplit are summed up.
+	 *
+	 * @return int|null Percentage of translated phrases (rounded down), or `null` if component is not available in
+	 * translations repository.
+	 */
+	private function getCompletion(string $componentId): ?int {
+		if (array_key_exists($componentId, $this->_completions)) {
+			return $this->_completions[$componentId];
+		}
+		if (!$this->translations->hasComponent($componentId)) {
+			return $this->_completions[$componentId] = null;
+		}
+
+		$component = $this->translations->getComponent($componentId);
+		$source = $this->loadJsonMessages($this->translations->getComponentSourcePath($componentId));
+		$total = 0;
+		$translated = 0;
+		foreach ($this->getLanguageSubsplits() as $subsplit) {
+			if (!$subsplit->isValidForComponent($component)) {
+				continue;
+			}
+			$messages = $this->loadJsonMessages($this->translations->getComponentTranslationPath($componentId, $subsplit->getLanguage()));
+			$total += count($source);
+			$translated += count(array_filter(array_intersect_key($messages, $source), static function ($message) {
+				return $message !== '';
+			}));
+		}
+
+		return $this->_completions[$componentId] = $total === 0 ? null : (int) floor($translated * 100 / $total);
+	}
+
+	private function loadJsonMessages(string $path): array {
+		if (!is_file($path)) {
+			return [];
+		}
+		$messages = json_decode(file_get_contents($path), true, 512, JSON_THROW_ON_ERROR);
+		return is_array($messages) ? ArrayHelper::flatten($messages) : [];
+	}
+
 	private function hasUnchangedTranslationFile(string $id): bool {
 		$changedFiles = $this->getSubsplitChangedFiles();
 		foreach ($this->getTranslationsDirectories() as $directory) {
@@ -447,13 +517,19 @@ final class ReleaseGenerator {
 	 * variants for multi-language subsplit.
 	 */
 	private function getTranslationsDirectories(): array {
-		$subsplits = $this->subsplit instanceof MultiLanguageSubsplit ? $this->subsplit->getVariants() : [$this->subsplit];
 		$directories = [];
-		foreach ($subsplits as $subsplit) {
+		foreach ($this->getLanguageSubsplits() as $subsplit) {
 			$directories[] = trim($subsplit->getPath(), '/');
 		}
 
 		return $directories;
+	}
+
+	/**
+	 * @return LanguageSubsplit[] Subsplit itself, or variants for multi-language subsplit.
+	 */
+	private function getLanguageSubsplits(): array {
+		return $this->subsplit instanceof MultiLanguageSubsplit ? $this->subsplit->getVariants() : [$this->subsplit];
 	}
 
 	private function loadMessages(string $content): array {

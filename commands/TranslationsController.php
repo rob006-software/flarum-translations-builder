@@ -103,7 +103,7 @@ final class TranslationsController extends ConsoleController {
 				);
 				$subsplit->markAsProcessed($translations);
 				if ($subsplit->hasReleaseGenerator()) {
-					(new ReleasePullRequestGenerator($subsplit))->generate();
+					(new ReleasePullRequestGenerator($subsplit, $translations))->generate();
 				}
 			} catch (Throwable $exception) {
 				$hasErrors = true;
@@ -304,7 +304,7 @@ final class TranslationsController extends ConsoleController {
 					$repository,
 					'Cleanup outdated components'
 				);
-				if ($subsplit->hasReleaseGenerator() && $subsplit->createReleaseGenerator()->isCurrentVersionReleased()) {
+				if ($subsplit->hasReleaseGenerator() && $subsplit->createReleaseGenerator($translations)->isCurrentVersionReleased()) {
 					$version = $translations->bumpReleaseMinorVersion($subsplit->getId());
 					if ($this->verbose) {
 						echo "{$subsplit->getId()}: release version bumped to $version.\n";

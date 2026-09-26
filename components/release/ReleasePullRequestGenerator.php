@@ -19,6 +19,7 @@ use app\helpers\StringHelper;
 use app\jobs\AnnounceReleaseOnForumJob;
 use app\jobs\QueueMergeReleasePullRequestJob;
 use app\models\Subsplit;
+use app\models\Translations;
 use Dont\DontCall;
 use Dont\DontCallStatic;
 use Dont\DontGet;
@@ -70,12 +71,12 @@ class ReleasePullRequestGenerator {
 	private $githubApi;
 	private $generator;
 
-	public function __construct(Subsplit $subsplit, ?GithubApi $githubApi = null) {
+	public function __construct(Subsplit $subsplit, Translations $translations, ?GithubApi $githubApi = null) {
 		$this->subsplit = $subsplit;
 		$this->repository = $subsplit->getRepository();
 		$this->githubApi = $githubApi ?? Yii::$app->githubApi;
 
-		$this->generator = $this->subsplit->createReleaseGenerator();
+		$this->generator = $this->subsplit->createReleaseGenerator($translations);
 	}
 
 	public function getGenerator(): ReleaseGenerator {

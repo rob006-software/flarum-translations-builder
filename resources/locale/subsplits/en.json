@@ -11,6 +11,7 @@
 		"count-added": "{count} added",
 		"count-changed": "{count} changed",
 		"count-removed": "{count} removed",
+		"completion": "{percent}% complete",
 		"all-changes": "All changes: {link}."
 	},
 	"announcement": {

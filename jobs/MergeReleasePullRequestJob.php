@@ -33,6 +33,6 @@ class MergeReleasePullRequestJob extends BaseObject implements JobInterface {
 	public function execute($queue) {
 		$config = require Yii::getAlias($this->configFile);
 		$translations = new Translations(Yii::$app->params['translationsRepository'], FlarumVersion::branch(), $config);
-		(new ReleasePullRequestGenerator($translations->getSubsplit($this->subsplit)))->merge();
+		(new ReleasePullRequestGenerator($translations->getSubsplit($this->subsplit), $translations))->merge();
 	}
 }
