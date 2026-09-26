@@ -62,7 +62,6 @@ abstract class Subsplit {
 		string $path,
 		?array $components,
 		?string $releaseVersion,
-		array $localeConfig,
 		array $maintainers,
 		?int $discussThreadId = null
 	) {
@@ -80,8 +79,6 @@ abstract class Subsplit {
 			$this->repositoryUrl = $repository;
 			$this->repository = [$repository, $branch, static::generateRepositoryPath($id, $repository)];
 		}
-		$this->locale = [$localeConfig['path'] ?? null, $localeConfig['fallbackPath']];
-		$this->defaultLocale = [null, $localeConfig['fallbackPath']];
 		$this->maintainers = $maintainers;
 		$this->discussThreadId = $discussThreadId;
 	}
@@ -114,8 +111,8 @@ abstract class Subsplit {
 	}
 
 	public function getLocale(): SubsplitLocale {
-		if (is_array($this->locale)) {
-			$this->locale = new SubsplitLocale(...$this->locale);
+		if ($this->locale === null) {
+			$this->locale = new SubsplitLocale(self::getLocalePath($this->id), self::getLocalePath('en'));
 		}
 		return $this->locale;
 	}
@@ -124,10 +121,14 @@ abstract class Subsplit {
 	 * Locale with default (English) phrases, ignoring subsplit-specific translations.
 	 */
 	public function getDefaultLocale(): SubsplitLocale {
-		if (is_array($this->defaultLocale)) {
-			$this->defaultLocale = new SubsplitLocale(...$this->defaultLocale);
+		if ($this->defaultLocale === null) {
+			$this->defaultLocale = new SubsplitLocale(null, self::getLocalePath('en'));
 		}
 		return $this->defaultLocale;
+	}
+
+	private static function getLocalePath(string $id): string {
+		return APP_ROOT . "/resources/locale/subsplits/$id.json";
 	}
 
 	public function getId(): string {

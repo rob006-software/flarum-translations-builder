@@ -43,9 +43,9 @@ use yii\caching\TagDependency;
 use yii\helpers\ArrayHelper;
 use yii\helpers\FileHelper;
 use function array_diff;
-use function array_key_exists;
 use function array_diff_key;
 use function array_filter;
+use function array_key_exists;
 use function array_reverse;
 use function assert;
 use function count;
@@ -207,10 +207,6 @@ final class Translations {
 			$config = $this->subsplits[$id];
 			switch ($config['type']) {
 				case LanguageSubsplit::TYPE:
-					$defaultLocaleConfig = [
-						'path' => $this->getDir() . "/config/subsplitsLocale/{$id}.json",
-						'fallbackPath' => $this->getDir() . '/config/subsplitsLocale/en.json',
-					];
 					$this->subsplits[$id] = new LanguageSubsplit(
 						$id,
 						$config['language'],
@@ -219,17 +215,11 @@ final class Translations {
 						$config['path'],
 						$config['components'] ?? null,
 						$this->getReleaseVersion($id),
-						($config['locale'] ?? []) + $defaultLocaleConfig,
 						$config['maintainers'] ?? [],
 						isset($config['discussThreadId']) ? (int) $config['discussThreadId'] : null
 					);
 					break;
 				case MultiLanguageSubsplit::TYPE:
-					$defaultLocaleConfig = [
-						'path' => $this->getDir() . "/config/subsplitsLocale/{$id}.json",
-						'fallbackPath' => $this->getDir() . '/config/subsplitsLocale/en.json',
-					];
-
 					$variants = [];
 					$variantsLabels = [];
 					foreach ($config['variants'] as $variantId => $variantConfig) {
@@ -242,7 +232,6 @@ final class Translations {
 							$variantConfig['path'],
 							null,
 							null,
-							($config['locale'] ?? []) + $defaultLocaleConfig,
 							$config['maintainers'] ?? []
 						);
 					}
@@ -256,7 +245,6 @@ final class Translations {
 						$config['path'],
 						$config['components'] ?? null,
 						$this->getReleaseVersion($id),
-						($config['locale'] ?? []) + $defaultLocaleConfig,
 						$config['maintainers'] ?? [],
 						isset($config['discussThreadId']) ? (int) $config['discussThreadId'] : null
 					);
