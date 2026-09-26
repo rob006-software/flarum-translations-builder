@@ -53,6 +53,7 @@ abstract class Subsplit {
 	private $locale;
 	private $defaultLocale;
 	private $maintainers;
+	private $weblateMaintainers;
 	private $discussThreadId;
 
 	public function __construct(
@@ -63,6 +64,7 @@ abstract class Subsplit {
 		?array $components,
 		?string $releaseVersion,
 		array $maintainers,
+		array $weblateMaintainers,
 		?int $discussThreadId = null
 	) {
 		$this->id = $id;
@@ -80,6 +82,7 @@ abstract class Subsplit {
 			$this->repository = [$repository, $branch, static::generateRepositoryPath($id, $repository)];
 		}
 		$this->maintainers = $maintainers;
+		$this->weblateMaintainers = $weblateMaintainers;
 		$this->discussThreadId = $discussThreadId;
 	}
 
@@ -128,6 +131,11 @@ abstract class Subsplit {
 	}
 
 	/**
+	 * @return string[] Codes of all languages included in this subsplit.
+	 */
+	abstract public function getLanguages(): array;
+
+	/**
 	 * @return string Language code used for formatting localized phrases (plural rules etc.).
 	 */
 	abstract protected function getLocaleLanguage(): string;
@@ -150,6 +158,13 @@ abstract class Subsplit {
 
 	public function getMaintainers(): array {
 		return $this->maintainers;
+	}
+
+	/**
+	 * @return string[] Usernames of maintainers on Weblate.
+	 */
+	public function getWeblateMaintainers(): array {
+		return $this->weblateMaintainers;
 	}
 
 	/**

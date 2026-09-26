@@ -76,4 +76,42 @@ class WeblateApi extends Component {
 		// call this to trigger errors if response is invalid
 		$response->toArray();
 	}
+
+	/**
+	 * @return array[]
+	 */
+	public function getGroups(): iterable {
+		return $this->getAll("$this->weblateUrl/api/groups/");
+	}
+
+	/**
+	 * @return array[]
+	 */
+	public function getUsers(): iterable {
+		return $this->getAll("$this->weblateUrl/api/users/");
+	}
+
+	public function addUserToGroup(string $username, int $groupId): void {
+		$response = $this->getClient()->request('POST', "$this->weblateUrl/api/users/{$username}/groups/", [
+			'body' => ['group_id' => $groupId],
+		]);
+		// call this to trigger errors if response is invalid
+		$response->getContent();
+	}
+
+	public function removeUserFromGroup(string $username, int $groupId): void {
+		$response = $this->getClient()->request('DELETE', "$this->weblateUrl/api/users/{$username}/groups/", [
+			'body' => ['group_id' => $groupId],
+		]);
+		// call this to trigger errors if response is invalid
+		$response->getContent();
+	}
+
+	private function getAll(string $url): iterable {
+		do {
+			$jsonResponse = $this->getClient()->request('GET', $url)->toArray();
+			$url = $jsonResponse['next'];
+			yield from $jsonResponse['results'];
+		} while ($url !== null);
+	}
 }

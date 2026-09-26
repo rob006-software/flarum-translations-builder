@@ -44,12 +44,13 @@ final class MultiLanguageSubsplit extends Subsplit {
 		?array $components,
 		?string $releaseVersion,
 		array $maintainers,
+		array $weblateMaintainers,
 		?int $discussThreadId = null
 	) {
 		$this->variants = $variants;
 		$this->variantsLabels = $variantsLabels;
 
-		parent::__construct($id, $repository, $branch, $path, $components, $releaseVersion, $maintainers, $discussThreadId);
+		parent::__construct($id, $repository, $branch, $path, $components, $releaseVersion, $maintainers, $weblateMaintainers, $discussThreadId);
 	}
 
 	public function getTranslationsHash(Translations $translations): string {
@@ -79,6 +80,15 @@ final class MultiLanguageSubsplit extends Subsplit {
 			$variants[$variant->getLanguage()] = $this->variantsLabels[$variantId];
 		}
 		return new MultiLanguageSubsplitReadmeGenerator($variants, $this->getLocale());
+	}
+
+	public function getLanguages(): array {
+		$languages = [];
+		foreach ($this->variants as $variant) {
+			$languages[] = $variant->getLanguage();
+		}
+
+		return $languages;
 	}
 
 	/**

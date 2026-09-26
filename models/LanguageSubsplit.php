@@ -53,11 +53,12 @@ final class LanguageSubsplit extends Subsplit {
 		?array $components,
 		?string $releaseVersion,
 		array $maintainers,
+		array $weblateMaintainers,
 		?int $discussThreadId = null
 	) {
 		$this->language = $language;
 
-		parent::__construct($id, $repository, $branch, $path, $components, $releaseVersion, $maintainers, $discussThreadId);
+		parent::__construct($id, $repository, $branch, $path, $components, $releaseVersion, $maintainers, $weblateMaintainers, $discussThreadId);
 	}
 
 	public function setFallbackLanguage(self $language): void {
@@ -154,6 +155,10 @@ final class LanguageSubsplit extends Subsplit {
 
 	public function getLanguage(): string {
 		return $this->language;
+	}
+
+	public function getLanguages(): array {
+		return [$this->language];
 	}
 
 	protected function getLocaleLanguage(): string {

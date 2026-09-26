@@ -118,6 +118,10 @@ final class Translations {
 			// old versions of translations repository do not have this metadata - releases are not supported there
 			$this->releaseVersions = null;
 		}
+		// languages and subsplits are the same for all Flarum versions, so they are stored in builder - only branches of
+		// subsplits are specific for Flarum version, and they are stored in metadata of translations repository
+		$config['languages'] = require APP_ROOT . '/config/translations/languages.php';
+		$config['subsplits'] = $this->loadSubsplitsConfig();
 		$this->hash = md5(json_encode([$config, $this->releaseVersions], JSON_THROW_ON_ERROR));
 		$this->languages = array_keys($config['languages']);
 		$this->ignoredExtensions = $config['ignoredExtensions'] ?? [];
@@ -194,6 +198,20 @@ final class Translations {
 		}
 	}
 
+	private function loadSubsplitsConfig(): array {
+		$branchesPath = "{$this->metadataDir}/branches.json";
+		$branches = file_exists($branchesPath)
+			? json_decode(file_get_contents($branchesPath), true, 512, JSON_THROW_ON_ERROR)
+			: [];
+		$subsplits = require APP_ROOT . '/config/translations/subsplits.php';
+		foreach ($subsplits as $id => $config) {
+			// there is no fallback - pushing to wrong branch could mess up language pack for other Flarum version
+			$subsplits[$id]['branch'] = $branches[$id] ?? null;
+		}
+
+		return $subsplits;
+	}
+
 	public function hasSubsplit(string $id): bool {
 		return isset($this->subsplits[$id]);
 	}
@@ -205,6 +223,9 @@ final class Translations {
 
 		if (!$this->subsplits[$id] instanceof Subsplit) {
 			$config = $this->subsplits[$id];
+			if ($config['branch'] === null) {
+				throw new InvalidConfigException('There is no branch for ' . readable::value($id) . ' subsplit in metadata/branches.json.');
+			}
 			switch ($config['type']) {
 				case LanguageSubsplit::TYPE:
 					$this->subsplits[$id] = new LanguageSubsplit(
@@ -216,6 +237,7 @@ final class Translations {
 						$config['components'] ?? null,
 						$this->getReleaseVersion($id),
 						$config['maintainers'] ?? [],
+						$config['weblateMaintainers'] ?? [],
 						isset($config['discussThreadId']) ? (int) $config['discussThreadId'] : null
 					);
 					break;
@@ -232,7 +254,8 @@ final class Translations {
 							$variantConfig['path'],
 							null,
 							null,
-							$config['maintainers'] ?? []
+							$config['maintainers'] ?? [],
+							$config['weblateMaintainers'] ?? []
 						);
 					}
 
@@ -246,6 +269,7 @@ final class Translations {
 						$config['components'] ?? null,
 						$this->getReleaseVersion($id),
 						$config['maintainers'] ?? [],
+						$config['weblateMaintainers'] ?? [],
 						isset($config['discussThreadId']) ? (int) $config['discussThreadId'] : null
 					);
 					break;

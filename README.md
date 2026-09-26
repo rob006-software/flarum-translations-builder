@@ -14,6 +14,10 @@ There are two production instances, one per Flarum line, with the same code but 
 Both instances work on the **same** `flarum-lang/*` repositories. The line is selected by `params['flarumVersion']`
 in `config/local.php`, and everything version-dependent goes through `app\helpers\FlarumVersion`.
 
+Languages and language packs are configured once, in the builder (`config/translations/`), and are shared by both lines.
+The only line-specific part is the branch of each language pack, stored in `metadata/branches.json` in the translations
+repo (there is no fallback - a language pack without an entry fails loudly).
+
 > [!WARNING]
 > Almost every command writes to public repositories (translations repo, language packs, pull requests, releases,
 > forum posts). Without `--push`, most commands only change local clones, but **`translations/split` and all
@@ -92,6 +96,7 @@ earlier when its input changes. `./cron` runs its steps sequentially - see the s
 * `translations/cleanup-outdated` - once a year (removes outdated translations and bumps language packs minor version).
 * `release/pr`, `release/merge` - when automation needs a nudge.
 * `janitor/*` - housekeeping, from time to time.
+* `github/sync-maintainers`, `weblate/sync-maintainers` - after changing maintainers in config.
 
 
 ## Commands
@@ -226,6 +231,33 @@ Both only talk to Weblate API - nothing is committed.
 * `update-units-flags` - adds `ignore-same` flag to units whose source is a reference (`=> core.ref.something`), so
   Weblate does not warn about translations identical to source.
 
+```bash
+./yii weblate/sync-maintainers [subsplitIds] [--dryRun=0] [--verbose=1]
+```
+
+Synchronizes members of `Flarum@Language maintainer - <language>` groups (e.g. `Flarum@Language maintainer - pl`)
+with `weblateMaintainers` from `config/translations/subsplits.php` - adds missing users and removes users that are not
+listed. For multi-language packs, maintainers are synced to groups of all variants (e.g. `de` and `de@formal`).
+Groups are not created automatically: a missing group is reported only if the language pack has maintainers. Groups
+are shared by both Weblate projects (1.x and 2.x), so it is enough to run it in one instance.
+**Dry run by default** - it only lists changes, `--dryRun=0` applies them.
+
+### `github/*` - language packs repositories administration
+
+```bash
+./yii github/sync-maintainers [subsplitIds] [--dryRun=0] [--verbose=1]
+```
+
+These commands need more permissions than the bot has, so they use the `gh` CLI with the account logged in on the
+current machine (`gh auth status`). They are meant to be run manually, never from cron.
+
+* **`sync-maintainers`** - synchronizes direct collaborators of language pack repositories with `maintainers` from
+  `config/translations/subsplits.php`. Maintainers get `triage` permission (enough to approve PRs, change labels and
+  close issues) - except members of the `flarum-lang` organization, which can only have `admin` for direct access.
+  Direct collaborators and pending invitations of users that are not maintainers are removed. `robbot006` is ignored.
+  New users get an invitation, which they need to accept. Languages and branches do not matter here, so it is enough
+  to run it in one instance. **Dry run by default** - it only lists changes, `--dryRun=0` applies them.
+
 ### `release/*` - language packs releases
 
 ```bash
@@ -335,8 +367,10 @@ To drop a job queued by mistake (before a worker picks it up), use `queue/remove
 | Path                                 | What                                                                  |
 |--------------------------------------|-----------------------------------------------------------------------|
 | `translations/`                      | clone of the translations monorepo (branch depends on Flarum line)    |
+| `config/translations/`               | `languages.php` and `subsplits.php` (language packs, maintainers) - shared by both Flarum lines |
 | `translations/config.php`            | main translations config, includes files from `translations/config/`  |
-| `translations/config/`               | `components.php`, `languages.php`, `subsplits.php` (language packs), `inheritors.php`, `ignored-extensions.php` |
+| `translations/config/`               | `components.php`, `inheritors.php`, `ignored-extensions.php`          |
+| `translations/metadata/`             | `branches.json` and `versions.json` of language packs, inheritors and outdated translations bookkeeping |
 | `runtime/subsplits/`                 | clones of language pack repositories                                  |
 | `runtime/translations-fork/`         | clone of the fork used for new-extension PRs                          |
 | `runtime/logs/`, `runtime/git-logs/` | app logs, git command logs                                            |
