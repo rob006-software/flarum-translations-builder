@@ -11,7 +11,8 @@
         "all-changes": "Wszystkie zmiany: {link}.",
         "count-changed": "{count} zmieniono",
         "count-removed": "{count} usunięto",
-        "count-added": "{count} dodano"
+        "count-added": "{count} dodano",
+        "completion": "przetłumaczono {percent}%"
     },
     "announcement": {
         "version": "Wersja {version}",
