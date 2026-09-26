@@ -47,7 +47,6 @@ abstract class Subsplit {
 	private $id;
 	private $repository;
 	private $path;
-	private $components;
 	private $releaseVersion;
 	private $repositoryUrl;
 	private $locale;
@@ -61,7 +60,6 @@ abstract class Subsplit {
 		$repository,
 		string $branch,
 		string $path,
-		?array $components,
 		?string $releaseVersion,
 		array $maintainers,
 		array $weblateMaintainers,
@@ -69,7 +67,6 @@ abstract class Subsplit {
 	) {
 		$this->id = $id;
 		$this->path = $path;
-		$this->components = $components;
 		$this->releaseVersion = $releaseVersion;
 		if (is_array($repository)) {
 			$this->repositoryUrl = $repository[0];
@@ -85,6 +82,14 @@ abstract class Subsplit {
 		$this->weblateMaintainers = $weblateMaintainers;
 		$this->discussThreadId = $discussThreadId;
 	}
+
+	/**
+	 * Creates subsplit from its config (from `config/translations/subsplits.php`).
+	 *
+	 * @param array $config Subsplit config with `branch` from `metadata/branches.json` of translations repository.
+	 * @param string|null $releaseVersion Version from `metadata/versions.json` of translations repository.
+	 */
+	abstract public static function createFromConfig(string $id, array $config, ?string $releaseVersion): Subsplit;
 
 	public static function generateRepositoryPath(string $subsplitId, string $repositoryUrl): string {
 		$repoDirectory = $subsplitId . '__' . strtr($repositoryUrl, [
@@ -174,9 +179,7 @@ abstract class Subsplit {
 		return $this->discussThreadId;
 	}
 
-	public function isValidForComponent(Component $component): bool {
-		return ($this->components === null || in_array($component->getId(), $this->components, true));
-	}
+	abstract public function isValidForComponent(Component $component): bool;
 
 	abstract public function getTranslationsHash(Translations $translations): string;
 

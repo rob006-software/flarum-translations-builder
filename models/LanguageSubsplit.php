@@ -37,8 +37,6 @@ use const JSON_THROW_ON_ERROR;
  */
 final class LanguageSubsplit extends Subsplit {
 
-	public const TYPE = 'language';
-
 	/** @var string */
 	private $language;
 	/** @var self */
@@ -50,7 +48,6 @@ final class LanguageSubsplit extends Subsplit {
 		$repository,
 		string $branch,
 		string $path,
-		?array $components,
 		?string $releaseVersion,
 		array $maintainers,
 		array $weblateMaintainers,
@@ -58,7 +55,21 @@ final class LanguageSubsplit extends Subsplit {
 	) {
 		$this->language = $language;
 
-		parent::__construct($id, $repository, $branch, $path, $components, $releaseVersion, $maintainers, $weblateMaintainers, $discussThreadId);
+		parent::__construct($id, $repository, $branch, $path, $releaseVersion, $maintainers, $weblateMaintainers, $discussThreadId);
+	}
+
+	public static function createFromConfig(string $id, array $config, ?string $releaseVersion): Subsplit {
+		return new self(
+			$id,
+			$config['language'],
+			$config['repository'],
+			$config['branch'],
+			$config['path'],
+			$releaseVersion,
+			$config['maintainers'],
+			$config['weblateMaintainers'],
+			$config['discussThreadId'] ?? null
+		);
 	}
 
 	public function setFallbackLanguage(self $language): void {
@@ -166,7 +177,7 @@ final class LanguageSubsplit extends Subsplit {
 	}
 
 	public function isValidForComponent(Component $component): bool {
-		return parent::isValidForComponent($component) && $component->isValidForLanguage($this->language);
+		return $component->isValidForLanguage($this->language);
 	}
 
 	public function createReadmeGenerator(Translations $translations): ReadmeGenerator {

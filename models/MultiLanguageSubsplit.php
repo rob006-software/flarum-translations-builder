@@ -15,8 +15,9 @@ namespace app\models;
 
 use app\components\readme\MultiLanguageSubsplitReadmeGenerator;
 use app\components\readme\ReadmeGenerator;
+use mindplay\readable;
+use yii\base\InvalidConfigException;
 use function json_encode;
-use function reset;
 
 /**
  * Class MultiLanguageSubsplit.
@@ -25,32 +26,80 @@ use function reset;
  */
 final class MultiLanguageSubsplit extends Subsplit {
 
-	public const TYPE = 'multi-language';
-
+	/** @var string */
+	private $language;
 	/** @var LanguageSubsplit[] */
 	private $variants;
 	/** @var string[] */
 	private $variantsLabels;
+	/** @var LanguageSubsplit */
+	private $mainVariant;
 
 	private $_variantsRepositoriesInitialised = false;
 
+	/**
+	 * @param string $language Main language - its variant is used as fallback for other variants.
+	 * @param LanguageSubsplit[] $variants
+	 */
 	public function __construct(
 		string $id,
+		string $language,
 		array $variants,
 		array $variantsLabels,
 		string $repository,
 		string $branch,
 		string $path,
-		?array $components,
 		?string $releaseVersion,
 		array $maintainers,
 		array $weblateMaintainers,
 		?int $discussThreadId = null
 	) {
+		$this->language = $language;
 		$this->variants = $variants;
 		$this->variantsLabels = $variantsLabels;
+		foreach ($variants as $variant) {
+			if ($variant->getLanguage() === $language) {
+				$this->mainVariant = $variant;
+			}
+		}
+		if ($this->mainVariant === null) {
+			throw new InvalidConfigException('There is no variant for ' . readable::value($language) . " language in $id subsplit.");
+		}
 
-		parent::__construct($id, $repository, $branch, $path, $components, $releaseVersion, $maintainers, $weblateMaintainers, $discussThreadId);
+		parent::__construct($id, $repository, $branch, $path, $releaseVersion, $maintainers, $weblateMaintainers, $discussThreadId);
+	}
+
+	public static function createFromConfig(string $id, array $config, ?string $releaseVersion): Subsplit {
+		$variants = [];
+		$variantsLabels = [];
+		foreach ($config['variants'] as $variantId => $variantConfig) {
+			$variantsLabels[$variantId] = $variantConfig['name'];
+			$variants[$variantId] = new LanguageSubsplit(
+				$variantId,
+				$variantConfig['language'],
+				// all variants use the same repository - see `getRepository()`
+				[$config['repository'], $config['branch'], self::generateRepositoryPath($id, $config['repository'])],
+				$config['branch'],
+				$variantConfig['path'],
+				null,
+				$config['maintainers'],
+				$config['weblateMaintainers']
+			);
+		}
+
+		return new self(
+			$id,
+			$config['language'],
+			$variants,
+			$variantsLabels,
+			$config['repository'],
+			$config['branch'],
+			$config['path'],
+			$releaseVersion,
+			$config['maintainers'],
+			$config['weblateMaintainers'],
+			$config['discussThreadId'] ?? null
+		);
 	}
 
 	public function getTranslationsHash(Translations $translations): string {
@@ -63,12 +112,9 @@ final class MultiLanguageSubsplit extends Subsplit {
 	}
 
 	public function split(Translations $translations): void {
-		$fallback = null;
 		foreach ($this->variants as $variant) {
-			if ($fallback === null) {
-				$fallback = $variant;
-			} else {
-				$variant->setFallbackLanguage($fallback);
+			if ($variant !== $this->mainVariant) {
+				$variant->setFallbackLanguage($this->mainVariant);
 			}
 			$variant->split($translations);
 		}
@@ -91,11 +137,8 @@ final class MultiLanguageSubsplit extends Subsplit {
 		return $languages;
 	}
 
-	/**
-	 * First variant is also used as fallback for other variants, so it is treated as the main language.
-	 */
 	protected function getLocaleLanguage(): string {
-		return reset($this->variants)->getLanguage();
+		return $this->language;
 	}
 
 	protected function getSourcesPaths(Translations $translations): array {
@@ -131,10 +174,6 @@ final class MultiLanguageSubsplit extends Subsplit {
 	}
 
 	public function isValidForComponent(Component $component): bool {
-		if (!parent::isValidForComponent($component)) {
-			return false;
-		}
-
 		foreach ($this->variants as $variant) {
 			if ($component->isValidForLanguage($variant->getLanguage())) {
 				return true;
@@ -147,7 +186,7 @@ final class MultiLanguageSubsplit extends Subsplit {
 	public function getMainVariant(): LanguageSubsplit {
 		// inject `Repository` object to variants to avoid instantiating multiple objects for the same repository path
 		$this->getRepository();
-		return reset($this->variants);
+		return $this->mainVariant;
 	}
 
 	/**

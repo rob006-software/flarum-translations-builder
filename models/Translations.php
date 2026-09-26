@@ -59,6 +59,7 @@ use function getenv;
 use function in_array;
 use function is_array;
 use function is_dir;
+use function is_subclass_of;
 use function json_decode;
 use function json_encode;
 use function ksort;
@@ -226,56 +227,10 @@ final class Translations {
 			if ($config['branch'] === null) {
 				throw new InvalidConfigException('There is no branch for ' . readable::value($id) . ' subsplit in metadata/branches.json.');
 			}
-			switch ($config['type']) {
-				case LanguageSubsplit::TYPE:
-					$this->subsplits[$id] = new LanguageSubsplit(
-						$id,
-						$config['language'],
-						$config['repository'],
-						$config['branch'],
-						$config['path'],
-						$config['components'] ?? null,
-						$this->getReleaseVersion($id),
-						$config['maintainers'] ?? [],
-						$config['weblateMaintainers'] ?? [],
-						isset($config['discussThreadId']) ? (int) $config['discussThreadId'] : null
-					);
-					break;
-				case MultiLanguageSubsplit::TYPE:
-					$variants = [];
-					$variantsLabels = [];
-					foreach ($config['variants'] as $variantId => $variantConfig) {
-						$variantsLabels[$variantId] = $variantConfig['name'] ?? $variantId;
-						$variants[$variantId] = new LanguageSubsplit(
-							$variantId,
-							$variantConfig['language'],
-							[$config['repository'], $config['branch'], LanguageSubsplit::generateRepositoryPath($id, $config['repository'])],
-							$config['branch'],
-							$variantConfig['path'],
-							null,
-							null,
-							$config['maintainers'] ?? [],
-							$config['weblateMaintainers'] ?? []
-						);
-					}
-
-					$this->subsplits[$id] = new MultiLanguageSubsplit(
-						$id,
-						$variants,
-						$variantsLabels,
-						$config['repository'],
-						$config['branch'],
-						$config['path'],
-						$config['components'] ?? null,
-						$this->getReleaseVersion($id),
-						$config['maintainers'] ?? [],
-						$config['weblateMaintainers'] ?? [],
-						isset($config['discussThreadId']) ? (int) $config['discussThreadId'] : null
-					);
-					break;
-				default:
-					throw new InvalidConfigException('Invalid subsplit type for ' . readable::value($id) . '.');
+			if (!is_subclass_of($config['class'], Subsplit::class)) {
+				throw new InvalidConfigException('Invalid subsplit class for ' . readable::value($id) . ': ' . readable::value($config['class']) . '.');
 			}
+			$this->subsplits[$id] = $config['class']::createFromConfig($id, $config, $this->getReleaseVersion($id));
 		}
 
 		return $this->subsplits[$id];
