@@ -28,8 +28,8 @@ return [
 		'language' => 'ar',
 		'repository' => 'git@github.com:flarum-lang/arabic.git',
 		'path' => '/locale',
-		'maintainers' => [], // ['neerugupta'], see https://github.com/flarum-lang/arabic/pull/6#issuecomment-3020290604
-		'weblateMaintainers' => ['neeru.gupta'],
+		'maintainers' => [],
+		'weblateMaintainers' => [],
 	],
 	'ast' => [
 		'class' => LanguageSubsplit::class,
@@ -44,8 +44,8 @@ return [
 		'language' => 'az',
 		'repository' => 'git@github.com:flarum-lang/azerbaijani.git',
 		'path' => '/locale',
-		'maintainers' => [], // ['khayal011'], see https://github.com/flarum-lang/azerbaijani/pull/1#issuecomment-1311812451
-		'weblateMaintainers' => ['khayal'],
+		'maintainers' => [],
+		'weblateMaintainers' => [],
 	],
 	'be' => [
 		'class' => LanguageSubsplit::class,
@@ -60,16 +60,16 @@ return [
 		'language' => 'bg',
 		'repository' => 'git@github.com:flarum-lang/bulgarian.git',
 		'path' => '/locale',
-		'maintainers' => ['nsokoloff'],
-		'weblateMaintainers' => ['omoroka'],
+		'maintainers' => [],
+		'weblateMaintainers' => [],
 	],
 	'bn' => [
 		'class' => LanguageSubsplit::class,
 		'language' => 'bn',
 		'repository' => 'git@github.com:flarum-lang/bengali.git',
 		'path' => '/locale',
-		'maintainers' => [], // ['mueenulit'], see https://github.com/flarum-lang/bengali/pull/1#issuecomment-1311816335
-		'weblateMaintainers' => ['mueenulit'],
+		'maintainers' => [],
+		'weblateMaintainers' => [],
 	],
 	'br' => [
 		'class' => LanguageSubsplit::class,
@@ -92,8 +92,8 @@ return [
 		'language' => 'ca',
 		'repository' => 'git@github.com:flarum-lang/catalan.git',
 		'path' => '/locale',
-		'maintainers' => ['pepoliveras', 'joanaranda'],
-		'weblateMaintainers' => ['pepoliveras', 'joanaranda'],
+		'maintainers' => [],
+		'weblateMaintainers' => [],
 	],
 	'ckb' => [
 		'class' => LanguageSubsplit::class,
@@ -124,8 +124,8 @@ return [
 		'language' => 'da',
 		'repository' => 'git@github.com:flarum-lang/danish.git',
 		'path' => '/locale',
-		'maintainers' => [], // ['DeliciousDanny', 'davwheat'], see https://github.com/flarum-lang/danish/pull/1#issuecomment-1311822729
-		'weblateMaintainers' => ['davwheat', 'DeliciousDanny'],
+		'maintainers' => [],
+		'weblateMaintainers' => [],
 	],
 	'de' => [
 		'class' => MultiLanguageSubsplit::class,
@@ -204,8 +204,8 @@ return [
 		'language' => 'et',
 		'repository' => 'git@github.com:flarum-lang/estonian.git',
 		'path' => '/locale',
-		'maintainers' => ['JoomlaEstonia'],
-		'weblateMaintainers' => ['Zangov'],
+		'maintainers' => [],
+		'weblateMaintainers' => [],
 	],
 	'eu' => [
 		'class' => LanguageSubsplit::class,
@@ -276,8 +276,8 @@ return [
 		'language' => 'hi',
 		'repository' => 'git@github.com:flarum-lang/hindi.git',
 		'path' => '/locale',
-		'maintainers' => ['ItsNeil17'],
-		'weblateMaintainers' => ['Neil'],
+		'maintainers' => [],
+		'weblateMaintainers' => [],
 	],
 	'hr' => [
 		'class' => LanguageSubsplit::class,
@@ -388,24 +388,24 @@ return [
 		'language' => 'ko',
 		'repository' => 'git@github.com:flarum-lang/korean.git',
 		'path' => '/locale',
-		'maintainers' => ['hahagu'],
-		'weblateMaintainers' => ['hahagu'],
+		'maintainers' => [],
+		'weblateMaintainers' => [],
 	],
 	'lt' => [
 		'class' => LanguageSubsplit::class,
 		'language' => 'lt',
 		'repository' => 'git@github.com:flarum-lang/lithuanian.git',
 		'path' => '/locale',
-		'maintainers' => [], // ['tavoweb'], see https://github.com/flarum-lang/lithuanian/pull/1#issuecomment-1311833030
-		'weblateMaintainers' => ['mindaugas'],
+		'maintainers' => [],
+		'weblateMaintainers' => [],
 	],
 	'lv' => [
 		'class' => LanguageSubsplit::class,
 		'language' => 'lv',
 		'repository' => 'git@github.com:flarum-lang/latvian.git',
 		'path' => '/locale',
-		'maintainers' => ['edevrob'],
-		'weblateMaintainers' => ['edevrob'],
+		'maintainers' => [],
+		'weblateMaintainers' => [],
 	],
 	'mk' => [
 		'class' => LanguageSubsplit::class,
@@ -420,8 +420,8 @@ return [
 		'language' => 'ml',
 		'repository' => 'git@github.com:flarum-lang/malayalam.git',
 		'path' => '/locale',
-		'maintainers' => [], // ['meetdilip'], see https://github.com/flarum-lang/malayalam/pull/1#issuecomment-1311837994
-		'weblateMaintainers' => ['meetdilip'],
+		'maintainers' => [],
+		'weblateMaintainers' => [],
 	],
 	'mr' => [
 		'class' => LanguageSubsplit::class,
@@ -444,8 +444,8 @@ return [
 		'language' => 'nb',
 		'repository' => 'git@github.com:flarum-lang/norwegian-bokmal.git',
 		'path' => '/locale',
-		'maintainers' => ['tormi-github'],
-		'weblateMaintainers' => ['tormi'],
+		'maintainers' => [],
+		'weblateMaintainers' => [],
 	],
 	'ne' => [
 		'class' => LanguageSubsplit::class,
@@ -493,7 +493,7 @@ return [
 		'repository' => 'git@github.com:flarum-lang/polish.git',
 		'path' => '/locale',
 		'maintainers' => ['rob006'],
-		'weblateMaintainers' => ['rob006', 'test'],
+		'weblateMaintainers' => ['rob006'],
 		'discussThreadId' => 18134,
 	],
 	'pt' => [
@@ -517,8 +517,8 @@ return [
 		'language' => 'ro',
 		'repository' => 'git@github.com:flarum-lang/romanian.git',
 		'path' => '/locale',
-		'maintainers' => ['laurentiu86stan'],
-		'weblateMaintainers' => ['laurentiu86stan'],
+		'maintainers' => [],
+		'weblateMaintainers' => [],
 	],
 	'ru' => [
 		'class' => LanguageSubsplit::class,
@@ -526,7 +526,7 @@ return [
 		'repository' => 'git@github.com:flarum-lang/russian.git',
 		'path' => '/locale',
 		'maintainers' => ['KaiKimera'],
-		'weblateMaintainers' => ['KaiKimera', 'KitsuneSolar', 'forumaker'],
+		'weblateMaintainers' => ['KaiKimera', 'forumaker'],
 	],
 	'sc' => [
 		'class' => LanguageSubsplit::class,
@@ -549,8 +549,8 @@ return [
 		'language' => 'sk',
 		'repository' => 'git@github.com:flarum-lang/slovak.git',
 		'path' => '/locale',
-		'maintainers' => ['SKevo18'],
-		'weblateMaintainers' => ['SKevo'],
+		'maintainers' => [],
+		'weblateMaintainers' => [],
 	],
 	'sl' => [
 		'class' => LanguageSubsplit::class,
@@ -597,8 +597,8 @@ return [
 		'language' => 'ta',
 		'repository' => 'git@github.com:flarum-lang/tamil.git',
 		'path' => '/locale',
-		'maintainers' => [], // ['eYM3', 'sayuri-gi'], see https://github.com/flarum-lang/tamil/pull/3#issuecomment-1311851703
-		'weblateMaintainers' => ['sayuri', 'eYM3'],
+		'maintainers' => [],
+		'weblateMaintainers' => [],
 	],
 	'te' => [
 		'class' => LanguageSubsplit::class,
@@ -613,24 +613,24 @@ return [
 		'language' => 'tg',
 		'repository' => 'git@github.com:flarum-lang/tajik.git',
 		'path' => '/locale',
-		'maintainers' => ['alikhakbaz97'],
-		'weblateMaintainers' => ['alikhakbaz97'],
+		'maintainers' => [],
+		'weblateMaintainers' => [],
 	],
 	'th' => [
 		'class' => LanguageSubsplit::class,
 		'language' => 'th',
 		'repository' => 'git@github.com:flarum-lang/thai.git',
 		'path' => '/locale',
-		'maintainers' => [], // ['kon3ko'], see https://github.com/flarum-lang/thai/pull/2#issuecomment-1311857526
-		'weblateMaintainers' => ['kon3ko'],
+		'maintainers' => [],
+		'weblateMaintainers' => [],
 	],
 	'tk' => [
 		'class' => LanguageSubsplit::class,
 		'language' => 'tk',
 		'repository' => 'git@github.com:flarum-lang/turkmen.git',
 		'path' => '/locale',
-		'maintainers' => ['NuryagdyMuhyyev'],
-		'weblateMaintainers' => ['Kotosov'],
+		'maintainers' => [],
+		'weblateMaintainers' => [],
 	],
 	'tl' => [
 		'class' => LanguageSubsplit::class,
@@ -645,15 +645,15 @@ return [
 		'language' => 'tok',
 		'repository' => 'git@github.com:flarum-lang/toki-pona.git',
 		'path' => '/locale',
-		'maintainers' => ['mazziechai'],
-		'weblateMaintainers' => ['mazzie'],
+		'maintainers' => [],
+		'weblateMaintainers' => [],
 	],
 	'tr' => [
 		'class' => LanguageSubsplit::class,
 		'language' => 'tr',
 		'repository' => 'git@github.com:flarum-lang/turkish.git',
 		'path' => '/locale',
-		'maintainers' => ['tolgaaaltas', 'selmanozturk', 'huseyinfiliz'], // todo: temporary maintainer? https://discuss.flarum.org/d/27519-the-flarum-language-project/235
+		'maintainers' => ['tolgaaaltas', 'huseyinfiliz'],
 		'weblateMaintainers' => ['tolgaaaltas', 'huseyinfiliz'],
 	],
 	'tt' => [
@@ -661,8 +661,8 @@ return [
 		'language' => 'tt',
 		'repository' => 'git@github.com:flarum-lang/tatar.git',
 		'path' => '/locale',
-		'maintainers' => ['inov8ru'],
-		'weblateMaintainers' => ['inov8'],
+		'maintainers' => [],
+		'weblateMaintainers' => [],
 	],
 	'ug' => [
 		'class' => LanguageSubsplit::class,
@@ -693,8 +693,8 @@ return [
 		'language' => 'uz',
 		'repository' => 'git@github.com:flarum-lang/uzbek.git',
 		'path' => '/locale',
-		'maintainers' => ['JeongJun-Lee'],
-		'weblateMaintainers' => ['comseong'],
+		'maintainers' => [],
+		'weblateMaintainers' => [],
 	],
 	'vi' => [
 		'class' => LanguageSubsplit::class,
