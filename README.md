@@ -268,9 +268,10 @@ current machine (`gh auth status`). They are meant to be run manually, never fro
 
 How releases work:
 
-1. `translations/split` creates/updates branch `release/<pack branch>` with a changelog draft and opens a **draft PR**
-   titled ``Release `x.y.z` `` (release notes live between `<!-- release-notes-begin -->` markers in PR body - keep
-   them intact). Version is taken from the PR title on merge, so it can be edited in the title.
+1. `translations/split` creates/updates branch `release/<pack branch>` with a changelog draft and opens a PR titled
+   ``Release `x.y.z` `` (release notes live between `<!-- release-notes-begin -->` markers in PR body - keep them
+   intact). Version is taken from the PR title on merge, so it can be edited in the title. Older release PRs may still
+   be drafts - they are marked as ready for review right before merge.
 2. Maintainer approves the PR → GitHub webhook (`POST /github/language-subsplit`) → `MergeReleasePullRequestJob` in
    queue → PR is merged, tagged, GitHub release is created and release is announced (on the forum if
    `discussThreadId` is configured for the pack, otherwise as a PR comment with announcement to copy).

@@ -260,7 +260,6 @@ class ReleasePullRequestGenerator {
 				'base' => $this->repository->getBranch(),
 				'title' => "Release `{$this->generator->getNextVersion()}`",
 				'body' => $this->generatePullRequestBody(),
-				'draft' => true,
 			]
 		);
 		Yii::$app->queue->delay(self::AUTO_MERGE_QUEUE_DELAY)->push(new QueueMergeReleasePullRequestJob([
