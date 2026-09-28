@@ -57,8 +57,6 @@ class ReleasePullRequestGenerator {
 	public const MIN_AUTO_MERGE_LABEL_AGE = 24 * 60 * 60;
 	/** Delay for job which queues pull request for automatic merge. */
 	public const AUTO_MERGE_QUEUE_DELAY = 6 * 24 * 60 * 60;
-	/** @todo automatic merge is tested only on single language pack for now */
-	public const AUTO_MERGE_SUBSPLITS = ['pl'];
 
 	public const MAINTAINER_ASSOCIATIONS = [
 		'OWNER',
@@ -265,12 +263,10 @@ class ReleasePullRequestGenerator {
 				'draft' => true,
 			]
 		);
-		if (in_array($this->subsplit->getId(), self::AUTO_MERGE_SUBSPLITS, true)) {
-			Yii::$app->queue->delay(self::AUTO_MERGE_QUEUE_DELAY)->push(new QueueMergeReleasePullRequestJob([
-				'subsplit' => $this->subsplit->getId(),
-				'pullRequestNumber' => $pullRequest['number'],
-			]));
-		}
+		Yii::$app->queue->delay(self::AUTO_MERGE_QUEUE_DELAY)->push(new QueueMergeReleasePullRequestJob([
+			'subsplit' => $this->subsplit->getId(),
+			'pullRequestNumber' => $pullRequest['number'],
+		]));
 		if (!empty($this->subsplit->getMaintainers())) {
 			try {
 				$this->githubApi->addPullRequestAssignees($this->subsplit->getRepositoryUrl(), $pullRequest['number'], $this->subsplit->getMaintainers());

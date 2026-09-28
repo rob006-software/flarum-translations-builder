@@ -21,7 +21,6 @@ use Throwable;
 use Yii;
 use yii\helpers\Console;
 use function array_merge;
-use function in_array;
 use function strtotime;
 use function time;
 
@@ -108,11 +107,6 @@ final class ReleaseController extends ConsoleController {
 
 		foreach ($subsplits as $subsplit) {
 			if (!$subsplit->hasReleaseGenerator()) {
-				continue;
-			}
-			// @todo automatic merge is tested only on single language pack for now
-			if (!in_array($subsplit->getId(), ReleasePullRequestGenerator::AUTO_MERGE_SUBSPLITS, true)) {
-				$this->log($subsplit, 'automatic merge is not enabled for this subsplit - skip.');
 				continue;
 			}
 
