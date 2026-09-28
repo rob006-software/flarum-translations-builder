@@ -29,6 +29,7 @@ use Dont\DontCall;
 use Dont\DontCallStatic;
 use Dont\DontGet;
 use Dont\DontSet;
+use Locale;
 use mindplay\readable;
 use Symfony\Component\Translation\Loader\ArrayLoader;
 use Symfony\Component\Translation\MessageCatalogue;
@@ -100,6 +101,7 @@ final class Translations {
 	private $inheritors;
 	private $ignoredExtensions;
 	private $languages;
+	private $languagesConfig;
 	private $supportedVersions;
 	private $unsupportedVersions;
 
@@ -125,6 +127,7 @@ final class Translations {
 		$config['subsplits'] = $this->loadSubsplitsConfig();
 		$this->hash = md5(json_encode([$config, $this->releaseVersions], JSON_THROW_ON_ERROR));
 		$this->languages = array_keys($config['languages']);
+		$this->languagesConfig = $config['languages'];
 		$this->ignoredExtensions = $config['ignoredExtensions'] ?? [];
 		$this->subsplits = $config['subsplits'];
 		$this->inheritors = $config['inheritors'] ?? [];
@@ -134,13 +137,6 @@ final class Translations {
 			if (is_array($componentConfig)) {
 				$builtInLanguages = ArrayHelper::remove($componentConfig, '__builtInLanguages', []);
 				$languages = array_diff($this->languages, $builtInLanguages);
-				foreach ($config['languages'] as $language => $languageComponents) {
-					if (in_array($componentId, $languageComponents, true)) {
-						$languages[] = $language;
-					} elseif (in_array("!$componentId", $languageComponents, true)) {
-						$languages = array_diff($languages, [$language]);
-					}
-				}
 				$this->components[$componentId] = new Component($componentConfig, $componentId, $languages);
 			} else {
 				throw new InvalidConfigException('Invalid $config: ' . readable::value($componentConfig) . '.');
@@ -368,6 +364,14 @@ final class Translations {
 	 */
 	public function getLanguages(): array {
 		return $this->languages;
+	}
+
+	public function getLanguageName(string $language): string {
+		if (!isset($this->languagesConfig[$language])) {
+			throw new InvalidArgumentException('There is no language with ' . readable::value($language) . ' ID.');
+		}
+
+		return $this->languagesConfig[$language]['name'] ?? Locale::getDisplayName($language, 'en');
 	}
 
 	public function getDir(): string {

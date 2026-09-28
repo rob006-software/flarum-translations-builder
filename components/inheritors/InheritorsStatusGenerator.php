@@ -13,7 +13,7 @@ declare(strict_types=1);
 
 namespace app\components\inheritors;
 
-use app\helpers\Language;
+use app\models\Translations;
 use Dont\DontCall;
 use Dont\DontCallStatic;
 use Dont\DontGet;
@@ -79,7 +79,7 @@ final class InheritorsStatusGenerator {
 		$this->writeReport($fileName, (new InheritorDiffGenerator($inheritor, $comparison))->generate());
 		$this->summaryGenerator->addReport(
 			$inheritor,
-			Language::name($inheritor->getLanguage()) . " (`{$inheritor->getId()}`)",
+			Translations::$instance->getLanguageName($inheritor->getLanguage()) . " (`{$inheritor->getId()}`)",
 			$fileName,
 			1,
 			$comparison->getDifferencesCount(),

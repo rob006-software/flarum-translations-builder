@@ -17,11 +17,11 @@ declare(strict_types=1);
 namespace app\components\extensions;
 
 use app\helpers\FlarumVersion;
-use app\helpers\Language;
 use app\helpers\StringHelper;
 use app\models\Extension;
 use app\models\PremiumExtension;
 use app\models\RegularExtension;
+use app\models\Translations;
 use Dont\DontCall;
 use Dont\DontCallStatic;
 use Dont\DontGet;
@@ -81,7 +81,7 @@ final class LanguageStatsGenerator {
 	}
 
 	public function generate(): string {
-		$languageName = Language::name($this->language);
+		$languageName = Translations::$instance->getLanguageName($this->language);
 		return "# $languageName translation status \n\n\n"
 			. $this->generateCore() . "\n\n"
 			. $this->generateRegularExtensions() . "\n\n"

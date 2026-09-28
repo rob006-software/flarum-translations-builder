@@ -14,8 +14,8 @@ declare(strict_types=1);
 namespace app\components\languages;
 
 use app\helpers\FlarumVersion;
-use app\helpers\Language;
 use app\models\LanguageSubsplit;
+use app\models\Translations;
 use Dont\DontCall;
 use Dont\DontCallStatic;
 use Dont\DontGet;
@@ -48,7 +48,7 @@ final class LanguagePacksSummaryGenerator {
 		$names = [];
 		foreach ($this->subsplits as $subsplit) {
 			/* @noinspection AmbiguousMethodsCallsInArrayMappingInspection */
-			$names[$subsplit->getLanguage()] = Language::name($subsplit->getLanguage());
+			$names[$subsplit->getLanguage()] = Translations::$instance->getLanguageName($subsplit->getLanguage());
 		}
 		uasort($names, static function (string $a, string $b) {
 			return $a <=> $b;
@@ -76,7 +76,7 @@ final class LanguagePacksSummaryGenerator {
 			$weblateProject = FlarumVersion::weblateProject();
 			$branchName = FlarumVersion::branch();
 			$subsplit = $this->subsplits[$language];
-			$name = Language::name($subsplit->getLanguage());
+			$name = Translations::$instance->getLanguageName($subsplit->getLanguage());
 			$packageName = $subsplit->getPackageName();
 			[$userName, $repoName] = Yii::$app->githubApi->explodeRepoUrl($subsplit->getRepositoryUrl());
 			$prefix = '';

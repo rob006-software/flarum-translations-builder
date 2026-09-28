@@ -13,7 +13,7 @@ declare(strict_types=1);
 
 namespace app\components\inheritors;
 
-use app\helpers\Language;
+use app\models\Translations;
 use Dont\DontCall;
 use Dont\DontCallStatic;
 use Dont\DontGet;
@@ -54,7 +54,7 @@ final class InheritorLanguagesSummaryGenerator {
 	 */
 	public function addLanguage(TranslationsInheritor $inheritor, InheritorComparison $comparison, string $fileName): void {
 		$this->languages[$inheritor->getLanguage()] = [
-			'name' => Language::name($inheritor->getLanguage()),
+			'name' => Translations::$instance->getLanguageName($inheritor->getLanguage()),
 			'language' => $inheritor->getLanguage(),
 			'fileName' => $fileName,
 			'differencesCount' => $comparison->getDifferencesCount(),

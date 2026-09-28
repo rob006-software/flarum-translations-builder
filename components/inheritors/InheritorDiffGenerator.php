@@ -14,8 +14,8 @@ declare(strict_types=1);
 namespace app\components\inheritors;
 
 use app\helpers\FlarumVersion;
-use app\helpers\Language;
 use app\helpers\TextDiff;
+use app\models\Translations;
 use Dont\DontCall;
 use Dont\DontCallStatic;
 use Dont\DontGet;
@@ -89,7 +89,7 @@ final class InheritorDiffGenerator {
 			translated only in `{language}`. Altogether they cover **{componentsCount}** components.
 
 			MD, [
-			'{name}' => Language::name($language),
+			'{name}' => Translations::$instance->getLanguageName($language),
 			'{language}' => $language,
 			'{fromLabel}' => $this->inheritor->getInheritFromLabel(),
 			'{count}' => $this->comparison->getDifferencesCount(),
