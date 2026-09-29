@@ -23,6 +23,7 @@
         "extensions-updated": "Mise à jour des traductions de certaines extensions",
         "count-changed": "{count} changé(s)",
         "count-removed": "{count} supprimé(s)",
-        "count-added": "{count} ajouté(s)"
+        "count-added": "{count} ajouté(s)",
+        "completion": "{percent} % terminé"
     }
 }
