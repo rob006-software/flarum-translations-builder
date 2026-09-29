@@ -154,6 +154,7 @@ final class ReleaseController extends ConsoleController {
 				return;
 			}
 
+			Yii::error("Release PR for $branchName branch was not found for '{$subsplit->getId()}' subsplit.");
 			$this->deleteBranch($subsplit, $branchName, 'there is no pull request for this branch');
 			return;
 		}
