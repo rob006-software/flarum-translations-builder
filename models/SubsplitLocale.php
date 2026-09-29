@@ -69,7 +69,7 @@ class SubsplitLocale {
 				return $result;
 			}
 			// broken translation should not break release - use English phrase instead
-			Yii::warning("Unable to format '$key' phrase for '$this->language' language: " . intl_get_error_message(), __METHOD__);
+			Yii::error("Unable to format '$key' phrase for '$this->language' language: " . intl_get_error_message(), __METHOD__);
 		}
 
 		$string = ArrayHelper::getValue($this->fallbackLocale, $key);

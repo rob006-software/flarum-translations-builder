@@ -39,7 +39,7 @@ class AnnounceReleaseOnForumJob extends BaseObject implements JobInterface {
 		$subsplit = $translations->getSubsplit($this->subsplit);
 		$discussThreadId = $subsplit->getDiscussThreadId();
 		if ($discussThreadId === null) {
-			Yii::warning("Subsplit '{$this->subsplit}' does not have discussion thread configured.");
+			Yii::error("Subsplit '{$this->subsplit}' does not have discussion thread configured.");
 			return;
 		}
 

@@ -34,25 +34,32 @@ final class JsonFileLoader extends BaseJsonFileLoader {
 	protected function loadResource(string $resource) {
 		$data = parent::loadResource($resource);
 		if ($this->skipEmpty && !empty($data)) {
-			$data = $this->removeEmpty($data);
+			$data = $this->removeEmpty($data, $resource);
 		}
 
 		return $data;
 	}
 
-	private function removeEmpty(array $data): array {
+	private function removeEmpty(array $data, string $resource): array {
 		foreach ($data as $i => $item) {
 			if (is_string($item)) {
 				if ($item === '') {
 					unset($data[$i]);
 				}
 			} elseif (is_array($item)) {
-				$data[$i] = $this->removeEmpty($item);
+				$data[$i] = $this->removeEmpty($item, $resource);
 				if (empty($data[$i])) {
 					unset($data[$i]);
 				}
 			} else {
-				Yii::warning("Non-string translation occurred for '$i' key.", __CLASS__);
+				$message = "Non-string translation occurred for '$i' key in '$resource'.";
+				Yii::$app->frequencyLimiter->run(
+					__METHOD__ . '#' . $message,
+					31 * 24 * 3600,
+					static function () use ($message) {
+						Yii::warning($message, __CLASS__);
+					}
+				);
 			}
 		}
 

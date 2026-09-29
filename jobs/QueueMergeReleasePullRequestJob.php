@@ -58,7 +58,7 @@ class QueueMergeReleasePullRequestJob extends BaseObject implements JobInterface
 		$branchName = "release/{$subsplit->getRepository()->getBranch()}";
 		if ($pullRequest['head']['ref'] !== $branchName) {
 			// make sure that we're not touching pull request from other Flarum version line
-			Yii::warning(
+			Yii::error(
 				"PR #$pullRequestNumber in $repositoryUrl is not a release pull request for '$branchName' branch."
 			);
 			return;
