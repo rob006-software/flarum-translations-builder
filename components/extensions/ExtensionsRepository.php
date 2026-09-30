@@ -315,7 +315,7 @@ final class ExtensionsRepository extends Component {
 				try {
 					$parsed = Yaml::parse($response->getContent());
 					if (is_array($parsed)) {
-						return !empty(YamlLoader::filter($parsed));
+						return !empty(YamlLoader::filter($parsed, $url));
 					}
 				} catch (ParseException $exception) {
 					// ignore exception, we will log warning bellow

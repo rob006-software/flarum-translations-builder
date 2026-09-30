@@ -429,10 +429,10 @@ final class ReleaseGenerator {
 			$id = basename($file, '.yml');
 			$old = $changeType === Repository::CHANGE_ADDED
 				? null
-				: $this->loadMessages($this->repository->getFileContent($this->getPreviousVersion(), $file));
+				: $this->loadMessages($this->repository->getFileContent($this->getPreviousVersion(), $file), $file);
 			$new = $changeType === Repository::CHANGE_DELETED
 				? null
-				: $this->loadMessages(file_get_contents("{$this->repository->getPath()}/$file"));
+				: $this->loadMessages(file_get_contents("{$this->repository->getPath()}/$file"), $file);
 
 			$changes[$id] = $changes[$id] ?? [
 				'added' => 0,
@@ -532,8 +532,8 @@ final class ReleaseGenerator {
 		return $this->subsplit instanceof MultiLanguageSubsplit ? $this->subsplit->getVariants() : [$this->subsplit];
 	}
 
-	private function loadMessages(string $content): array {
-		$messages = YamlLoader::filter(Yaml::parse($content));
+	private function loadMessages(string $content, string $file): array {
+		$messages = YamlLoader::filter(Yaml::parse($content), $file);
 		return is_array($messages) ? ArrayHelper::flatten($messages) : [];
 	}
 

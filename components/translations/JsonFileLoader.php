@@ -33,26 +33,19 @@ final class JsonFileLoader extends BaseJsonFileLoader {
 
 	protected function loadResource(string $resource) {
 		$data = parent::loadResource($resource);
-		if ($this->skipEmpty && !empty($data)) {
-			$data = $this->removeEmpty($data, $resource);
+		if (is_array($data)) {
+			$data = $this->filter($data, $resource);
 		}
 
 		return $data;
 	}
 
-	private function removeEmpty(array $data, string $resource): array {
-		foreach ($data as $i => $item) {
-			if (is_string($item)) {
-				if ($item === '') {
-					unset($data[$i]);
-				}
-			} elseif (is_array($item)) {
-				$data[$i] = $this->removeEmpty($item, $resource);
-				if (empty($data[$i])) {
-					unset($data[$i]);
-				}
-			} else {
-				$message = "Non-string translation occurred for '$i' key in '$resource'.";
+	private function filter(array $data, string $resource): array {
+		foreach ($data as $key => $value) {
+			if (is_array($value)) {
+				$value = $this->filter($value, $resource);
+			} elseif (!is_string($value) && $value !== null) {
+				$message = "Non-string translation occurred for '$key' key in '$resource'.";
 				Yii::$app->frequencyLimiter->run(
 					__METHOD__ . '#' . $message,
 					31 * 24 * 3600,
@@ -60,6 +53,13 @@ final class JsonFileLoader extends BaseJsonFileLoader {
 						Yii::warning($message, __CLASS__);
 					}
 				);
+				$value = null;
+			}
+
+			if ($value === null || $value === [] || ($this->skipEmpty && $value === '')) {
+				unset($data[$key]);
+			} else {
+				$data[$key] = $value;
 			}
 		}
 
