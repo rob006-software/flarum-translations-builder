@@ -275,7 +275,7 @@ How releases work:
 2. Maintainer approves the PR → GitHub webhook (`POST /github/language-subsplit`) → `MergeReleasePullRequestJob` in
    queue → PR is merged, tagged, GitHub release is created and release is announced (on the forum if
    `discussThreadId` is configured for the pack, otherwise as a PR comment with announcement to copy).
-3. **Auto-merge fallback**: 6 days after opening the PR the bot adds `ci-merge-queued` label with a comment, and merges
+3. **Auto-merge fallback**: 7 days after opening the PR the bot adds `ci-merge-queued` label with a comment, and merges
    the PR once the label is present for 24 hours. Removing the label postpones the merge (it will be added again by the
    next daily check).
 
@@ -338,7 +338,7 @@ File queue in `runtime/queue` (TTR 15 minutes, 10 attempts), log in `runtime/log
 | Job                                  | Queued by                                         | Does                                                          |
 |--------------------------------------|---------------------------------------------------|---------------------------------------------------------------|
 | `MergeReleasePullRequestJob`         | webhook after maintainer approval                 | merges and releases the pack                                  |
-| `QueueMergeReleasePullRequestJob`    | release PR creation (6 days delay), daily check   | adds `ci-merge-queued` label + comment, queues auto-merge     |
+| `QueueMergeReleasePullRequestJob`    | release PR creation (7 days delay), daily check   | adds `ci-merge-queued` label + comment, queues auto-merge     |
 | `AutoMergeReleasePullRequestJob`     | `QueueMergeReleasePullRequestJob` (~25h delay)    | merges the PR if the label is present for 24h                 |
 | `AnnounceReleaseOnForumJob`          | merge, if `discussThreadId` is configured         | posts announcement on Flarum forum and links it in the PR     |
 

@@ -56,7 +56,7 @@ class ReleasePullRequestGenerator {
 	 */
 	public const MIN_AUTO_MERGE_LABEL_AGE = 24 * 60 * 60;
 	/** Delay for job which queues pull request for automatic merge. */
-	public const AUTO_MERGE_QUEUE_DELAY = 6 * 24 * 60 * 60;
+	public const AUTO_MERGE_QUEUE_DELAY = 7 * 24 * 60 * 60;
 
 	public const MAINTAINER_ASSOCIATIONS = [
 		'OWNER',
