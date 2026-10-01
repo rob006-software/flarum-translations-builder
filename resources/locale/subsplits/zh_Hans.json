@@ -20,6 +20,10 @@
         "general-changes": "例行更新",
         "updated-config-js": "更新日期翻译",
         "all-changes": "全部变化：{link}",
-        "extensions-updated": "更新翻译"
+        "extensions-updated": "更新翻译",
+        "count-changed": "{count} 更新",
+        "count-removed": "{count} 移除",
+        "count-added": "{count} 新增",
+        "completion": "{percent}% 已翻译"
     }
 }
