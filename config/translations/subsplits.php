@@ -517,8 +517,8 @@ return [
 		'language' => 'ro',
 		'repository' => 'git@github.com:flarum-lang/romanian.git',
 		'path' => '/locale',
-		'maintainers' => [],
-		'weblateMaintainers' => [],
+		'maintainers' => ['iorGian'],
+		'weblateMaintainers' => ['iorGian'],
 	],
 	'ru' => [
 		'class' => LanguageSubsplit::class,
