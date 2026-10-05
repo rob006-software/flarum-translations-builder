@@ -11,7 +11,8 @@
         "all-changes": "Összes változás: {link}.",
         "count-changed": "{count} megváltoztatva",
         "count-removed": "{count} eltávolítva",
-        "count-added": "{count} hozzáadva"
+        "count-added": "{count} hozzáadva",
+        "completion": "{percent}% kész"
     },
     "announcement": {
         "version": "Verzió: {version}",
