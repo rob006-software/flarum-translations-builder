@@ -33,6 +33,8 @@ use function file_get_contents;
 use function file_put_contents;
 use function in_array;
 use function sleep;
+use function strpos;
+use function strtotime;
 use function time;
 
 /**
@@ -57,6 +59,18 @@ class ReleasePullRequestGenerator {
 	public const MIN_AUTO_MERGE_LABEL_AGE = 24 * 60 * 60;
 	/** Delay for job which queues pull request for automatic merge. */
 	public const AUTO_MERGE_QUEUE_DELAY = 7 * 24 * 60 * 60;
+	/**
+	 * How long removing the auto-merge label postpones automatic merge - `QueueMergeReleasePullRequestJob` does not
+	 * add the label again until this amount of time passes since it was removed.
+	 */
+	public const AUTO_MERGE_POSTPONE_TIME = 7 * 24 * 60 * 60;
+	/**
+	 * Pull requests older than this are merged automatically regardless of the auto-merge label - removing the label
+	 * no longer postpones the merge. See `isAutoMergeForced()`.
+	 */
+	public const FORCED_AUTO_MERGE_PULL_REQUEST_AGE = 30 * 24 * 60 * 60;
+	/** Marker of the comment which notifies maintainer about forced automatic merge. */
+	public const FORCED_AUTO_MERGE_NOTICE_MARKER = '<!-- forced-auto-merge-notice -->';
 
 	public const MAINTAINER_ASSOCIATIONS = [
 		'OWNER',
@@ -138,7 +152,9 @@ class ReleasePullRequestGenerator {
 	/**
 	 * Merges release pull request without maintainer approval. This is a fallback for situations when maintainer is
 	 * not available - pull request is merged only if it was marked as queued for automatic merge (and maintainer did
-	 * not disable it by removing label from pull request) for at least `MIN_AUTO_MERGE_LABEL_AGE`.
+	 * not disable it by removing label from pull request) for at least `MIN_AUTO_MERGE_LABEL_AGE`. Pull requests
+	 * older than `FORCED_AUTO_MERGE_PULL_REQUEST_AGE` are merged regardless of the label, as long as maintainer was
+	 * notified about it at least `MIN_AUTO_MERGE_LABEL_AGE` ago.
 	 */
 	public function autoMerge(int $pullRequestNumber): void {
 		$branchName = "release/{$this->repository->getBranch()}";
@@ -154,28 +170,86 @@ class ReleasePullRequestGenerator {
 			// make sure that we're not touching pull request from other Flarum version line
 			throw new PullRequestMergeException("PR #$pullRequestNumber is not a release PR for branch $branchName.");
 		}
-		if (!self::hasAutoMergeLabel($pullRequest)) {
-			// automatic merge was disabled by maintainer
-			return;
-		}
-		$labelAddDate = $this->githubApi->getLabelAddDate(
-			$this->subsplit->getRepositoryUrl(),
-			$pullRequestNumber,
-			self::AUTO_MERGE_LABEL
-		);
-		if ($labelAddDate !== null && $labelAddDate > time() - self::MIN_AUTO_MERGE_LABEL_AGE) {
-			// label was added recently - most likely maintainer removed it to postpone the merge and it was added
-			// again by `release/check-pull-requests`. Maintainer should get the full amount of time to react, counted
-			// from the last time when the label was added, so skip the merge - it will be queued again by
-			// `release/check-pull-requests`.
+		if (!$this->isAutoMergeAllowed($pullRequest)) {
 			return;
 		}
 
 		$this->mergePullRequest($pullRequest, $branchName);
 	}
 
+	private function isAutoMergeAllowed(array $pullRequest): bool {
+		$minNoticeDate = time() - self::MIN_AUTO_MERGE_LABEL_AGE;
+		if (self::hasAutoMergeLabel($pullRequest)) {
+			$labelEvents = $this->githubApi->getLabelEvents(
+				$this->subsplit->getRepositoryUrl(),
+				$pullRequest['number'],
+				self::AUTO_MERGE_LABEL
+			);
+			$labelAddDate = self::getLastLabelEventDate($labelEvents, 'labeled');
+			// Label which was added recently most likely means that maintainer removed it to postpone the merge and it
+			// was added again by `release/check-pull-requests`. Maintainer should get the full amount of time to react,
+			// counted from the last time when the label was added, so skip the merge - it will be queued again by
+			// `release/check-pull-requests`. If we cannot determine when the label was added, we allow merge - label is
+			// added again only when it is missing, so otherwise this pull request would be never merged.
+			if ($labelAddDate === null || $labelAddDate <= $minNoticeDate) {
+				return true;
+			}
+		}
+		if (self::isAutoMergeForced($pullRequest)) {
+			// removing the label no longer postpones the merge - we only need to make sure that maintainer got the
+			// final notice about it (posted by `QueueMergeReleasePullRequestJob`)
+			$noticeDate = self::getForcedAutoMergeNoticeDate(
+				$this->githubApi->getPullRequestComments($this->subsplit->getRepositoryUrl(), $pullRequest['number'])
+			);
+			return $noticeDate !== null && $noticeDate <= $minNoticeDate;
+		}
+
+		// automatic merge was disabled by maintainer, or label was added recently
+		return false;
+	}
+
 	public static function hasAutoMergeLabel(array $pullRequest): bool {
 		return in_array(self::AUTO_MERGE_LABEL, array_column($pullRequest['labels'] ?? [], 'name'), true);
+	}
+
+	/**
+	 * Whether pull request is old enough to be merged regardless of the auto-merge label.
+	 */
+	public static function isAutoMergeForced(array $pullRequest): bool {
+		// @todo enable forced automatic merge once maintainers had a chance to notice the announcement in
+		//       `QueueMergeReleasePullRequestJob::generateComment()` (update its wording too)
+		return false;
+		// $createdAt = strtotime($pullRequest['created_at']);
+		// return $createdAt !== false && $createdAt <= time() - self::FORCED_AUTO_MERGE_PULL_REQUEST_AGE;
+	}
+
+	/**
+	 * Returns timestamp of the first comment with notice about forced automatic merge, or `null` if maintainer was not
+	 * notified yet.
+	 */
+	public static function getForcedAutoMergeNoticeDate(array $comments): ?int {
+		foreach ($comments as $comment) {
+			if (strpos($comment['body'] ?? '', self::FORCED_AUTO_MERGE_NOTICE_MARKER) !== false) {
+				return strtotime($comment['created_at']) ?: null;
+			}
+		}
+
+		return null;
+	}
+
+	/**
+	 * Returns timestamp of the last label event with given type (`labeled` or `unlabeled`), or `null` if there was
+	 * no such event.
+	 */
+	public static function getLastLabelEventDate(array $labelEvents, string $eventType): ?int {
+		$date = null;
+		foreach ($labelEvents as $event) {
+			if ($event['event'] === $eventType) {
+				$date = strtotime($event['created_at']) ?: null;
+			}
+		}
+
+		return $date;
 	}
 
 	/**

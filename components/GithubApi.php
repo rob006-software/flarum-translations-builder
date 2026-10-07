@@ -28,8 +28,8 @@ use yii\base\Component;
 use yii\base\InvalidArgumentException;
 use function array_merge;
 use function count;
+use function in_array;
 use function strncmp;
-use function strtotime;
 
 /**
  * Class GithubApi.
@@ -202,6 +202,12 @@ final class GithubApi extends Component {
 			->create($targetUserName, $targetRepoName, $number, $settings);
 	}
 
+	public function getPullRequestComments(string $repository, int $number): array {
+		[$userName, $repoName] = $this->explodeRepoUrl($repository);
+		return (new ResultPager($this->githubApiClient))
+			->fetchAll($this->githubApiClient->issues()->comments(), 'all', [$userName, $repoName, $number]);
+	}
+
 	public function getPullRequest(string $repository, int $number): ?array {
 		[$targetUserName, $targetRepoName] = $this->explodeRepoUrl($repository);
 		return $this->githubApiClient->pullRequests()->show($targetUserName, $targetRepoName, $number);
@@ -234,27 +240,20 @@ final class GithubApi extends Component {
 	}
 
 	/**
-	 * Returns timestamp of the last time when given label was added to the pull request. Returns `null` if the label
-	 * is not present on the pull request, or if we're not able to determine when it was added.
+	 * Returns `labeled` and `unlabeled` events for given label on the pull request, from the oldest to the newest one.
 	 */
-	public function getLabelAddDate(string $repository, int $number, string $label): ?int {
+	public function getLabelEvents(string $repository, int $number, string $label): array {
 		[$userName, $repoName] = $this->explodeRepoUrl($repository);
-		$date = null;
+		$result = [];
 		$paginator = new ResultPager($this->githubApiClient);
 		$events = $paginator->fetchAllLazy($this->githubApiClient->issues()->events(), 'all', [$userName, $repoName, $number]);
-		// events are returned from the oldest to the newest one, so the last one wins
 		foreach ($events as $event) {
-			if (($event['label']['name'] ?? null) !== $label) {
-				continue;
-			}
-			if ($event['event'] === 'labeled') {
-				$date = strtotime($event['created_at']) ?: null;
-			} elseif ($event['event'] === 'unlabeled') {
-				$date = null;
+			if (($event['label']['name'] ?? null) === $label && in_array($event['event'], ['labeled', 'unlabeled'], true)) {
+				$result[] = $event;
 			}
 		}
 
-		return $date;
+		return $result;
 	}
 
 	public function createIssueIfNotExist(string $repository, string $title, array $settings = []): ?array {
