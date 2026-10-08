@@ -150,6 +150,11 @@ abstract class Subsplit {
 	abstract public function getLanguages(): array;
 
 	/**
+	 * @return string Code of main language of this subsplit.
+	 */
+	abstract public function getLanguage(): string;
+
+	/**
 	 * @return string Language code used for formatting localized phrases (plural rules etc.).
 	 */
 	abstract protected function getLocaleLanguage(): string;

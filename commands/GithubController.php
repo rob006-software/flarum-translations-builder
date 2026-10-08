@@ -16,6 +16,7 @@ namespace app\commands;
 use app\components\ConsoleController;
 use app\components\GhCli;
 use app\models\Subsplit;
+use app\models\Translations;
 use Throwable;
 use Yii;
 use yii\helpers\Console;
@@ -23,7 +24,11 @@ use function array_column;
 use function array_map;
 use function array_merge;
 use function in_array;
+use function json_encode;
+use function sort;
 use function strtolower;
+use const JSON_UNESCAPED_SLASHES;
+use const JSON_UNESCAPED_UNICODE;
 
 /**
  * Class GithubController.
@@ -41,6 +46,8 @@ final class GithubController extends ConsoleController {
 	private const ORGANIZATION_MEMBER_PERMISSION = 'admin';
 	/** Accounts which have direct access to all language packs, but are not maintainers. */
 	private const IGNORED_COLLABORATORS = ['robbot006'];
+	/** Topics of language packs repositories - all other topics are removed. */
+	private const TOPICS = ['flarum', 'flarum-extension', 'flarum-language-pack'];
 
 	/** @var bool */
 	public $dryRun = true;
@@ -82,8 +89,20 @@ final class GithubController extends ConsoleController {
 	}
 
 	/**
+	 * Synchronizes details of language packs repositories (visible in "About" section): description, website (only for
+	 * subsplits with `discussThreadId`) and topics.
+	 *
+	 * Runs in dry-run mode by default - use `--dryRun=0` to apply changes.
+	 */
+	public function actionSyncDetails(array $subsplits = [], string $configFile = '@app/translations/config.php') {
+		$this->runForSubsplits($subsplits, $configFile, function (Subsplit $subsplit, Translations $translations) {
+			$this->syncSubsplitDetails($subsplit, $translations);
+		});
+	}
+
+	/**
 	 * @param string[] $subsplits IDs of subsplits to process, all subsplits if empty.
-	 * @param callable $callback Callback called for each subsplit, with `Subsplit` as argument.
+	 * @param callable $callback Callback called for each subsplit, with `Subsplit` and `Translations` as arguments.
 	 */
 	private function runForSubsplits(array $subsplits, string $configFile, callable $callback): void {
 		$translations = $this->getTranslations($configFile);
@@ -103,7 +122,7 @@ final class GithubController extends ConsoleController {
 
 		foreach ($subsplits as $subsplit) {
 			try {
-				$callback($subsplit);
+				$callback($subsplit, $translations);
 			} catch (Throwable $exception) {
 				Yii::error($exception);
 				echo Console::renderColoredString("%r{$subsplit->getId()}: {$exception->getMessage()}%n"), "\n";
@@ -181,6 +200,48 @@ final class GithubController extends ConsoleController {
 			}
 		}
 
+		$this->applyChanges($repo, $changes);
+	}
+
+	private function syncSubsplitDetails(Subsplit $subsplit, Translations $translations): void {
+		[$owner, $repoName] = Yii::$app->githubApi->explodeRepoUrl($subsplit->getRepositoryUrl());
+		$repo = "$owner/$repoName";
+
+		$expected = [
+			'description' => $translations->getLanguageName($subsplit->getLanguage()) . ' Language Pack for Flarum',
+		];
+		if ($subsplit->getDiscussThreadId() !== null) {
+			$expected['homepage'] = "https://discuss.flarum.org/d/{$subsplit->getDiscussThreadId()}";
+		}
+
+		$current = $this->gh->api('GET', "repos/$repo");
+		$changes = [];
+		foreach ($expected as $field => $value) {
+			if ($current[$field] !== $value) {
+				$changes[] = [
+					"~ $field: {$this->formatValue($current[$field])} -> {$this->formatValue($value)}",
+					'PATCH', "repos/$repo", [$field => $value],
+				];
+			}
+		}
+		$currentTopics = $current['topics'];
+		$expectedTopics = self::TOPICS;
+		sort($currentTopics);
+		sort($expectedTopics);
+		if ($currentTopics !== $expectedTopics) {
+			$changes[] = [
+				"~ topics: {$this->formatValue($currentTopics)} -> {$this->formatValue(self::TOPICS)}",
+				'PUT', "repos/$repo/topics", ['names' => self::TOPICS],
+			];
+		}
+
+		$this->applyChanges($repo, $changes);
+	}
+
+	/**
+	 * @param array[] $changes List of changes as `[$label, $method, $endpoint, $data]` arrays.
+	 */
+	private function applyChanges(string $repo, array $changes): void {
 		if (empty($changes)) {
 			if ($this->verbose) {
 				echo "$repo: no changes.\n";
@@ -200,6 +261,10 @@ final class GithubController extends ConsoleController {
 				}
 			}
 		}
+	}
+
+	private function formatValue($value): string {
+		return json_encode($value, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 	}
 
 	private function setSubsplitDefaultBranch(Subsplit $subsplit): void {
