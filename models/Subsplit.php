@@ -46,6 +46,7 @@ abstract class Subsplit {
 
 	private $id;
 	private $repository;
+	private $branch;
 	private $path;
 	private $releaseVersion;
 	private $repositoryUrl;
@@ -66,6 +67,7 @@ abstract class Subsplit {
 		?int $discussThreadId = null
 	) {
 		$this->id = $id;
+		$this->branch = $branch;
 		$this->path = $path;
 		$this->releaseVersion = $releaseVersion;
 		if (is_array($repository)) {
@@ -116,6 +118,13 @@ abstract class Subsplit {
 
 	public function getRepositoryUrl(): string {
 		return $this->repositoryUrl;
+	}
+
+	/**
+	 * @return string Branch used by this subsplit (from `metadata/branches.json` of translations repository).
+	 */
+	public function getBranch(): string {
+		return $this->branch;
 	}
 
 	public function getLocale(): SubsplitLocale {

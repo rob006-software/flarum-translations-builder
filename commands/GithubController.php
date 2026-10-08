@@ -64,6 +64,28 @@ final class GithubController extends ConsoleController {
 	 * Runs in dry-run mode by default - use `--dryRun=0` to apply changes.
 	 */
 	public function actionSyncMaintainers(array $subsplits = [], string $configFile = '@app/translations/config.php') {
+		$this->runForSubsplits($subsplits, $configFile, function (Subsplit $subsplit) {
+			$this->syncSubsplitMaintainers($subsplit);
+		});
+	}
+
+	/**
+	 * Sets default branch of language packs repositories to branch used by this instance (from
+	 * `metadata/branches.json` of translations repository).
+	 *
+	 * Runs in dry-run mode by default - use `--dryRun=0` to apply changes.
+	 */
+	public function actionSetDefaultBranch(array $subsplits = [], string $configFile = '@app/translations/config.php') {
+		$this->runForSubsplits($subsplits, $configFile, function (Subsplit $subsplit) {
+			$this->setSubsplitDefaultBranch($subsplit);
+		});
+	}
+
+	/**
+	 * @param string[] $subsplits IDs of subsplits to process, all subsplits if empty.
+	 * @param callable $callback Callback called for each subsplit, with `Subsplit` as argument.
+	 */
+	private function runForSubsplits(array $subsplits, string $configFile, callable $callback): void {
 		$translations = $this->getTranslations($configFile);
 		// release lock early, since we're only using config, and this action can take a while
 		Yii::$app->locks->releaseRepoLock($translations->getRepository()->getPath());
@@ -81,7 +103,7 @@ final class GithubController extends ConsoleController {
 
 		foreach ($subsplits as $subsplit) {
 			try {
-				$this->syncSubsplitMaintainers($subsplit);
+				$callback($subsplit);
 			} catch (Throwable $exception) {
 				Yii::error($exception);
 				echo Console::renderColoredString("%r{$subsplit->getId()}: {$exception->getMessage()}%n"), "\n";
@@ -177,6 +199,31 @@ final class GithubController extends ConsoleController {
 					echo Console::renderColoredString("  %r{$exception->getMessage()}%n"), "\n";
 				}
 			}
+		}
+	}
+
+	private function setSubsplitDefaultBranch(Subsplit $subsplit): void {
+		[$owner, $repoName] = Yii::$app->githubApi->explodeRepoUrl($subsplit->getRepositoryUrl());
+		$repo = "$owner/$repoName";
+		$branch = $subsplit->getBranch();
+
+		$current = $this->gh->api('GET', "repos/$repo")['default_branch'];
+		if ($current === $branch) {
+			if ($this->verbose) {
+				echo "$repo: no changes.\n";
+			}
+			return;
+		}
+
+		$branches = array_column($this->gh->getAll("repos/$repo/branches"), 'name');
+		if (!in_array($branch, $branches, true)) {
+			echo Console::renderColoredString("%r$repo: there is no $branch branch, default branch is $current.%n"), "\n";
+			return;
+		}
+
+		echo "$repo: change default branch from $current to $branch\n";
+		if (!$this->dryRun) {
+			$this->gh->api('PATCH', "repos/$repo", ['default_branch' => $branch]);
 		}
 	}
 
