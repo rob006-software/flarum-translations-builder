@@ -216,11 +216,8 @@ class ReleasePullRequestGenerator {
 	 * Whether pull request is old enough to be merged regardless of the auto-merge label.
 	 */
 	public static function isAutoMergeForced(array $pullRequest): bool {
-		// @todo enable forced automatic merge once maintainers had a chance to notice the announcement in
-		//       `QueueMergeReleasePullRequestJob::generateComment()` (update its wording too)
-		return false;
-		// $createdAt = strtotime($pullRequest['created_at']);
-		// return $createdAt !== false && $createdAt <= time() - self::FORCED_AUTO_MERGE_PULL_REQUEST_AGE;
+		$createdAt = strtotime($pullRequest['created_at']);
+		return $createdAt !== false && $createdAt <= time() - self::FORCED_AUTO_MERGE_PULL_REQUEST_AGE;
 	}
 
 	/**

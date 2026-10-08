@@ -114,9 +114,6 @@ class QueueMergeReleasePullRequestJob extends BaseObject implements JobInterface
 		$approvePrUrl = self::APPROVE_PR_URL;
 		$postponeDays = intdiv(ReleasePullRequestGenerator::AUTO_MERGE_POSTPONE_TIME, 24 * 60 * 60);
 		$forcedMergeDays = intdiv(ReleasePullRequestGenerator::FORCED_AUTO_MERGE_PULL_REQUEST_AGE, 24 * 60 * 60);
-		// @todo replace the last sentence once forced automatic merge is enabled in
-		//       `ReleasePullRequestGenerator::isAutoMergeForced()`, for example:
-		//       "Pull requests open for more than $forcedMergeDays days are merged regardless of this label."
 		return <<<MD
 			This pull request is waiting for review for a long time, so it will be merged automatically in 24 hours.
 			
@@ -124,7 +121,7 @@ class QueueMergeReleasePullRequestJob extends BaseObject implements JobInterface
 			If you're not ready for a new release yet, you can remove the `$label` label to postpone automatic merge.
 			Keep in mind that this is only a temporary solution - the label will be added again after $postponeDays days,
 			so you need to repeat it every $postponeDays days until you're ready to review this pull request.
-			Soon pull requests open for more than $forcedMergeDays days will be merged regardless of this label.
+			Pull requests open for more than $forcedMergeDays days are merged regardless of this label.
 			MD;
 	}
 
