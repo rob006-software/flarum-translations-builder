@@ -97,6 +97,8 @@ earlier when its input changes. `./cron` runs its steps sequentially - see the s
 * `release/pr`, `release/merge` - when automation needs a nudge.
 * `janitor/*` - housekeeping, from time to time.
 * `github/sync-maintainers`, `weblate/sync-maintainers` - after changing maintainers in config.
+* `github/sync-details` - after adding a language pack or changing its `discussThreadId`.
+* `github/set-default-branch` - after adding a language pack or changing its branch in `metadata/branches.json`.
 
 
 ## Commands
@@ -246,6 +248,8 @@ are shared by both Weblate projects (1.x and 2.x), so it is enough to run it in 
 
 ```bash
 ./yii github/sync-maintainers [subsplitIds] [--dryRun=0] [--verbose=1]
+./yii github/sync-details [subsplitIds] [--dryRun=0] [--verbose=1]
+./yii github/set-default-branch [subsplitIds] [--dryRun=0] [--verbose=1]
 ```
 
 These commands need more permissions than the bot has, so they use the `gh` CLI with the account logged in on the
@@ -257,6 +261,15 @@ current machine (`gh auth status`). They are meant to be run manually, never fro
   Direct collaborators and pending invitations of users that are not maintainers are removed. `robbot006` is ignored.
   New users get an invitation, which they need to accept. Languages and branches do not matter here, so it is enough
   to run it in one instance. **Dry run by default** - it only lists changes, `--dryRun=0` applies them.
+* **`sync-details`** - synchronizes details of language pack repositories (the "About" section): description
+  (`<Language> Language Pack for Flarum`), website (`https://discuss.flarum.org/d/<discussThreadId>`, only for packs with
+  `discussThreadId` - others keep their current website) and topics (`flarum`, `flarum-extension`,
+  `flarum-language-pack` - other topics are removed). "Include in the home page" settings are not available in GitHub
+  API, so they are not handled. It is enough to run it in one instance. **Dry run by default**.
+* **`set-default-branch`** - sets default branch of language pack repositories to the branch used by the current
+  instance (from `metadata/branches.json` in translations repo). Repositories without that branch are skipped.
+  ⚠️ The result depends on the instance - run it only from the instance of Flarum line which should be the default.
+  **Dry run by default**.
 
 ### `release/*` - language packs releases
 
@@ -276,8 +289,9 @@ How releases work:
    queue → PR is merged, tagged, GitHub release is created and release is announced (on the forum if
    `discussThreadId` is configured for the pack, otherwise as a PR comment with announcement to copy).
 3. **Auto-merge fallback**: 7 days after opening the PR the bot adds `ci-merge-queued` label with a comment, and merges
-   the PR once the label is present for 24 hours. Removing the label postpones the merge (it will be added again by the
-   next daily check).
+   the PR once the label is present for 24 hours. Removing the label postpones the merge by 7 days (then the label is
+   added again by the daily check). PRs open for more than 30 days get a final notice and are merged 24 hours later,
+   regardless of the label.
 
 Versions: release `major.minor` for each pack is stored in `metadata/versions.json` in translations repo (missing entry =
 `1.0` / `2.0` depending on Flarum line, `null` = releases disabled). Previous version is the newest tag reachable from
