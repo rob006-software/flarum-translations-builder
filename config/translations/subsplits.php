@@ -110,6 +110,7 @@ return [
 		'path' => '/locale',
 		'maintainers' => ['YelehaUwU'],
 		'weblateMaintainers' => ['Yeleha'],
+		'discussThreadId' => 35138,
 	],
 	'cy' => [
 		'class' => LanguageSubsplit::class,
@@ -134,6 +135,7 @@ return [
 		'path' => '/locale',
 		'maintainers' => ['Kakifrucht', 'claudiush'],
 		'weblateMaintainers' => ['Kakifrucht', 'Claudius'],
+		'discussThreadId' => 2648,
 		'variants' => [
 			'informal' => [
 				'name' => 'Standard',
@@ -154,6 +156,7 @@ return [
 		'path' => '/locale',
 		'maintainers' => ['futuresound'],
 		'weblateMaintainers' => ['futuresound'],
+		'discussThreadId' => 26162,
 	],
 	'eo' => [
 		'class' => LanguageSubsplit::class,
@@ -170,6 +173,7 @@ return [
 		'path' => '/locale',
 		'maintainers' => ['iamdarkle', 'jslirola'],
 		'weblateMaintainers' => ['Darkle', 'jslirola'],
+		'discussThreadId' => 26792,
 		'variants' => [
 			'informal' => [
 				'name' => 'Informal',
@@ -222,6 +226,7 @@ return [
 		'path' => '/locale',
 		'maintainers' => ['claudiush'],
 		'weblateMaintainers' => ['Claudius'],
+		'discussThreadId' => 35866,
 	],
 	'fi' => [
 		'class' => LanguageSubsplit::class,
@@ -230,6 +235,7 @@ return [
 		'path' => '/locale',
 		'maintainers' => ['MarkoKaartinen'],
 		'weblateMaintainers' => ['markok'],
+		'discussThreadId' => 28810,
 	],
 	'fil' => [
 		'class' => LanguageSubsplit::class,
@@ -246,6 +252,7 @@ return [
 		'path' => '/locale',
 		'maintainers' => ['Wlork'],
 		'weblateMaintainers' => ['Wlork'],
+		'discussThreadId' => 615,
 	],
 	'ga' => [
 		'class' => LanguageSubsplit::class,
@@ -270,6 +277,7 @@ return [
 		'path' => '/locale',
 		'maintainers' => ['icecore2'],
 		'weblateMaintainers' => ['icecore'],
+		'discussThreadId' => 6473,
 	],
 	'hi' => [
 		'class' => LanguageSubsplit::class,
@@ -278,6 +286,7 @@ return [
 		'path' => '/locale',
 		'maintainers' => [],
 		'weblateMaintainers' => [],
+		'discussThreadId' => 33972,
 	],
 	'hr' => [
 		'class' => LanguageSubsplit::class,
@@ -310,6 +319,7 @@ return [
 		'path' => '/locale',
 		'maintainers' => ['realodix'],
 		'weblateMaintainers' => ['realodix'],
+		'discussThreadId' => 1358,
 	],
 	'is' => [
 		'class' => LanguageSubsplit::class,
@@ -334,6 +344,7 @@ return [
 		'path' => '/locale',
 		'maintainers' => ['takumi9942'],
 		'weblateMaintainers' => ['takumi9942'],
+		'discussThreadId' => 23757,
 	],
 	'ka' => [
 		'class' => LanguageSubsplit::class,
@@ -398,6 +409,7 @@ return [
 		'path' => '/locale',
 		'maintainers' => [],
 		'weblateMaintainers' => [],
+		'discussThreadId' => 30283,
 	],
 	'lv' => [
 		'class' => LanguageSubsplit::class,
@@ -462,6 +474,7 @@ return [
 		'path' => '/locale',
 		'maintainers' => ['jaspervriends', 'MichaelBelgium'],
 		'weblateMaintainers' => ['JasperVriends', 'michaelbelgium'],
+		'discussThreadId' => 18962,
 	],
 	'nn' => [
 		'class' => LanguageSubsplit::class,
@@ -511,6 +524,7 @@ return [
 		'path' => '/locale',
 		'maintainers' => ['ram0ng1'],
 		'weblateMaintainers' => ['Ram0n'],
+		'discussThreadId' => 18543,
 	],
 	'ro' => [
 		'class' => LanguageSubsplit::class,
@@ -519,6 +533,7 @@ return [
 		'path' => '/locale',
 		'maintainers' => ['iorGian'],
 		'weblateMaintainers' => ['iorGian'],
+		'discussThreadId' => 27531,
 	],
 	'ru' => [
 		'class' => LanguageSubsplit::class,
@@ -527,6 +542,7 @@ return [
 		'path' => '/locale',
 		'maintainers' => ['KaiKimera'],
 		'weblateMaintainers' => ['KaiKimera', 'forumaker'],
+		'discussThreadId' => 1545,
 	],
 	'sc' => [
 		'class' => LanguageSubsplit::class,
@@ -543,6 +559,7 @@ return [
 		'path' => '/locale',
 		'maintainers' => ['sayuri-gi'],
 		'weblateMaintainers' => ['sayuri'],
+		'discussThreadId' => 27076,
 	],
 	'sk' => [
 		'class' => LanguageSubsplit::class,
@@ -551,6 +568,7 @@ return [
 		'path' => '/locale',
 		'maintainers' => [],
 		'weblateMaintainers' => [],
+		'discussThreadId' => 20993,
 	],
 	'sl' => [
 		'class' => LanguageSubsplit::class,
@@ -599,6 +617,7 @@ return [
 		'path' => '/locale',
 		'maintainers' => [],
 		'weblateMaintainers' => [],
+		'discussThreadId' => 27775,
 	],
 	'te' => [
 		'class' => LanguageSubsplit::class,
@@ -623,6 +642,7 @@ return [
 		'path' => '/locale',
 		'maintainers' => [],
 		'weblateMaintainers' => [],
+		'discussThreadId' => 28873,
 	],
 	'tk' => [
 		'class' => LanguageSubsplit::class,
@@ -655,6 +675,7 @@ return [
 		'path' => '/locale',
 		'maintainers' => ['tolgaaaltas', 'huseyinfiliz'],
 		'weblateMaintainers' => ['tolgaaaltas', 'huseyinfiliz'],
+		'discussThreadId' => 21356,
 	],
 	'tt' => [
 		'class' => LanguageSubsplit::class,
@@ -679,6 +700,7 @@ return [
 		'path' => '/locale',
 		'maintainers' => ['denysdesign'],
 		'weblateMaintainers' => ['Denys'],
+		'discussThreadId' => 31921,
 	],
 	'ur' => [
 		'class' => LanguageSubsplit::class,
@@ -703,6 +725,7 @@ return [
 		'path' => '/locale',
 		'maintainers' => ['datlechin'],
 		'weblateMaintainers' => ['ngoquocdat'],
+		'discussThreadId' => 28471,
 	],
 	'zh_Hans' => [
 		'class' => LanguageSubsplit::class,
@@ -711,6 +734,7 @@ return [
 		'path' => '/locale',
 		'maintainers' => ['thatsgolden'],
 		'weblateMaintainers' => ['Golden'],
+		'discussThreadId' => 22690,
 	],
 	'zh_Hant' => [
 		'class' => LanguageSubsplit::class,
@@ -719,5 +743,6 @@ return [
 		'path' => '/locale',
 		'maintainers' => ['efast1568'],
 		'weblateMaintainers' => ['efast1568'],
+		'discussThreadId' => 32373,
 	],
 ];
