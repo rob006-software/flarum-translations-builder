@@ -15,10 +15,12 @@ namespace app\commands;
 
 use app\components\ConsoleController;
 use app\components\extensions\ConfigGenerator;
+use app\components\extensions\CoreConfigGenerator;
 use app\helpers\FlarumVersion;
 use app\models\Translations;
 use Yii;
 use function array_merge;
+use function implode;
 use function json_encode;
 
 /**
@@ -66,6 +68,38 @@ final class ConfigController extends ConsoleController {
 		}
 
 		$this->pushRepository($translations->getRepository());
+		$this->updateLimit($token);
+	}
+
+	public function actionUpdateCore(string $configFile = '@app/translations/config.php') {
+		$translations = $this->getTranslations($configFile);
+		$token = __METHOD__;
+		if ($this->isLimited($token)) {
+			return;
+		}
+
+		$configGenerator = new CoreConfigGenerator(
+			Yii::getAlias($configFile),
+			$translations->getDir() . '/config/components.php',
+			FlarumVersion::majorVersion()
+		);
+		$tags = $configGenerator->update();
+		if ($tags !== null) {
+			$flarumVersion = FlarumVersion::lineName();
+			$tagsList = implode(', ', $tags);
+			if ($this->verbose) {
+				echo "Updated core config to {$tagsList}.\n";
+			}
+			$releasesUrls = '';
+			foreach ($tags as $tag) {
+				$releasesUrls .= "\nhttps://github.com/flarum/flarum-core/releases/tag/{$tag}";
+			}
+			$this->postProcessRepository(
+				$translations->getRepository(),
+				"[{$flarumVersion}] Update core and validation URLs to Flarum {$tagsList}\n{$releasesUrls}"
+			);
+		}
+
 		$this->updateLimit($token);
 	}
 

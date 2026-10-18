@@ -82,7 +82,7 @@ Both instances run the same schedule:
 | Commands                                                                                                                    | When                                                                     |
 |-----------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------|
 | `queue/single-listen`                                                                                                       | every minute                                                             |
-| `config/update`, `translations/update`, `translations/split`, `readme/update`, `readme/update-subsplits`, `extensions/detect-new 10` | every 10 minutes (via `./cron`), with 6 hours rate limit      |
+| `config/update-core`, `config/update`, `translations/update`, `translations/split`, `readme/update`, `readme/update-subsplits`, `extensions/detect-new 10` | every 10 minutes (via `./cron`), with 6 hours rate limit      |
 | `translations/inherit`                                                                                                      | every 10 minutes (via `./cron`), with 24 hours rate limit                |
 | `translations/update-inheritors-status`, `stats`, `weblate/update-priorities`, `weblate/update-units-flags`, `release/check-pull-requests` | daily, in the morning                          |
 | `translations/update-outdated-translations-metadata`, `translations/update-outdated-subsplits-metadata`                    | weekly, on Sunday morning                                                |
@@ -115,10 +115,17 @@ Pulls the builder itself (`master` branch), runs `composer install`, and pulls `
 Config of components lives in the translations repo, in `config/components.php`.
 
 ```bash
+./yii config/update-core [--push] [--frequency=N]
 ./yii config/update [--push] [--frequency=N]
 ./yii config/update-built-in-languages <extensionIds>
 ```
 
+* `config/update-core` - points `core` and `validation` components to the last release of the two last minor versions
+  of `flarum/core` (versions from Packagist, files from `flarum/flarum-core` repo) and sets `supportedVersions` in
+  `config.php` to match (`x.y.0` of each tracked minor + `x.99.99`). Only stable releases of the current Flarum line are
+  tracked. It fails hard and changes nothing if anything looks wrong: API error, a URL that does not return valid YAML,
+  a version older than the configured one, or config sections that do not match the expected format exactly (so
+  manual edits block it until the format is restored). Commits by default.
 * `config/update` - refreshes config of every extension component (URLs of stable/beta translation sources). Commits
   **by default**, one commit per extension (`[1.x] Update config for vendor/package`).
 * `config/update-built-in-languages ext-a,ext-b` - as above, but also detects languages that are bundled in the

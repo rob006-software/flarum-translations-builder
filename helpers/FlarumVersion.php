@@ -31,6 +31,15 @@ class FlarumVersion {
 		return Yii::$app->params['flarumVersion'];
 	}
 
+	public static function majorVersion(): int {
+		switch (Yii::$app->params['flarumVersion']) {
+			case self::V2:
+				return 2;
+			case self::V1:
+				return 1;
+		}
+	}
+
 	public static function branch(): string {
 		switch (Yii::$app->params['flarumVersion']) {
 			case self::V2:
