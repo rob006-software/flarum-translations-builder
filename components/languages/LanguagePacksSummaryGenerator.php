@@ -63,8 +63,6 @@ final class LanguagePacksSummaryGenerator {
 				<tr>
 					<th>Language pack</th>
 					<th>Last release</th>
-					<th>Activity</th>
-					<th>Pull requests</th>
 					<th>Downloads</th>
 					<th>Translation status</th>
 				</tr>
@@ -89,20 +87,10 @@ final class LanguagePacksSummaryGenerator {
 						<td>$prefix<a href="https://github.com/$userName/$repoName">$name</a></td>
 						<td align="right">
 							<a href="https://github.com/$userName/$repoName/tags">
-								<img src="https://img.shields.io/github/release-date/$userName/$repoName" alt="last release" style="max-width: 160px;" />
+								<img src="https://img.shields.io/github/release-date/$userName/$repoName" alt="last release" />
 							</a>
 						</td>
-						<td>
-							<a href="https://github.com/$userName/$repoName/commits">
-								<img src="https://img.shields.io/github/commits-since/$userName/$repoName/latest" alt="commits since last release" style="max-width: 150px;" />
-							</a>
-						</td>
-						<td>
-							<a href="https://github.com/$userName/$repoName/pulls">
-								<img src="https://img.shields.io/github/issues-pr/$userName/$repoName" alt="open pull requests" />
-							</a>
-						</td>
-						<td>
+						<td align="right">
 							<a href="https://packagist.org/packages/$packageName/stats">
 								<img src="https://img.shields.io/packagist/dm/$packageName" alt="downloads (monthly)" />
 							</a>

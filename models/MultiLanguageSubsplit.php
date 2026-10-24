@@ -137,6 +137,9 @@ final class MultiLanguageSubsplit extends Subsplit {
 		return $languages;
 	}
 
+	/**
+	 * @return string Main language of the subsplit.
+	 */
 	public function getLanguage(): string {
 		return $this->language;
 	}
