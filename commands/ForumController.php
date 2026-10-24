@@ -65,7 +65,8 @@ final class ForumController extends ConsoleController {
 	 * or updates first post of already configured discussion. Content of the post is generated from template - any
 	 * manual changes in first post will be overwritten.
 	 *
-	 * Runs in dry-run mode by default - use `--dryRun=0` to apply changes. Use `--verbose=1` to see generated post.
+	 * Runs in dry-run mode by default - use `--dryRun=0` to apply changes. Use `--verbose=1` to print generated post -
+	 * with dry run it is a way to get the post for manual edition.
 	 */
 	public function actionSyncDiscussion(array $subsplits, string $configFile = '@app/translations/config.php') {
 		$translations = $this->getTranslations($configFile);
@@ -98,6 +99,11 @@ final class ForumController extends ConsoleController {
 			"$owner/$repoName"
 		);
 
+		// print it before any request, so it is available even if forum account cannot edit the post
+		if ($this->verbose) {
+			echo "{$subsplit->getId()}: generated first post:\n\n{$generator->generateContent()}\n\n";
+		}
+
 		if ($subsplit->getDiscussThreadId() === null) {
 			$this->createDiscussion($subsplit, $generator);
 		} else {
@@ -109,9 +115,6 @@ final class ForumController extends ConsoleController {
 		$title = $generator->generateTitle();
 		$content = $generator->generateContent();
 		echo "{$subsplit->getId()}: create discussion ", readable::value($title), "\n";
-		if ($this->verbose) {
-			echo "\n$content\n\n";
-		}
 		if ($this->dryRun) {
 			return;
 		}
@@ -153,9 +156,6 @@ final class ForumController extends ConsoleController {
 		}
 
 		echo "{$subsplit->getId()}: update first post of $url\n";
-		if ($this->verbose) {
-			echo "\n$content\n\n";
-		}
 		if ($this->dryRun) {
 			return;
 		}

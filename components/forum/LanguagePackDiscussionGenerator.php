@@ -53,7 +53,7 @@ final class LanguagePackDiscussionGenerator {
 
 			### Installation
 
-			```
+			```shell
 			composer require "$package:*"
 			```
 
@@ -61,7 +61,7 @@ final class LanguagePackDiscussionGenerator {
 
 			### Updating
 
-			```
+			```shell
 			composer update $package
 			php flarum cache:clear
 			```
