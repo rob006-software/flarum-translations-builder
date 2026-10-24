@@ -172,10 +172,6 @@ final class LanguageSubsplit extends Subsplit {
 		return [$this->language];
 	}
 
-	protected function getLocaleLanguage(): string {
-		return $this->language;
-	}
-
 	public function isValidForComponent(Component $component): bool {
 		return $component->isValidForLanguage($this->language);
 	}
