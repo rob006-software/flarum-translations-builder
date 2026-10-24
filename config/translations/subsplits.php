@@ -303,6 +303,7 @@ return [
 		'path' => '/locale',
 		'maintainers' => ['meskobalazs', 'Rebootcodesoft'],
 		'weblateMaintainers' => ['Rebootcodesoft', 'meskobalazs'],
+		'discussThreadId' => 8931,
 	],
 	'hy' => [
 		'class' => LanguageSubsplit::class,
@@ -401,6 +402,7 @@ return [
 		'path' => '/locale',
 		'maintainers' => [],
 		'weblateMaintainers' => [],
+		'discussThreadId' => 34368,
 	],
 	'lt' => [
 		'class' => LanguageSubsplit::class,
@@ -609,6 +611,7 @@ return [
 		'path' => '/locale',
 		'maintainers' => ['Dzenan', 'gustjoha'],
 		'weblateMaintainers' => ['Dzenan', 'gustjoha'],
+		'discussThreadId' => 26393,
 	],
 	'ta' => [
 		'class' => LanguageSubsplit::class,
