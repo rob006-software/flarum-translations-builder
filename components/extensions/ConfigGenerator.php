@@ -23,8 +23,10 @@ use Dont\DontSet;
 use Yii;
 use function file_get_contents;
 use function file_put_contents;
+use function implode;
 use function in_array;
 use function is_array;
+use function is_int;
 use function json_encode;
 use function strcmp;
 use function strpos;
@@ -125,6 +127,14 @@ final class ConfigGenerator {
 		if (!is_array($value)) {
 			return "'$value'";
 		}
+		if ($this->isScalarsList($value)) {
+			$items = [];
+			foreach ($value as $item) {
+				$items[] = $this->renderValue($item, $indent + 1);
+			}
+
+			return '[' . implode(', ', $items) . ']';
+		}
 
 		$tabs = str_repeat("\t", $indent);
 		$result = "[\n";
@@ -138,6 +148,20 @@ final class ConfigGenerator {
 		$result .= $tabs . ']';
 
 		return $result;
+	}
+
+	/**
+	 * Lists of scalars (like `__builtInLanguages`) are rendered in a single line. Keys are not checked for being
+	 * sequential, since int keys are not rendered anyway.
+	 */
+	private function isScalarsList(array $value): bool {
+		foreach ($value as $key => $item) {
+			if (!is_int($key) || is_array($item)) {
+				return false;
+			}
+		}
+
+		return true;
 	}
 
 	public static function generateConfig(Extension $extension, array $extensionConfig = [], bool $detectBuiltInLanguages = false): array {
