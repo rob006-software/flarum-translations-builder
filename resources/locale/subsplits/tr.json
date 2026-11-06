@@ -20,6 +20,10 @@
         "general-changes": "Genel değişiklikler",
         "updated-config-js": "Day.js çevirileri güncellendi",
         "all-changes": "Tüm değişiklikler: {link}.",
-        "extensions-updated": "Uzantılar için çeviriler güncellendi"
+        "extensions-updated": "Uzantılar için çeviriler güncellendi",
+        "count-changed": "{count} değiştirildi",
+        "count-removed": "{count} kaldırıldı",
+        "count-added": "{count} eklendi",
+        "completion": "%{percent} tamamlandı"
     }
 }
