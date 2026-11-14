@@ -103,6 +103,7 @@ earlier when its input changes. `./cron` runs its steps sequentially - see the s
 * `forum/sync-discussion` - when adding a language pack or changing the first post template.
 * `readme/update-agents` - when adding a language pack or changing the `AGENTS.md` template.
 * `readme/update-git-files` - when adding a language pack or changing the `.gitattributes`/`.gitignore` template.
+* `translations/update-dayjs` - from time to time, to pick up Day.js locale fixes.
 
 
 ## Commands
@@ -146,6 +147,7 @@ Config of components lives in the translations repo, in `config/components.php`.
 ./yii translations/split [subsplitIds] [--push] [--frequency=N]
 ./yii translations/update-inheritors-status [--push]
 ./yii translations/import <sourceFile> <componentId> <language> [--push]
+./yii translations/update-dayjs [subsplitIds] [--push]
 
 ./yii translations/update-outdated-translations-metadata [--push]
 ./yii translations/update-outdated-subsplits-metadata [--push]
@@ -168,6 +170,12 @@ Config of components lives in the translations repo, in `config/components.php`.
 * **`import`** - imports a YAML file (Flarum format, e.g. from an existing language pack) into
   `translations/<language>/<componentId>.json`. Non-empty strings from the file override existing translations.
   `sourceFile` may be a Yii alias.
+* **`update-dayjs`** - updates the Day.js locale in `locale/config.js` of language packs with `dayjsLocale` in
+  `config/translations/subsplits.php` (packs without it keep a manually maintained `config.js`). Downloads the compiled
+  locale of the latest Day.js 1.x from unpkg.com and regenerates the whole file (source links + compiled locale +
+  `dayjs.locale('<locale>')` - Flarum never activates the Day.js locale itself). Nothing is written when only the Day.js
+  version differs, so a new Day.js release alone does not produce a changelog entry and release. When `config.js`
+  changes, links to Day.js locale source in `README.md` are updated too (a pack without such a link gets a warning).
 
 **Outdated translations lifecycle** - translations for keys removed from English source (and language pack files for
 components that no longer exist) are not removed immediately:

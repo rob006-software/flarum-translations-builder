@@ -41,6 +41,8 @@ final class LanguageSubsplit extends Subsplit {
 	private $language;
 	/** @var self */
 	private $fallbackLanguage;
+	/** @var string|null */
+	private $dayjsLocale;
 
 	public function __construct(
 		string $id,
@@ -51,9 +53,11 @@ final class LanguageSubsplit extends Subsplit {
 		?string $releaseVersion,
 		array $maintainers,
 		array $weblateMaintainers,
-		?int $discussThreadId = null
+		?int $discussThreadId = null,
+		?string $dayjsLocale = null
 	) {
 		$this->language = $language;
+		$this->dayjsLocale = $dayjsLocale;
 
 		parent::__construct($id, $repository, $branch, $path, $releaseVersion, $maintainers, $weblateMaintainers, $discussThreadId);
 	}
@@ -68,8 +72,18 @@ final class LanguageSubsplit extends Subsplit {
 			$releaseVersion,
 			$config['maintainers'],
 			$config['weblateMaintainers'],
-			$config['discussThreadId'] ?? null
+			$config['discussThreadId'] ?? null,
+			$config['dayjsLocale'] ?? null
 		);
+	}
+
+	/**
+	 * @return string|null Name of Day.js locale (like `pl` or `pt-br`) used in `config.js` and updated automatically by
+	 * `translations/update-dayjs` command, or `null` if `config.js` is maintained manually.
+	 * @see https://github.com/iamkun/dayjs/tree/dev/src/locale
+	 */
+	public function getDayjsLocale(): ?string {
+		return $this->dayjsLocale;
 	}
 
 	public function setFallbackLanguage(self $language): void {

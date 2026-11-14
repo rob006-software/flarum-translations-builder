@@ -14,16 +14,23 @@ declare(strict_types=1);
 namespace app\commands;
 
 use app\components\ConsoleController;
+use app\components\dayjs\DayjsConfigGenerator;
+use app\components\dayjs\DayjsLocaleProvider;
 use app\components\inheritors\InheritorInterface;
 use app\components\inheritors\InheritorsStatusGenerator;
 use app\components\release\ReleasePullRequestGenerator;
 use app\components\translations\TranslationsImporter;
 use app\helpers\FlarumVersion;
+use app\models\LanguageSubsplit;
+use app\models\Repository;
 use app\models\Subsplit;
 use Throwable;
 use Yii;
 use yii\helpers\Console;
 use function array_merge;
+use function file_exists;
+use function file_get_contents;
+use function file_put_contents;
 
 /**
  * Class TranslationsController.
@@ -120,6 +127,53 @@ final class TranslationsController extends ConsoleController {
 		if (!$hasErrors) {
 			$this->updateLimit($token);
 		}
+	}
+
+	/**
+	 * Updates Day.js locale in `config.js` of language packs to the latest Day.js 1.x release. Only language packs with
+	 * `dayjsLocale` in config are updated, and only if the locale has actually changed (new Day.js release alone does
+	 * not change anything). Links to Day.js locale source in README are updated together with `config.js`.
+	 */
+	public function actionUpdateDayjs(array $subsplits = [], string $configFile = '@app/translations/config.php') {
+		$translations = $this->getTranslations($configFile);
+		$provider = new DayjsLocaleProvider();
+		$version = $provider->getLatestVersion();
+		$subsplits = (static function (iterable $subsplits) {
+			foreach ($subsplits as $subsplit) {
+				if ($subsplit instanceof LanguageSubsplit && $subsplit->getDayjsLocale() !== null) {
+					yield $subsplit;
+				}
+			}
+		})($this->resolveSubsplits($translations, $subsplits));
+
+		$this->updateSubsplitsFiles(
+			$subsplits,
+			'Day.js translations',
+			"Update Day.js translations to $version",
+			function (LanguageSubsplit $subsplit, Repository $repository) use ($provider, $version) {
+				$locale = $subsplit->getDayjsLocale();
+				$generator = new DayjsConfigGenerator($version, $locale, $provider->getLocaleScript($version, $locale));
+				$configPath = $repository->getPath() . $subsplit->getPath() . '/config.js';
+				if (file_exists($configPath) && $generator->isUpToDate(file_get_contents($configPath))) {
+					if ($this->verbose) {
+						echo "{$subsplit->getId()}: Day.js translations are up to date.\n";
+					}
+					return;
+				}
+
+				file_put_contents($configPath, $generator->generate());
+				$readmePath = $repository->getPath() . '/README.md';
+				$readme = $generator->updateReadme(file_get_contents($readmePath));
+				if ($readme === null) {
+					echo Console::renderColoredString("%y{$subsplit->getId()}: README.md does not contain link to Day.js locale source.%n"), "\n";
+				} else {
+					file_put_contents($readmePath, $readme);
+				}
+				if ($this->verbose) {
+					echo "{$subsplit->getId()}: Day.js translations updated to $version.\n";
+				}
+			}
+		);
 	}
 
 	public function actionInherit(array $inheritors = [], string $configFile = '@app/translations/config.php') {

@@ -262,52 +262,6 @@ final class ReadmeController extends ConsoleController {
 		);
 	}
 
-	/**
-	 * @param string[] $subsplitIds
-	 * @return iterable|Subsplit[]
-	 */
-	private function resolveSubsplits(Translations $translations, array $subsplitIds): iterable {
-		if (empty($subsplitIds)) {
-			return $translations->getSubsplits();
-		}
-
-		$subsplits = [];
-		foreach ($subsplitIds as $subsplitId) {
-			$subsplits[] = $translations->getSubsplit($subsplitId);
-		}
-		return $subsplits;
-	}
-
-	/**
-	 * Updates repository of each subsplit, calls `$callback` to modify files, then commits and pushes changes
-	 * (depending on `--commit` and `--push` options). Errors are reported and do not stop processing other subsplits.
-	 *
-	 * @param iterable|Subsplit[] $subsplits
-	 * @param string $label Name of updated files, used in error messages.
-	 * @param callable $callback `function (Subsplit $subsplit, Repository $repository): void`
-	 */
-	private function updateSubsplitsFiles(iterable $subsplits, string $label, string $commitMessage, callable $callback): void {
-		foreach ($subsplits as $subsplit) {
-			try {
-				// acquire repository lock outside of try/finally below - there is nothing to release if this fails
-				$repository = $subsplit->getRepository();
-			} catch (Throwable $exception) {
-				$this->reportError($subsplit, $exception, $label);
-				continue;
-			}
-
-			try {
-				$repository->update();
-				$callback($subsplit, $repository);
-				$this->postProcessRepository($repository, $commitMessage);
-			} catch (Throwable $exception) {
-				$this->reportError($subsplit, $exception, $label);
-			} finally {
-				Yii::$app->locks->releaseRepoLock($repository->getPath());
-			}
-		}
-	}
-
 	private function updateSubsplitReadme(Translations $translations, Subsplit $subsplit): void {
 		$subsplit->getRepository()->update();
 		$readme = file_get_contents($subsplit->getDir() . '/README.md');
@@ -363,8 +317,8 @@ final class ReadmeController extends ConsoleController {
 		return $languageSubsplits;
 	}
 
-	private function reportError(Subsplit $subsplit, Throwable $exception, string $file = 'README'): void {
-		Yii::warning("An error occurred while updating $file for {$subsplit->getId()} subsplit: {$exception->getMessage()}");
+	private function reportError(Subsplit $subsplit, Throwable $exception): void {
+		Yii::warning("An error occurred while updating README for {$subsplit->getId()} subsplit: {$exception->getMessage()}");
 		Yii::error($exception);
 		echo Console::renderColoredString("%r{$subsplit->getId()}: {$exception->getMessage()}%n"), "\n";
 	}
