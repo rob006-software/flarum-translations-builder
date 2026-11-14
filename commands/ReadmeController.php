@@ -264,9 +264,9 @@ final class ReadmeController extends ConsoleController {
 
 	/**
 	 * @param string[] $subsplitIds
-	 * @return Subsplit[]
+	 * @return iterable|Subsplit[]
 	 */
-	private function resolveSubsplits(Translations $translations, array $subsplitIds): array {
+	private function resolveSubsplits(Translations $translations, array $subsplitIds): iterable {
 		if (empty($subsplitIds)) {
 			return $translations->getSubsplits();
 		}
@@ -282,11 +282,11 @@ final class ReadmeController extends ConsoleController {
 	 * Updates repository of each subsplit, calls `$callback` to modify files, then commits and pushes changes
 	 * (depending on `--commit` and `--push` options). Errors are reported and do not stop processing other subsplits.
 	 *
-	 * @param Subsplit[] $subsplits
+	 * @param iterable|Subsplit[] $subsplits
 	 * @param string $label Name of updated files, used in error messages.
 	 * @param callable $callback `function (Subsplit $subsplit, Repository $repository): void`
 	 */
-	private function updateSubsplitsFiles(array $subsplits, string $label, string $commitMessage, callable $callback): void {
+	private function updateSubsplitsFiles(iterable $subsplits, string $label, string $commitMessage, callable $callback): void {
 		foreach ($subsplits as $subsplit) {
 			try {
 				// acquire repository lock outside of try/finally below - there is nothing to release if this fails
