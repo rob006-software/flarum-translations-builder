@@ -83,6 +83,7 @@ final class AgentsInstructionsGenerator {
 		}
 		$mapping = implode("\n", $mapping);
 		$weblateLinks = implode(', ', $weblateLinks);
+		$dayjs = $this->generateDayjsSection();
 		$marker = self::MARKER;
 
 		return <<<MD
@@ -104,9 +105,32 @@ final class AgentsInstructionsGenerator {
 			the extension repository, not to translations.
 
 			People who prefer to translate in the browser can use Weblate: $weblateLinks (AI agents can't access it).
+			$dayjs
+			`CHANGELOG.md`, the translation status in `README.md`, `AGENTS.md`, `CLAUDE.md`, `.gitattributes` and `.gitignore`
+			are also generated. Other files (like `composer.json` or `extend.php`) are maintained in this repository as usual.
 
-			`CHANGELOG.md` and the translation status in `README.md` are also generated. Other files (like `composer.json` or
-			`extend.php`) are maintained in this repository as usual.
+			MD;
+	}
+
+	private function generateDayjsSection(): string {
+		$files = [];
+		foreach ($this->subsplit->getDayjsTargets() as $target) {
+			$path = trim($target->getPath(), '/');
+			$locale = $target->getDayjsLocale();
+			$files[] = "- `$path/config.js` -> [`src/locale/$locale.js`](https://github.com/iamkun/dayjs/blob/dev/src/locale/$locale.js)";
+		}
+		if (empty($files)) {
+			return '';
+		}
+		$files = implode("\n", $files);
+
+		return <<<MD
+
+			`config.js` (Day.js translations of dates: month and weekday names, date formats, relative time) is generated from
+			the [Day.js](https://github.com/iamkun/dayjs) locale and overwritten when a new Day.js release changes it. Fixes
+			belong to the Day.js repository - they are picked up here after the next Day.js release:
+
+			$files
 
 			MD;
 	}
