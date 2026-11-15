@@ -196,6 +196,12 @@ abstract class Subsplit {
 
 	abstract public function createReadmeGenerator(Translations $translations): ReadmeGenerator;
 
+	/**
+	 * @return LanguageSubsplit[] Subsplit itself or its variants (for multi-language subsplit), which have Day.js
+	 * translations in `config.js` managed by `translations/update-dayjs` command. Does not initialize repository.
+	 */
+	abstract public function getDayjsTargets(): array;
+
 	public function hasReleaseGenerator(): bool {
 		return $this->releaseVersion !== null;
 	}

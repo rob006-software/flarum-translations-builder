@@ -21,7 +21,6 @@ use app\components\inheritors\InheritorsStatusGenerator;
 use app\components\release\ReleasePullRequestGenerator;
 use app\components\translations\TranslationsImporter;
 use app\helpers\FlarumVersion;
-use app\models\LanguageSubsplit;
 use app\models\Repository;
 use app\models\Subsplit;
 use Throwable;
@@ -130,9 +129,10 @@ final class TranslationsController extends ConsoleController {
 	}
 
 	/**
-	 * Updates Day.js locale in `config.js` of language packs to the latest Day.js 1.x release. Only language packs with
-	 * `dayjsLocale` in config are updated, and only if the locale has actually changed (new Day.js release alone does
-	 * not change anything). Links to Day.js locale source in README are updated together with `config.js`.
+	 * Updates Day.js locale in `config.js` of language packs to the latest Day.js 1.x release. Only language packs (or
+	 * variants of multi-language packs) with `dayjsLocale` in config are updated, and only if the locale has actually
+	 * changed (new Day.js release alone does not change anything). Links to Day.js locale source in README are updated
+	 * together with `config.js`.
 	 */
 	public function actionUpdateDayjs(array $subsplits = [], string $configFile = '@app/translations/config.php') {
 		$translations = $this->getTranslations($configFile);
@@ -140,7 +140,7 @@ final class TranslationsController extends ConsoleController {
 		$version = $provider->getLatestVersion();
 		$subsplits = (static function (iterable $subsplits) {
 			foreach ($subsplits as $subsplit) {
-				if ($subsplit instanceof LanguageSubsplit && $subsplit->getDayjsLocale() !== null) {
+				if (!empty($subsplit->getDayjsTargets())) {
 					yield $subsplit;
 				}
 			}
@@ -150,27 +150,38 @@ final class TranslationsController extends ConsoleController {
 			$subsplits,
 			'Day.js translations',
 			"Update Day.js translations to $version",
-			function (LanguageSubsplit $subsplit, Repository $repository) use ($provider, $version) {
-				$locale = $subsplit->getDayjsLocale();
-				$generator = new DayjsConfigGenerator($version, $locale, $provider->getLocaleScript($version, $locale));
-				$configPath = $repository->getPath() . $subsplit->getPath() . '/config.js';
-				if (file_exists($configPath) && $generator->isUpToDate(file_get_contents($configPath))) {
-					if ($this->verbose) {
-						echo "{$subsplit->getId()}: Day.js translations are up to date.\n";
+			function (Subsplit $subsplit, Repository $repository) use ($provider, $version) {
+				$changed = false;
+				$hasReadmeLink = false;
+				$readmePath = $repository->getPath() . '/README.md';
+				$readme = file_get_contents($readmePath);
+				foreach ($subsplit->getDayjsTargets() as $target) {
+					$locale = $target->getDayjsLocale();
+					$generator = new DayjsConfigGenerator($version, $locale, $provider->getLocaleScript($version, $locale));
+					$configPath = $repository->getPath() . $target->getPath() . '/config.js';
+					if (file_exists($configPath) && $generator->isUpToDate(file_get_contents($configPath))) {
+						continue;
 					}
-					return;
+
+					$changed = true;
+					file_put_contents($configPath, $generator->generate());
+					$updatedReadme = $generator->updateReadme($readme);
+					if ($updatedReadme !== null) {
+						$readme = $updatedReadme;
+						$hasReadmeLink = true;
+					}
 				}
 
-				file_put_contents($configPath, $generator->generate());
-				$readmePath = $repository->getPath() . '/README.md';
-				$readme = $generator->updateReadme(file_get_contents($readmePath));
-				if ($readme === null) {
-					echo Console::renderColoredString("%y{$subsplit->getId()}: README.md does not contain link to Day.js locale source.%n"), "\n";
-				} else {
+				if ($changed) {
 					file_put_contents($readmePath, $readme);
+					if (!$hasReadmeLink) {
+						echo Console::renderColoredString("%y{$subsplit->getId()}: README.md does not contain link to Day.js locale source.%n"), "\n";
+					}
 				}
 				if ($this->verbose) {
-					echo "{$subsplit->getId()}: Day.js translations updated to $version.\n";
+					echo $changed
+						? "{$subsplit->getId()}: Day.js translations updated to $version.\n"
+						: "{$subsplit->getId()}: Day.js translations are up to date.\n";
 				}
 			}
 		);

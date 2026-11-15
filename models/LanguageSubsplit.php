@@ -86,6 +86,10 @@ final class LanguageSubsplit extends Subsplit {
 		return $this->dayjsLocale;
 	}
 
+	public function getDayjsTargets(): array {
+		return $this->dayjsLocale === null ? [] : [$this];
+	}
+
 	public function setFallbackLanguage(self $language): void {
 		$this->fallbackLanguage = $language;
 	}

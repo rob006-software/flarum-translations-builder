@@ -17,6 +17,7 @@ use app\components\readme\MultiLanguageSubsplitReadmeGenerator;
 use app\components\readme\ReadmeGenerator;
 use mindplay\readable;
 use yii\base\InvalidConfigException;
+use function array_merge;
 use function json_encode;
 
 /**
@@ -83,7 +84,9 @@ final class MultiLanguageSubsplit extends Subsplit {
 				$variantConfig['path'],
 				null,
 				$config['maintainers'],
-				$config['weblateMaintainers']
+				$config['weblateMaintainers'],
+				null,
+				$variantConfig['dayjsLocale'] ?? null
 			);
 		}
 
@@ -192,6 +195,15 @@ final class MultiLanguageSubsplit extends Subsplit {
 	/**
 	 * @return LanguageSubsplit[]
 	 */
+	public function getDayjsTargets(): array {
+		$targets = [];
+		foreach ($this->variants as $variant) {
+			$targets[] = $variant->getDayjsTargets();
+		}
+
+		return array_merge([], ...$targets);
+	}
+
 	public function getVariants(): array {
 		// inject `Repository` object to variants to avoid instantiating multiple objects for the same repository path
 		$this->getRepository();
