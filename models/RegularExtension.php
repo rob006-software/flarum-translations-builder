@@ -160,16 +160,17 @@ final class RegularExtension extends Extension {
 			return null;
 		}
 
-		$key = __METHOD__ . '#' . $this->getRepositoryUrl() . '#' . $lastRelease['version_normalized'];
-		return Yii::$app->cache->getOrSet($key, function () use ($lastRelease) {
-			$lastVersion = Yii::$app->extensionsRepository->findTagForCommit(
-				$this->getRepositoryUrl(),
-				$lastRelease['source']['reference']
-			);
-			if ($lastVersion === null) {
-				$lastVersion = $lastRelease['version'];
-			}
-			return $this->getTranslationSourceUrl($lastVersion);
+		$commitHash = $lastRelease['source']['reference'] ?? null;
+		if ($commitHash === null) {
+			return null;
+		}
+
+		$key = __METHOD__ . '#' . $this->getRepositoryUrl() . '#' . $lastRelease['version_normalized'] . '#' . $commitHash;
+		return Yii::$app->cache->getOrSet($key, function () use ($commitHash) {
+			// If tag was moved after release (Packagist ignores retagging), it no longer matches the Packagist commit.
+			// In that case use commit hash directly - if it is no longer available, it will be treated as no source.
+			$ref = Yii::$app->extensionsRepository->findTagForCommit($this->getRepositoryUrl(), $commitHash);
+			return $this->getTranslationSourceUrl($ref ?? $commitHash);
 		}, 31 * 24 * 3600, new TagDependency(['tags' => $this->getRepositoryUrl()]));
 	}
 

@@ -74,7 +74,8 @@ final class GithubApi extends Component {
 		[$userName, $repoName] = $this->explodeRepoUrl($repoUrl);
 		try {
 			return Yii::$app->arrayCache->getOrSet(__METHOD__ . '#' . $repoUrl, function () use ($userName, $repoName) {
-				return $this->githubApiClient->repo()->tags($userName, $repoName);
+				return (new ResultPager($this->githubApiClient, 100))
+					->fetchAll($this->githubApiClient->repo(), 'tags', [$userName, $repoName]);
 			});
 		} catch (GithubRuntimeException $exception) {
 			throw new GithubApiException(

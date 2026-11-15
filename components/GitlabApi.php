@@ -21,6 +21,7 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Yii;
 use yii\base\Component;
 use yii\base\InvalidArgumentException;
+use function array_merge;
 use function parse_url;
 use function strncmp;
 use function substr;
@@ -41,9 +42,17 @@ final class GitlabApi extends Component {
 		return Yii::$app->arrayCache->getOrSet(__METHOD__ . '#' . $repoUrl, function () use ($repoUrl) {
 			$repoName = urlencode($this->extractRepoName($repoUrl));
 			try {
-				return $this->getClient()
-					->request('GET', "https://gitlab.com/api/v4/projects/$repoName/repository/tags/")
-					->toArray();
+				$tags = [];
+				$page = '1';
+				while ($page !== '') {
+					$response = $this->getClient()->request('GET', "https://gitlab.com/api/v4/projects/$repoName/repository/tags/", [
+						'query' => ['per_page' => 100, 'page' => $page],
+					]);
+					$tags[] = $response->toArray();
+					$page = $response->getHeaders()['x-next-page'][0] ?? '';
+				}
+
+				return array_merge(...$tags);
 			} catch (HttpExceptionInterface $exception) {
 				throw new GitlabApiException(
 					"Unable to get GitLab API data for https://gitlab.com/api/v4/projects/$repoName/repository/tags/.",
