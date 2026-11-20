@@ -20,6 +20,10 @@
         "general-changes": "Основні зміни",
         "updated-config-js": "Оновлено переклади Day.js",
         "all-changes": "Усі зміни: {link}.",
-        "extensions-updated": "Оновлено переклади для розширень"
+        "extensions-updated": "Оновлено переклади для розширень",
+        "count-changed": "{count} змінено",
+        "count-removed": "{count} видалено",
+        "count-added": "{count} додано",
+        "completion": "{percent}% готово"
     }
 }
