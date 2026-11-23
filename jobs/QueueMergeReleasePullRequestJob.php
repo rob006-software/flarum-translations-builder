@@ -93,11 +93,13 @@ class QueueMergeReleasePullRequestJob extends BaseObject implements JobInterface
 			}
 		}
 
-		Yii::$app->queue->delay(self::AUTO_MERGE_DELAY)->push(new AutoMergeReleasePullRequestJob([
-			'configFile' => $this->configFile,
-			'subsplit' => $this->subsplit,
-			'pullRequestNumber' => $pullRequestNumber,
-		]));
+		Yii::$app->queue
+			->delay(self::AUTO_MERGE_DELAY)
+			->push(new AutoMergeReleasePullRequestJob([
+				'configFile' => $this->configFile,
+				'subsplit' => $this->subsplit,
+				'pullRequestNumber' => $pullRequestNumber,
+			]));
 	}
 
 	private function addAutoMergeLabel(string $repositoryUrl, int $pullRequestNumber, string $comment): void {

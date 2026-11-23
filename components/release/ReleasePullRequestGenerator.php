@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace app\components\release;
 
 use app\components\GithubApi;
+use app\components\queue\FileQueue;
 use app\components\release\exceptions\PullRequestMergeException;
 use app\helpers\StringHelper;
 use app\jobs\AnnounceReleaseOnForumJob;
@@ -306,11 +307,13 @@ class ReleasePullRequestGenerator {
 		$this->generator->release();
 
 		if ($this->subsplit->getDiscussThreadId() !== null) {
-			Yii::$app->queue->push(new AnnounceReleaseOnForumJob([
-				'subsplit' => $this->subsplit->getId(),
-				'pullRequestNumber' => $pullRequest['number'],
-				'announcement' => $this->generator->getAnnouncement(),
-			]));
+			Yii::$app->queue
+				->priority(FileQueue::HIGH_PRIORITY)
+				->push(new AnnounceReleaseOnForumJob([
+					'subsplit' => $this->subsplit->getId(),
+					'pullRequestNumber' => $pullRequest['number'],
+					'announcement' => $this->generator->getAnnouncement(),
+				]));
 		} else {
 			$this->githubApi->addPullRequestComment(
 				$this->subsplit->getRepositoryUrl(),
@@ -333,10 +336,12 @@ class ReleasePullRequestGenerator {
 				'body' => $this->generatePullRequestBody(),
 			]
 		);
-		Yii::$app->queue->delay(self::AUTO_MERGE_QUEUE_DELAY)->push(new QueueMergeReleasePullRequestJob([
-			'subsplit' => $this->subsplit->getId(),
-			'pullRequestNumber' => $pullRequest['number'],
-		]));
+		Yii::$app->queue
+			->delay(self::AUTO_MERGE_QUEUE_DELAY)
+			->push(new QueueMergeReleasePullRequestJob([
+				'subsplit' => $this->subsplit->getId(),
+				'pullRequestNumber' => $pullRequest['number'],
+			]));
 		if (!empty($this->subsplit->getMaintainers())) {
 			try {
 				$this->githubApi->addPullRequestAssignees($this->subsplit->getRepositoryUrl(), $pullRequest['number'], $this->subsplit->getMaintainers());

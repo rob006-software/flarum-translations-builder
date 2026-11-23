@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace app\controllers;
 
+use app\components\queue\FileQueue;
 use app\components\release\ReleasePullRequestGenerator;
 use app\helpers\FlarumVersion;
 use app\jobs\MergeReleasePullRequestJob;
@@ -77,10 +78,12 @@ class GithubController extends Controller {
 			return $this->generateResponse("Cannot find valid $flarumVersion subsplit - skip.");
 		}
 
-		Yii::$app->queue->push(new MergeReleasePullRequestJob([
-			'configFile' => $this->configFile,
-			'subsplit' => $subsplit,
-		]));
+		Yii::$app->queue
+			->priority(FileQueue::HIGH_PRIORITY)
+			->push(new MergeReleasePullRequestJob([
+				'configFile' => $this->configFile,
+				'subsplit' => $subsplit,
+			]));
 
 		return $this->generateResponse("Queued MergeReleasePullRequestJob for $flarumVersion '$subsplit' subsplit.", 202);
 	}
