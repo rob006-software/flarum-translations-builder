@@ -8,7 +8,11 @@
         "updated-core": "Flarumi tuuma tõlked on uuendatud",
         "updated-config-js": "Day.js tõlked on uuendatud",
         "all-changes": "Kõik muudatused: {link}.",
-        "extensions-updated": "Lisaprogrammide tõlkeid on uuendatud"
+        "extensions-updated": "Lisaprogrammide tõlkeid on uuendatud",
+        "count-changed": "{count} muudetud",
+        "count-removed": "{count} eemaldatud",
+        "count-added": "{count} lisatud",
+        "completion": "{percent}% valmis"
     },
     "announcement": {
         "to-update": "Uuendamiseks käivita need käsud:",
