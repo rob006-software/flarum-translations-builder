@@ -8,11 +8,12 @@
     },
     "changelog": {
         "general-changes": "تغییرات کلی",
-        "all-changes": "تمام تغییرات: {link}",
+        "all-changes": "تمام تغییرات: {link}.",
         "count-changed": "{count} تغییر کرد",
         "count-removed": "{count} حذف شد",
         "count-added": "{count} اضافه شد",
-        "updated-config-css": "CSS به‌روزرسانی‌شده"
+        "updated-config-css": "CSS به‌روزرسانی‌شده",
+        "completion": "{percent}٪ کامل"
     },
     "announcement": {
         "version": "نسخه {version}"
