@@ -29,6 +29,7 @@ use function explode;
 use function file_get_contents;
 use function file_put_contents;
 use function implode;
+use function in_array;
 use function is_array;
 use function is_string;
 use function krsort;
@@ -40,7 +41,8 @@ use function substr_count;
 
 /**
  * Updates `core` and `validation` components and `supportedVersions` in translations config, so they track the last
- * release of two last minor versions of `flarum/core`.
+ * release of two last minor versions of `flarum/core`. If there is a beta or RC release newer than the last stable
+ * release, URLs for it are added at the end of the list (but it does not affect `supportedVersions`).
  *
  * It is designed to fail hard - any unexpected input (API error, unexpected format of config, broken URL, downgrade)
  * results in exception and config files are left untouched.
@@ -59,6 +61,7 @@ final class CoreConfigGenerator {
 	private const RAW_URL_PREFIX = 'https://raw.githubusercontent.com/flarum/flarum-core/';
 	private const COMPONENTS = ['core', 'validation'];
 	private const TRACKED_MINORS = 2;
+	private const PRE_RELEASE_STABILITIES = ['beta', 'RC'];
 	private const SUPPORTED_VERSIONS_COMMENT = ' // automatically support minor and patch releases';
 
 	private $configPath;
@@ -133,15 +136,25 @@ final class CoreConfigGenerator {
 	 */
 	private function findTrackedTags(): array {
 		$lastReleases = [];
+		$lastPreRelease = null;
 		foreach (Yii::$app->extensionsRepository->getPackagistReleasesData(self::PACKAGE_NAME) as $release) {
-			if (VersionParser::parseStability($release['version_normalized']) !== 'stable') {
+			$stability = VersionParser::parseStability($release['version_normalized']);
+			$isPreRelease = in_array($stability, self::PRE_RELEASE_STABILITIES, true);
+			if ($stability !== 'stable' && !$isPreRelease) {
 				continue;
 			}
 			[$major, $minor] = explode('.', $release['version_normalized']);
 			if ((int) $major !== $this->majorVersion) {
 				continue;
 			}
-			if (
+			if ($isPreRelease) {
+				if (
+					$lastPreRelease === null
+					|| Comparator::greaterThan($release['version_normalized'], $lastPreRelease['version_normalized'])
+				) {
+					$lastPreRelease = $release;
+				}
+			} elseif (
 				!isset($lastReleases[(int) $minor])
 				|| Comparator::greaterThan($release['version_normalized'], $lastReleases[(int) $minor]['version_normalized'])
 			) {
@@ -153,6 +166,13 @@ final class CoreConfigGenerator {
 		if (empty($lastReleases)) {
 			throw new Exception('Unable to find any stable release of ' . self::PACKAGE_NAME . " {$this->majorVersion}.x.");
 		}
+		// pre-release is tracked only until stable release of the same (or newer) version is available
+		if (
+			$lastPreRelease !== null
+			&& Comparator::greaterThan($lastPreRelease['version_normalized'], $lastReleases[0]['version_normalized'])
+		) {
+			$lastReleases[] = $lastPreRelease;
+		}
 
 		$parser = new VersionParser();
 		$tags = [];
@@ -161,9 +181,10 @@ final class CoreConfigGenerator {
 			if (($release['source']['url'] ?? null) !== self::REPOSITORY_URL) {
 				throw new Exception("Unexpected source of {$tag} release: " . readable::value($release['source'] ?? null) . '.');
 			}
-			// tags are used to build URLs, so we accept only plain versions with optional "v" prefix
+			// tags are used to build URLs, so we accept only plain versions with optional "v" prefix and optional
+			// beta/RC suffix (normalized version comparison below ensures that suffix matches release stability)
 			if (
-				!preg_match('/^v?\d+\.\d+\.\d+$/', $tag)
+				!preg_match('/^v?\d+\.\d+\.\d+(-(beta|rc)\.\d+)?$/', $tag)
 				|| $parser->normalize($tag) !== $release['version_normalized']
 			) {
 				throw new Exception("Unexpected tag name: {$tag}.");
@@ -212,14 +233,21 @@ final class CoreConfigGenerator {
 		};
 
 		$newVersions = [];
+		$newest = null;
 		foreach ($newTags as $tag) {
-			$newVersions[$getMinor($normalize($tag))] = $normalize($tag);
+			$new = $normalize($tag);
+			$minor = $getMinor($new);
+			if (!isset($newVersions[$minor]) || Comparator::greaterThan($new, $newVersions[$minor])) {
+				$newVersions[$minor] = $new;
+			}
+			if ($newest === null || Comparator::greaterThan($new, $normalize($newest))) {
+				$newest = $tag;
+			}
 		}
-		$newest = $normalize($newTags[0]);
 		foreach ($currentTags as $tag) {
 			$current = $normalize($tag);
-			if (Comparator::greaterThan($current, $newest)) {
-				throw new Exception("Current version {$tag} is newer than the newest found release {$newTags[0]}.");
+			if (Comparator::greaterThan($current, $normalize($newest))) {
+				throw new Exception("Current version {$tag} is newer than the newest found release {$newest}.");
 			}
 			$new = $newVersions[$getMinor($current)] ?? null;
 			if ($new !== null && Comparator::lessThan($new, $current)) {
@@ -234,7 +262,12 @@ final class CoreConfigGenerator {
 	private function generateSupportedVersions(array $tags): array {
 		$minors = [];
 		foreach ($tags as $tag) {
-			[, $minor] = explode('.', (new VersionParser())->normalize($tag));
+			$normalized = (new VersionParser())->normalize($tag);
+			// pre-releases are already covered by wildcard version
+			if (VersionParser::parseStability($normalized) !== 'stable') {
+				continue;
+			}
+			[, $minor] = explode('.', $normalized);
 			$minors[] = (int) $minor;
 		}
 		sort($minors);
