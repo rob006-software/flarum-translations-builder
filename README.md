@@ -103,6 +103,8 @@ earlier when its input changes. `./cron` runs its steps sequentially - see the s
 * `forum/sync-discussion` - when adding a language pack or changing the first post template.
 * `readme/update-agents` - when adding a language pack or changing the `AGENTS.md` template.
 * `readme/update-git-files` - when adding a language pack or changing the `.gitattributes`/`.gitignore` template.
+* `readme/update-composer` - when adding a language pack, changing the `composer.json` template, maintainers,
+  `discussThreadId` or language names/direction.
 * `translations/update-dayjs` - from time to time, to pick up Day.js locale fixes.
 
 
@@ -201,6 +203,7 @@ components that no longer exist) are not removed immediately:
 ./yii readme/update-subsplits [subsplitIds] [--push] [--frequency=N]
 ./yii readme/update-agents [subsplitIds] [--push]
 ./yii readme/update-git-files [subsplitIds] [--push]
+./yii readme/update-composer [subsplitIds] [--push]
 ```
 
 * `readme/update` - updates translations repo: extensions and language lists in `README.md` (between
@@ -215,6 +218,14 @@ components that no longer exist) are not removed immediately:
   the changelog or trigger a release.
 * `readme/update-git-files` - creates/updates `.gitattributes` and `.gitignore` in each language pack, from templates
   in `ReadmeController::GIT_FILES`. Existing files are always overwritten (custom rules are not preserved).
+* `readme/update-composer` - overwrites `composer.json` in each language pack (`ComposerJsonGenerator`). Everything
+  comes from config: English language name (title, description), `nativeName` and `direction` from
+  `config/translations/languages.php` (`extra.flarum-locale`), maintainers as authors, `discussThreadId` as
+  `support.forum` (the "Discuss" link in admin panel), `localeCode` from subsplits config,
+  `flarum-lang/utils` for multi-language packs and branch alias for non-version branches (like `master`, major
+  version from `metadata/versions.json`). Only the `flarum/core` constraint and the icon are preserved from the
+  existing file. `localeCode` (default: subsplit ID) must never change - forums store it in settings. Files are
+  outside of `locale/`, so they never trigger a release.
 
 ### `extensions/*` - new extensions
 

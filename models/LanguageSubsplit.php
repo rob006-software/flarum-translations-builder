@@ -54,12 +54,13 @@ final class LanguageSubsplit extends Subsplit {
 		array $maintainers,
 		array $weblateMaintainers,
 		?int $discussThreadId = null,
-		?string $dayjsLocale = null
+		?string $dayjsLocale = null,
+		?string $localeCode = null
 	) {
 		$this->language = $language;
 		$this->dayjsLocale = $dayjsLocale;
 
-		parent::__construct($id, $repository, $branch, $path, $releaseVersion, $maintainers, $weblateMaintainers, $discussThreadId);
+		parent::__construct($id, $repository, $branch, $path, $releaseVersion, $maintainers, $weblateMaintainers, $discussThreadId, $localeCode);
 	}
 
 	public static function createFromConfig(string $id, array $config, ?string $releaseVersion): Subsplit {
@@ -73,7 +74,8 @@ final class LanguageSubsplit extends Subsplit {
 			$config['maintainers'],
 			$config['weblateMaintainers'],
 			$config['discussThreadId'] ?? null,
-			$config['dayjsLocale'] ?? null
+			$config['dayjsLocale'] ?? null,
+			$config['localeCode'] ?? null
 		);
 	}
 

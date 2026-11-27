@@ -374,6 +374,28 @@ final class Translations {
 		return $this->languagesConfig[$language]['name'] ?? Locale::getDisplayName($language, 'en');
 	}
 
+	/**
+	 * @return string Name of language written in this language (like `Polski`), from `nativeName` in languages config.
+	 */
+	public function getLanguageNativeName(string $language): string {
+		if (!isset($this->languagesConfig[$language]['nativeName'])) {
+			throw new InvalidArgumentException('There is no native name for ' . readable::value($language) . ' language.');
+		}
+
+		return $this->languagesConfig[$language]['nativeName'];
+	}
+
+	/**
+	 * @return string Direction of text in this language: `ltr` (default) or `rtl`.
+	 */
+	public function getLanguageDirection(string $language): string {
+		if (!isset($this->languagesConfig[$language])) {
+			throw new InvalidArgumentException('There is no language with ' . readable::value($language) . ' ID.');
+		}
+
+		return $this->languagesConfig[$language]['direction'] ?? 'ltr';
+	}
+
 	public function getDir(): string {
 		return $this->dir;
 	}

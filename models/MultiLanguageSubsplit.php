@@ -53,7 +53,8 @@ final class MultiLanguageSubsplit extends Subsplit {
 		?string $releaseVersion,
 		array $maintainers,
 		array $weblateMaintainers,
-		?int $discussThreadId = null
+		?int $discussThreadId = null,
+		?string $localeCode = null
 	) {
 		$this->language = $language;
 		$this->variants = $variants;
@@ -67,7 +68,7 @@ final class MultiLanguageSubsplit extends Subsplit {
 			throw new InvalidConfigException('There is no variant for ' . readable::value($language) . " language in $id subsplit.");
 		}
 
-		parent::__construct($id, $repository, $branch, $path, $releaseVersion, $maintainers, $weblateMaintainers, $discussThreadId);
+		parent::__construct($id, $repository, $branch, $path, $releaseVersion, $maintainers, $weblateMaintainers, $discussThreadId, $localeCode);
 	}
 
 	public static function createFromConfig(string $id, array $config, ?string $releaseVersion): Subsplit {
@@ -101,7 +102,8 @@ final class MultiLanguageSubsplit extends Subsplit {
 			$releaseVersion,
 			$config['maintainers'],
 			$config['weblateMaintainers'],
-			$config['discussThreadId'] ?? null
+			$config['discussThreadId'] ?? null,
+			$config['localeCode'] ?? null
 		);
 	}
 

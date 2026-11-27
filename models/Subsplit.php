@@ -21,7 +21,6 @@ use Dont\DontGet;
 use Dont\DontSet;
 use Yii;
 use yii\base\InvalidConfigException;
-use yii\helpers\ArrayHelper;
 use function array_keys;
 use function arsort;
 use function basename;
@@ -55,6 +54,7 @@ abstract class Subsplit {
 	private $maintainers;
 	private $weblateMaintainers;
 	private $discussThreadId;
+	private $localeCode;
 
 	public function __construct(
 		string $id,
@@ -64,7 +64,8 @@ abstract class Subsplit {
 		?string $releaseVersion,
 		array $maintainers,
 		array $weblateMaintainers,
-		?int $discussThreadId = null
+		?int $discussThreadId = null,
+		?string $localeCode = null
 	) {
 		$this->id = $id;
 		$this->branch = $branch;
@@ -83,6 +84,7 @@ abstract class Subsplit {
 		$this->maintainers = $maintainers;
 		$this->weblateMaintainers = $weblateMaintainers;
 		$this->discussThreadId = $discussThreadId;
+		$this->localeCode = $localeCode;
 	}
 
 	/**
@@ -186,6 +188,14 @@ abstract class Subsplit {
 	 */
 	public function getDiscussThreadId(): ?int {
 		return $this->discussThreadId;
+	}
+
+	/**
+	 * @return string Locale code registered by language pack in Flarum (`extra.flarum-locale.code` in `composer.json`).
+	 * Forums store it in settings and users preferences, so it must never change for existing language pack.
+	 */
+	public function getLocaleCode(): string {
+		return $this->localeCode ?? $this->id;
 	}
 
 	abstract public function isValidForComponent(Component $component): bool;
@@ -300,9 +310,7 @@ abstract class Subsplit {
 	}
 
 	public function getThreadUrl(): ?string {
-		$composerJson = $this->getComposerJsonContent();
-		$url = ArrayHelper::getValue($composerJson, 'extra.extiverse.discuss') ?? ArrayHelper::getValue($composerJson, 'extra.flagrow.discuss');
-		return !empty($url) ? $url : null;
+		return $this->discussThreadId === null ? null : "https://discuss.flarum.org/d/{$this->discussThreadId}";
 	}
 
 	public function getComposerJsonContent(): array {

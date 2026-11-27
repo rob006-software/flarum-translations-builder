@@ -16,6 +16,7 @@ namespace app\commands;
 use app\components\ConsoleController;
 use app\components\languages\LanguagePacksSummaryGenerator;
 use app\components\readme\AgentsInstructionsGenerator;
+use app\components\readme\ComposerJsonGenerator;
 use app\components\readme\LicenseSummaryGenerator;
 use app\components\readme\MainReadmeGenerator;
 use app\components\readme\SummaryGenerator;
@@ -36,8 +37,10 @@ use function file_exists;
 use function file_get_contents;
 use function file_put_contents;
 use function in_array;
+use function json_decode;
 use function strpos;
 use function substr;
+use const JSON_THROW_ON_ERROR;
 
 /**
  * Class ReadmeController.
@@ -258,6 +261,28 @@ final class ReadmeController extends ConsoleController {
 				foreach (self::GIT_FILES as $fileName => $content) {
 					file_put_contents($repository->getPath() . '/' . $fileName, $content);
 				}
+			}
+		);
+	}
+
+	/**
+	 * Overwrites `composer.json` in language packs with version generated from builder config. Only `flarum/core`
+	 * constraint and icon are preserved from existing file. Not scheduled - run it manually after changing the template,
+	 * languages or subsplits config.
+	 */
+	public function actionUpdateComposer(array $subsplits = [], string $configFile = '@app/translations/config.php') {
+		$translations = $this->getTranslations($configFile);
+		$this->updateSubsplitsFiles(
+			$this->resolveSubsplits($translations, $subsplits),
+			ComposerJsonGenerator::FILE,
+			'Update composer.json',
+			static function (Subsplit $subsplit, Repository $repository) use ($translations) {
+				$path = $repository->getPath() . '/' . ComposerJsonGenerator::FILE;
+				$current = file_exists($path)
+					? json_decode(file_get_contents($path), true, 512, JSON_THROW_ON_ERROR)
+					: [];
+				$generator = new ComposerJsonGenerator($subsplit, $translations, $current);
+				file_put_contents($path, $generator->generate());
 			}
 		);
 	}
